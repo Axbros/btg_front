@@ -18,6 +18,11 @@
         <van-cell title="付款人昵称" :value="txt(fromProfile.nickname)" />
         <van-cell title="付款人手机" :value="txt(fromProfile.mobile)" />
         <van-cell title="收款人昵称" :value="txt(toProfile.nickname)" />
+        <van-cell title="收款人交易所">
+          <template #value>
+            <span class="pay-amt">{{ txt(toExchangeUidText) }}</span>
+          </template>
+        </van-cell>
         <!-- <van-cell title="收款人手机" :value="txt(toProfile.mobile)" /> -->
         <van-cell title="应支付金额">
           <template #value>
@@ -293,6 +298,17 @@ function pickUserSide(d, side) {
 
 const fromProfile = computed(() => pickUserSide(detail.value, 'from'))
 const toProfile = computed(() => pickUserSide(detail.value, 'to'))
+
+const toExchangeUidText = computed(() => {
+  const d = detail.value
+  if (!d) return ''
+  return pickStr(
+    d.toUserExchangeUid,
+    d.to_user_exchange_uid,
+    d.toExchangeUid,
+    d.to_exchange_uid,
+  )
+})
 
 const transferShotUrl = computed(() => {
   const d = detail.value

@@ -36,7 +36,7 @@ import { formatMoney, formatDateTime, formatRate, formatProfitRecordStatus } fro
 const props = defineProps({
   item: { type: Object, required: true },
   showDistributionLink: { type: Boolean, default: false },
-  /** 为 true 时（如「我的利润上报记录」）点击卡片跳转到结算详情 /settlement/:id */
+  /** 为 true 时（如「我的利润上报记录」）点击卡片跳结算详情；路由 id 为 root_report_id（与利润单 id 一致） */
   linkToSettlement: { type: Boolean, default: false },
 })
 
@@ -87,19 +87,21 @@ const shareUpField = computed(
     props.item.payableToSuperiorAmount,
 )
 
-/** 结算详情路由参数：优先 settlementId，否则用列表项 id（与后端约定一致） */
-function settlementRouteId() {
-  const it = props.item
-  const sid = it.settlementId ?? it.settlement_id
-  if (sid != null && String(sid).trim() !== '') return String(sid).trim()
-  if (it.id != null) return String(it.id)
-  return ''
-}
-
+/** 付款人打开详情：GET /settlements/{rootReportId}；root_report_id 与本次上报利润单 id 一致 */
 function goSettlement() {
-  const id = settlementRouteId()
-  if (!id) return
-  router.push({ name: 'SettlementDetail', params: { id } })
+  const it = props.item
+  const root = it.rootReportId ?? it.root_report_id ?? it.id
+  if (root != null && String(root).trim() !== '') {
+    const n = Number(root)
+    if (Number.isFinite(n) && n > 0) {
+      router.push({ name: 'SettlementDetail', params: { id: String(n) } })
+      return
+    }
+  }
+  const row = it.settlementId ?? it.settlement_id
+  if (row != null && String(row).trim() !== '') {
+    router.push({ name: 'SettlementDetailByRow', params: { rowId: String(row).trim() } })
+  }
 }
 
 function onCardClick() {

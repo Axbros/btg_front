@@ -3,6 +3,22 @@
     <AppHeader title="我的信息" />
     <van-loading v-if="loading" class="profile__loading" vertical>加载个人信息…</van-loading>
     <div v-else-if="userInfo" class="profile">
+      <div v-if="inviteRegisterUrl" class="invite-qr">
+        <div class="invite-qr__title">邀请注册</div>
+        <div class="invite-qr__canvas-wrap">
+          <van-loading v-if="inviteQrLoading" type="spinner" size="28px" vertical>生成二维码…</van-loading>
+          <img
+            v-else-if="inviteQrDataUrl"
+            class="invite-qr__img"
+            :src="inviteQrDataUrl"
+            alt="邀请注册链接二维码"
+            width="220"
+            height="220"
+          />
+          <p v-else-if="inviteQrFailed" class="invite-qr__err">二维码生成失败，请点下方「邀请码」复制链接</p>
+        </div>
+        <p class="invite-qr__hint">扫码打开注册页；也可点下方「邀请码」复制链接</p>
+      </div>
       <van-cell-group inset>
         <van-cell title="手机号" :value="String(userInfo.mobile ?? '—')" />
         <van-cell title="昵称" :value="String(userInfo.nickname ?? '—')" />
@@ -41,7 +57,8 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import QRCode from 'qrcode'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { showToast } from 'vant'
@@ -61,6 +78,49 @@ const router = useRouter()
 const loading = ref(true)
 const logoutDialogShow = ref(false)
 
+/** 带邀请码的完整注册页 URL，用于二维码与复制 */
+const inviteRegisterUrl = computed(() => {
+  const code = String(userInfo.value?.invitationCode ?? '').trim()
+  if (!code) return ''
+  const { fullPath } = router.resolve({
+    path: '/register',
+    query: { invitationCode: code },
+  })
+  return `${window.location.origin}${fullPath}`
+})
+
+const inviteQrDataUrl = ref('')
+const inviteQrLoading = ref(false)
+const inviteQrFailed = ref(false)
+
+watch(
+  inviteRegisterUrl,
+  async (url) => {
+    if (!url) {
+      inviteQrDataUrl.value = ''
+      inviteQrLoading.value = false
+      inviteQrFailed.value = false
+      return
+    }
+    inviteQrLoading.value = true
+    inviteQrDataUrl.value = ''
+    inviteQrFailed.value = false
+    try {
+      inviteQrDataUrl.value = await QRCode.toDataURL(url, {
+        width: 220,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+      })
+    } catch {
+      inviteQrDataUrl.value = ''
+      inviteQrFailed.value = true
+    } finally {
+      inviteQrLoading.value = false
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
   if (!auth.isLogin) {
     loading.value = false
@@ -77,23 +137,12 @@ onMounted(async () => {
   }
 })
 
-function buildRegisterInviteUrl() {
-  const code = String(userInfo.value?.invitationCode ?? '').trim()
-  if (!code) return ''
-  const { fullPath } = router.resolve({
-    path: '/register',
-    query: { invitationCode: code },
-  })
-  return `${window.location.origin}${fullPath}`
-}
-
 async function copyInviteRegisterUrl() {
-  const code = String(userInfo.value?.invitationCode ?? '').trim()
-  if (!code) {
+  const url = inviteRegisterUrl.value
+  if (!url) {
     showToast('暂无邀请码')
     return
   }
-  const url = buildRegisterInviteUrl()
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(url)
@@ -129,6 +178,44 @@ function onLogoutConfirm() {
 .profile {
   margin-top: 12px;
   padding-bottom: 24px;
+}
+.invite-qr {
+  margin: 0 16px 12px;
+  padding: 16px 14px 14px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+.invite-qr__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
+  margin-bottom: 12px;
+}
+.invite-qr__canvas-wrap {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.invite-qr__img {
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+}
+.invite-qr__hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #969799;
+}
+.invite-qr__err {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #ee0a24;
 }
 .profile__admin,
 .profile__edit,
