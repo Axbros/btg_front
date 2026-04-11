@@ -84,7 +84,9 @@ function amountField(item) {
 }
 
 function detailTo(item) {
-  return item.id != null ? { name: 'SettlementDetail', params: { id: String(item.id) } } : undefined
+  return item.id != null
+    ? { name: 'SettlementDetailByRow', params: { rowId: String(item.id) } }
+    : undefined
 }
 
 async function fetchPage(p) {

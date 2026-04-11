@@ -112,7 +112,8 @@ import EmptyState from '@/components/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
 import { uploadFile, FILE_UPLOAD_TYPES } from '@/api/files'
 import {
-  fetchSettlementById,
+  fetchSettlementByRootReportId,
+  fetchSettlementRowById,
   approveSettlement,
   rejectSettlement,
   submitSettlementTransfer,

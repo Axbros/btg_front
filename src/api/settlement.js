@@ -14,9 +14,14 @@ export function fetchMyPendingReviewSettlements(params = {}) {
   return get('/settlements/pending-review', { page, size })
 }
 
-/** GET /api/v1/settlements/{id} — profitScreenshotUrl 利润截图；transferScreenshotUrl 上缴/划转截图 */
-export function fetchSettlementById(id) {
-  return get(`/settlements/${id}`)
+/** GET /api/v1/settlements/{rootReportId} — id 为 root_report_id，且本人为付款人 */
+export function fetchSettlementByRootReportId(rootReportId) {
+  return get(`/settlements/${rootReportId}`)
+}
+
+/** GET /api/v1/settlements/row/{settlementId} — 结算单主键；本人为付款人或收款人 */
+export function fetchSettlementRowById(settlementId) {
+  return get(`/settlements/row/${settlementId}`)
 }
 
 /** POST /api/v1/settlements/{id}/submit */

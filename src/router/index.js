@@ -87,6 +87,12 @@ const routes = [
         meta: { title: '待审核下级结算', hideTab: true },
       },
       {
+        path: 'settlement/row/:rowId',
+        name: 'SettlementDetailByRow',
+        component: () => import('@/views/settlement/SettlementDetail.vue'),
+        meta: { title: '结算详情', hideTab: true },
+      },
+      {
         path: 'settlement/:id',
         name: 'SettlementDetail',
         component: () => import('@/views/settlement/SettlementDetail.vue'),

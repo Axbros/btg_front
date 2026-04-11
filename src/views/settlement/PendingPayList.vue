@@ -63,8 +63,17 @@ function amountField(item) {
   return item.payAmount ?? item.payableAmount ?? item.amount ?? item.profitAmount ?? 0
 }
 
+function rootReportIdOf(item) {
+  const v = item.rootReportId ?? item.root_report_id
+  if (v == null || v === '') return null
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 function detailTo(item) {
-  return item.id != null ? { name: 'SettlementDetail', params: { id: String(item.id) } } : undefined
+  const rid = rootReportIdOf(item)
+  if (rid != null) return { name: 'SettlementDetail', params: { id: String(rid) } }
+  return undefined
 }
 
 async function fetchPage(p) {
