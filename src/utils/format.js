@@ -45,8 +45,8 @@ const STATUS_MAP = {
 /** btg_profit_report.status：1 待直属上级审核；2 已进入结算链；3 拒绝；4 全链路完成 */
 const PROFIT_REPORT_STATUS_NUM = {
   1: '待直属上级审核',
-  2: '结算进行中',
-  3: '已拒绝',
+  2: '通过',
+  3: '拒绝',
   4: '全链路完成',
 }
 
@@ -88,8 +88,8 @@ export function formatStatus(val) {
 }
 
 const PROFIT_REPORT_STATUS_STR = {
-  PENDING_DIRECT_REVIEW: '待直属上级审核',
-  IN_SETTLEMENT_CHAIN: '结算进行中',
+  PENDING_DIRECT_REVIEW: '待上级审核',
+  IN_SETTLEMENT_CHAIN: '已通过',
   REJECTED: '已拒绝',
   ALL_COMPLETED: '全链路完成',
 }

@@ -1,6 +1,6 @@
 import { get, post, put } from './request'
 
-/** GET /api/v1/profit-configs/self-under-parent — 当前用户在上级处的子级总利润占比 */
+/** GET /api/v1/profit-configs/self-under-parent — 分润配置平铺 + parentExchangeUid（上级 exchange_uid） */
 export function fetchSelfProfitConfigUnderParent() {
   return get('/profit-configs/self-under-parent')
 }

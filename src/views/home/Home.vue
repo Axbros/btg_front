@@ -7,9 +7,9 @@
     </div>
 
     <van-grid :column-num="2" :gutter="10" class="home__grid" clickable>
-      <van-grid-item icon="friends-o" text="我的直属下级" to="/team/direct" />
+      <!-- <van-grid-item icon="friends-o" text="我的直属下级" to="/team/direct" /> -->
       <van-grid-item icon="cluster-o" text="我的全部下级" to="/team/descendants" />
-      <van-grid-item icon="edit" text="利润上报" to="/profit-report/submit" />
+      <!-- <van-grid-item icon="edit" text="利润上报" to="/profit-report/submit" /> -->
       <van-grid-item icon="records" text="我的利润上报记录" to="/profit-report/mine" />
       <van-grid-item icon="balance-pay" text="待支付给上级" to="/settlement/pending-pay" />
       <van-grid-item icon="passed" text="待审核下级结算" to="/settlement/pending-review" />

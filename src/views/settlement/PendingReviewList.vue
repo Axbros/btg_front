@@ -80,7 +80,7 @@ function metaLine(item) {
 }
 
 function amountField(item) {
-  return item.profitAmount ?? item.amount ?? 0
+  return item.profitAmount ?? item.payAmount ?? 0
 }
 
 function detailTo(item) {

@@ -14,7 +14,7 @@ export function fetchMyPendingReviewSettlements(params = {}) {
   return get('/settlements/pending-review', { page, size })
 }
 
-/** GET /api/v1/settlements/{id} — 含 reportNo、收付款人昵称/手机；profitScreenshotUrl、reportTransferScreenshotUrl 与 transferScreenshotUrl 同级 */
+/** GET /api/v1/settlements/{id} — profitScreenshotUrl 利润截图；transferScreenshotUrl 上缴/划转截图 */
 export function fetchSettlementById(id) {
   return get(`/settlements/${id}`)
 }

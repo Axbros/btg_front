@@ -3,27 +3,56 @@
     <AppHeader title="结算详情" />
     <van-loading v-if="loading" class="pad" vertical>加载中…</van-loading>
     <template v-else-if="detail">
-      <van-cell-group inset>
+      <van-cell-group>
         <!-- <van-cell title="结算单号" :value="txt(detail.id)" /> -->
         <van-cell title="利润上报单号" :value="txt(reportNoText)" />
-        <van-cell title="上报审核状态" :value="formatSettlementStatus(detail.status)" />
+        <van-cell title="上报审核状态">
+          <template #value>
+            <van-tag :type="settlementStatusTagType" plain round>
+              {{ formatSettlementStatus(detail.status) }}
+            </van-tag>
+          </template>
+        </van-cell>
 
         <!-- <van-cell v-if="rootReportIdText" title="关联根单 ID" :value="rootReportIdText" /> -->
         <van-cell title="付款人昵称" :value="txt(fromProfile.nickname)" />
         <van-cell title="付款人手机" :value="txt(fromProfile.mobile)" />
         <van-cell title="收款人昵称" :value="txt(toProfile.nickname)" />
         <!-- <van-cell title="收款人手机" :value="txt(toProfile.mobile)" /> -->
-        <van-cell title="应支付金额" :value="formatMoney(detail.payAmount)" />
-        <van-cell title="划转凭证">
-          <a v-if="img(transferShotUrl)" :href="img(transferShotUrl)" target="_blank" rel="noopener">查看</a>
-          <span v-else>—</span>
+        <van-cell title="应支付金额">
+          <template #value>
+            <span class="pay-amt">{{ formatMoney(detail.payAmount) }}</span>
+          </template>
         </van-cell>
+        <van-cell v-if="needSubmitTransferProof" title="" class="hint-cell">
+          <template #title>
+            <span class="transfer-hint">请向收款人完成打款后，上传划转凭证提交上级审核。</span>
+          </template>
+        </van-cell>
+        <van-cell title="上缴/划转凭证">
+          <template #value>
+            <a v-if="img(transferShotUrl)" :href="img(transferShotUrl)" target="_blank" rel="noopener">查看</a>
+            <van-button
+              v-else-if="needSubmitTransferProof"
+              type="primary"
+              size="small"
+              :loading="submittingTransfer"
+              @click="onPickTransferProof"
+            >
+              上传划转凭证
+            </van-button>
+            <span v-else>—</span>
+          </template>
+        </van-cell>
+        <input
+          ref="transferFileRef"
+          type="file"
+          class="visually-hidden"
+          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf"
+          @change="onTransferFileChange"
+        />
         <van-cell title="利润截图">
           <a v-if="img(profitShotUrl)" :href="img(profitShotUrl)" target="_blank" rel="noopener">查看</a>
-          <span v-else>—</span>
-        </van-cell>
-        <van-cell title="上缴截图（利润单）">
-          <a v-if="img(reportTransferShotUrl)" :href="img(reportTransferShotUrl)" target="_blank" rel="noopener">查看</a>
           <span v-else>—</span>
         </van-cell>
         <van-cell title="提交时间" :value="formatDateTime(detail.submitTime ?? detail.createdAt)" />
@@ -31,7 +60,7 @@
         <van-cell v-if="detail.auditRemark" title="审核备注" :label="detail.auditRemark" />
       </van-cell-group>
 
-      <div v-if="profitReportIdForLink" class="link-row">
+      <div v-if="showProfitDistributionLink" class="link-row">
         <van-button block round plain type="primary" @click="goDistribution">查看关联利润的分润明细</van-button>
       </div>
 
@@ -75,20 +104,31 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchSettlementById, approveSettlement, rejectSettlement } from '@/api/settlement'
+import { useAuthStore } from '@/stores/auth'
+import { uploadFile, FILE_UPLOAD_TYPES } from '@/api/files'
+import {
+  fetchSettlementById,
+  approveSettlement,
+  rejectSettlement,
+  submitSettlementTransfer,
+} from '@/api/settlement'
 import { formatMoney, formatDateTime, formatSettlementStatus } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
+const { userInfo } = storeToRefs(useAuthStore())
 const loading = ref(true)
 const detail = ref(null)
 const approveDialogShow = ref(false)
 const rejectShow = ref(false)
 const rejectRemark = ref('')
+const transferFileRef = ref(null)
+const submittingTransfer = ref(false)
 
 const settlementId = computed(() => {
   const n = Number(route.params.id)
@@ -103,13 +143,111 @@ function isPendingReview(s) {
   return n === 3
 }
 
-const showReviewActions = computed(() => isPendingReview(detail.value))
+function isPendingSubmitStatus(s) {
+  if (!s) return false
+  const v = s.status
+  if (v === 'PENDING_SUBMIT') return true
+  const n = Number(v)
+  return n === 2
+}
+
+const meId = computed(() => {
+  const id = userInfo.value?.id
+  const n = Number(id)
+  return Number.isFinite(n) && n > 0 ? n : null
+})
+
+function pickFromUserId(d) {
+  if (!d) return null
+  const fromObj = d.fromUser ?? d.from_user
+  const raw = d.fromUserId ?? d.from_user_id ?? fromObj?.id ?? fromObj?.userId ?? fromObj?.user_id
+  if (raw == null || raw === '') return null
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function pickToUserId(d) {
+  if (!d) return null
+  const toObj = d.toUser ?? d.to_user ?? d.toUserInfo ?? d.to_user_info
+  const raw = d.toUserId ?? d.to_user_id ?? toObj?.id ?? toObj?.userId ?? toObj?.user_id
+  if (raw == null || raw === '') return null
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** 当前用户是否为直属上级（收款方），可审核本条结算 */
+const isMeAsReviewingSuperior = computed(() => {
+  const d = detail.value
+  const mid = meId.value
+  if (!d || mid == null) return false
+  const reviewerRaw =
+    d.reviewerUserId ??
+    d.reviewer_user_id ??
+    d.auditByUserId ??
+    d.audit_by_user_id ??
+    pickToUserId(d)
+  if (reviewerRaw == null) return false
+  const rid = Number(reviewerRaw)
+  return Number.isFinite(rid) && rid > 0 && rid === mid
+})
+
+/** 当前用户是否为付款方（下级/上报人），仅查看自己的单不应出现通过/拒绝 */
+const isMeAsSubordinatePayer = computed(() => {
+  const d = detail.value
+  const mid = meId.value
+  if (!d || mid == null) return false
+  const fid = pickFromUserId(d)
+  return fid != null && fid === mid
+})
+
+const isRootUser = computed(() => {
+  const u = userInfo.value
+  if (!u) return false
+  const v = u.isRoot ?? u.is_root
+  if (v === true || v === 1 || v === '1') return true
+  if (v === false || v === 0 || v === '0') return false
+  if (typeof v === 'string' && v.toLowerCase() === 'true') return true
+  return false
+})
+
+/**
+ * 仅根用户可看全链路分润明细；本人查看自己上报产生的结算单时不展示（与「自己的利润上报详情」一致）。
+ */
+const showProfitDistributionLink = computed(() => {
+  if (isMeAsSubordinatePayer.value) return false
+  if (!isRootUser.value) return false
+  return profitReportIdForLink.value != null
+})
+
+/** 仅待审核且当前用户为应审核的上级时显示通过/拒绝（本人作为上报人打开详情不显示） */
+const showReviewActions = computed(() => {
+  if (!isPendingReview(detail.value)) return false
+  if (isMeAsSubordinatePayer.value) return false
+  return isMeAsReviewingSuperior.value
+})
 
 const reportNoText = computed(() => {
   const d = detail.value
   if (!d) return ''
   const v = d.reportNo ?? d.report_no ?? d.profitRecordNo ?? d.profit_record_no
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
+})
+
+/** van-tag type：与结算单 status 数字/字符串枚举对应 */
+const settlementStatusTagType = computed(() => {
+  const s = detail.value?.status
+  if (s === 'APPROVED' || s === 4) return 'success'
+  if (s === 'REJECTED' || s === 5) return 'danger'
+  if (s === 'PENDING_REVIEW' || s === 'PENDING' || s === 3) return 'primary'
+  if (s === 'PENDING_SUBMIT' || s === 2) return 'warning'
+  if (s === 'INIT' || s === 1) return 'default'
+  const n = Number(s)
+  if (n === 4) return 'success'
+  if (n === 5) return 'danger'
+  if (n === 3) return 'primary'
+  if (n === 2) return 'warning'
+  if (n === 1) return 'default'
+  return 'default'
 })
 
 const rootReportIdText = computed(() => {
@@ -157,6 +295,14 @@ const transferShotUrl = computed(() => {
   )
 })
 
+/** 待提交凭证、尚无划转图、且当前用户为付款人 → 需向上级打款并上传凭证 */
+const needSubmitTransferProof = computed(() => {
+  const d = detail.value
+  if (!d || !isPendingSubmitStatus(d)) return false
+  if (img(transferShotUrl.value)) return false
+  return isMeAsSubordinatePayer.value
+})
+
 const profitShotUrl = computed(() => {
   const d = detail.value
   if (!d) return ''
@@ -166,12 +312,6 @@ const profitShotUrl = computed(() => {
     d.profitImgUrl,
     d.profit_img_url,
   )
-})
-
-const reportTransferShotUrl = computed(() => {
-  const d = detail.value
-  if (!d) return ''
-  return pickStr(d.reportTransferScreenshotUrl, d.report_transfer_screenshot_url)
 })
 
 function pickStr(...candidates) {
@@ -208,6 +348,33 @@ function txt(v) {
 
 function img(u) {
   return u ? String(u) : ''
+}
+
+function onPickTransferProof() {
+  transferFileRef.value?.click()
+}
+
+async function onTransferFileChange(ev) {
+  const input = ev.target
+  const file = input.files?.[0]
+  if (input) input.value = ''
+  if (!file || settlementId.value == null) return
+  submittingTransfer.value = true
+  try {
+    const vo = await uploadFile(file, FILE_UPLOAD_TYPES.TRANSFER)
+    const url = vo?.url ?? vo?.data?.url
+    if (!url || String(url).trim() === '') {
+      showToast('上传未返回地址')
+      return
+    }
+    await submitSettlementTransfer(settlementId.value, { transferScreenshotUrl: String(url).trim() })
+    showToast('已提交，待上级审核')
+    await load()
+  } catch {
+    /* 错误已由请求层 Toast */
+  } finally {
+    submittingTransfer.value = false
+  }
 }
 
 async function load() {
@@ -291,5 +458,29 @@ async function onRejectDialogBeforeClose(action) {
 }
 .dialog-field-wrap {
   padding: 0 8px 8px;
+}
+.pay-amt {
+  color: #ee0a24;
+  font-weight: 700;
+}
+.transfer-hint {
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+.hint-cell :deep(.van-cell__title) {
+  flex: 1;
+  max-width: 100%;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

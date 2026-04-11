@@ -66,12 +66,16 @@
             />
           </template>
         </van-field>
-        <div v-if="transferHintAmount" class="transfer-hint">
-          <span class="transfer-hint__plain">
-            当前结算模式下，请先向直属上级完成划转，再上传凭证。按当前配置，需划转
-          </span>
+        <div v-if="transferHintAmount" class="transfer-hint">  
+          <span class="transfer-hint__plain">按当前配置，需向直属上级</span>
+          <template v-if="parentExchangeUid">
+            <span class="transfer-hint__plain">（交易所 UID：</span>
+            <span class="transfer-hint__emph">{{ parentExchangeUid }}</span>
+            <span class="transfer-hint__plain">）</span>
+          </template>
+          <span class="transfer-hint__plain">划转</span>
           <span class="transfer-hint__amount">{{ transferHintAmount }}</span>
-          <span class="transfer-hint__plain">元（以最终核算为准）。</span>
+          <span class="transfer-hint__plain">元。</span>
         </div>
       </van-cell-group>
       <div class="actions">
@@ -121,6 +125,16 @@ function payableRatioFromContext(c) {
 
 const payableRatio = computed(() => payableRatioFromContext(context.value))
 
+/** 直属上级交易所 UID，用于划转提示 */
+const parentExchangeUid = computed(() => {
+  const c = context.value
+  if (!c) return ''
+  const uid = c.parentExchangeUid ?? c.parent_exchange_uid
+  if (uid == null) return ''
+  const s = String(uid).trim()
+  return s
+})
+
 const contextSummaryText = computed(() => {
   const c = context.value
   if (!c) return ''
@@ -129,6 +143,9 @@ const contextSummaryText = computed(() => {
   if (child != null) parts.push(`子级利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
   const pr = payableRatio.value
   if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属上级划转约 ${formatRate(pr)} 的利润部分`)
+  if (parentExchangeUid.value) {
+    parts.push(`直属上级交易所 UID：${parentExchangeUid.value}`)
+  }
   return parts.join('；')
 })
 
@@ -207,6 +224,10 @@ async function onSubmit() {
 }
 .transfer-hint__plain {
   color: #323233;
+}
+.transfer-hint__emph {
+  font-weight: 700;
+  color: #ee0a24;
 }
 .transfer-hint__amount {
   margin: 0 2px;

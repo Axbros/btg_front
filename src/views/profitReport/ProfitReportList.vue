@@ -3,7 +3,13 @@
     <AppHeader title="我的利润上报记录" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 12px;">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <ProfitRecordCard v-for="item in list" :key="item.id" :item="item" show-distribution-link />
+        <ProfitRecordCard
+          v-for="(item, idx) in list"
+          :key="rowKey(item, idx)"
+          :item="item"
+          link-to-settlement
+          show-distribution-link
+        />
         <EmptyState v-if="!loading && !list.length && loaded" />
       </van-list>
     </van-pull-refresh>
@@ -31,6 +37,10 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
+
+function rowKey(item, idx) {
+  return String(item.settlementId ?? item.settlement_id ?? item.id ?? `row-${idx}`)
+}
 
 async function fetchPage(p) {
   const raw = await fetchMyProfitReports({ page: p, size: pageSize.value })

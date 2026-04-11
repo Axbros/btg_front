@@ -1,6 +1,11 @@
 <template>
-  <van-cell-group inset class="profit-card">
-    <van-cell :title="orderNo" :value="statusText">
+  <van-cell-group
+    inset
+    class="profit-card"
+    :class="{ 'profit-card--clickable': linkToSettlement }"
+    @click="onCardClick"
+  >
+    <van-cell :title="orderNo" :value="statusText" :is-link="linkToSettlement">
       <template #title>
         <span class="profit-card__title">{{ orderNo }}</span>
       </template>
@@ -13,7 +18,7 @@
     <van-cell v-if="item.auditTime" title="审核时间" :value="formatDateTime(item.auditTime)" />
     <van-cell v-if="item.auditRemark" title="审核备注" :label="item.auditRemark" />
     <van-cell
-      v-if="showDistributionLink && item.id != null && isRootUser"
+      v-if="canShowDistributionLink"
       title="分润明细"
       is-link
       @click.stop="goDistribution"
@@ -31,6 +36,8 @@ import { formatMoney, formatDateTime, formatRate, formatProfitRecordStatus } fro
 const props = defineProps({
   item: { type: Object, required: true },
   showDistributionLink: { type: Boolean, default: false },
+  /** 为 true 时（如「我的利润上报记录」）点击卡片跳转到结算详情 /settlement/:id */
+  linkToSettlement: { type: Boolean, default: false },
 })
 
 const router = useRouter()
@@ -47,7 +54,20 @@ const isRootUser = computed(() => {
   return false
 })
 
-const orderNo = computed(() => props.item.reportNo )
+const canShowDistributionLink = computed(() => {
+  if (!props.showDistributionLink || !isRootUser.value) return false
+  const v = profitReportIdForDistribution()
+  return v != null && String(v).trim() !== ''
+})
+
+const orderNo = computed(
+  () =>
+    props.item.reportNo ??
+    props.item.report_no ??
+    props.item.recordNo ??
+    props.item.record_no ??
+    (props.item.id != null ? `#${props.item.id}` : '—'),
+)
 
 const statusText = computed(() => formatProfitRecordStatus(props.item.status))
 
@@ -67,9 +87,42 @@ const shareUpField = computed(
     props.item.payableToSuperiorAmount,
 )
 
+/** 结算详情路由参数：优先 settlementId，否则用列表项 id（与后端约定一致） */
+function settlementRouteId() {
+  const it = props.item
+  const sid = it.settlementId ?? it.settlement_id
+  if (sid != null && String(sid).trim() !== '') return String(sid).trim()
+  if (it.id != null) return String(it.id)
+  return ''
+}
+
+function goSettlement() {
+  const id = settlementRouteId()
+  if (!id) return
+  router.push({ name: 'SettlementDetail', params: { id } })
+}
+
+function onCardClick() {
+  if (!props.linkToSettlement) return
+  goSettlement()
+}
+
+/** 分润明细页按利润上报/根单 ID，避免与结算单 id 混淆 */
+function profitReportIdForDistribution() {
+  const it = props.item
+  return (
+    it.profitReportId ??
+    it.profit_report_id ??
+    it.rootReportId ??
+    it.root_report_id ??
+    it.reportId ??
+    it.id
+  )
+}
+
 function goDistribution() {
-  const id = props.item.id
-  if (id == null) return
+  const id = profitReportIdForDistribution()
+  if (id == null || String(id).trim() === '') return
   router.push({
     name: 'ProfitDistributionDetail',
     params: { profitReportId: String(id) },
@@ -83,5 +136,11 @@ function goDistribution() {
 }
 .profit-card__title {
   font-weight: 600;
+}
+.profit-card--clickable {
+  cursor: pointer;
+}
+.profit-card--clickable:active {
+  opacity: 0.92;
 }
 </style>
