@@ -36,13 +36,19 @@ const routes = [
         path: 'team/direct',
         name: 'DirectTeam',
         component: () => import('@/views/team/DirectTeam.vue'),
-        meta: { title: '直属下级', tab: 'team' },
+        meta: { title: '我的直属下级', tab: 'team' },
       },
       {
         path: 'team/descendants',
         name: 'DescendantsTeam',
         component: () => import('@/views/team/DescendantsTeam.vue'),
-        meta: { title: '全部下级', tab: 'team' },
+        meta: { title: '我的全部下级', tab: 'team' },
+      },
+      {
+        path: 'team/member/:memberId/profit-ratio',
+        name: 'ChildProfitRatioEdit',
+        component: () => import('@/views/team/ChildProfitRatioEdit.vue'),
+        meta: { title: '调整子级利润比例', tab: 'team', hideTab: true },
       },
       {
         path: 'team/member/:memberId',
@@ -51,52 +57,40 @@ const routes = [
         meta: { title: '下级详情', tab: 'team', hideTab: true },
       },
       {
-        path: 'team/bind/:childUserId',
-        name: 'BindStrategy',
-        component: () => import('@/views/team/BindStrategy.vue'),
-        meta: { title: '绑定策略', tab: 'team', hideTab: true },
+        path: 'profit-report/submit',
+        name: 'ProfitReportSubmit',
+        component: () => import('@/views/profitReport/ProfitReportSubmit.vue'),
+        meta: { title: '利润上报', tab: 'report' },
       },
       {
-        path: 'strategies',
-        name: 'Strategies',
-        component: () => import('@/views/team/StrategyList.vue'),
-        meta: { title: '分佣策略', tab: 'team', hideTab: true },
+        path: 'profit-report/mine',
+        name: 'ProfitReportList',
+        component: () => import('@/views/profitReport/ProfitReportList.vue'),
+        meta: { title: '我的利润上报记录', tab: 'report', hideTab: true },
       },
       {
-        path: 'profit/submit',
-        name: 'SubmitProfit',
-        component: () => import('@/views/profit/SubmitProfit.vue'),
-        meta: { title: '收益申报', tab: 'profit' },
+        path: 'profit-report/:profitReportId/distribution',
+        name: 'ProfitDistributionDetail',
+        component: () => import('@/views/profitReport/ProfitDistributionDetail.vue'),
+        meta: { title: '分润明细', tab: 'report', hideTab: true },
       },
       {
-        path: 'profit/list',
-        name: 'ProfitList',
-        component: () => import('@/views/profit/ProfitList.vue'),
-        meta: { title: '我的收益', tab: 'profit', hideTab: true },
+        path: 'settlement/pending-pay',
+        name: 'PendingPaySettlements',
+        component: () => import('@/views/settlement/PendingPayList.vue'),
+        meta: { title: '待支付给上级', hideTab: true },
       },
       {
-        path: 'profit/referrer/records',
-        name: 'ReferrerProfitList',
-        component: () => import('@/views/profit/ReferrerProfitList.vue'),
-        meta: { title: '下级申报审核', tab: 'profit', hideTab: true },
+        path: 'settlement/pending-review',
+        name: 'PendingReviewSettlements',
+        component: () => import('@/views/settlement/PendingReviewList.vue'),
+        meta: { title: '待审核下级结算', hideTab: true },
       },
       {
-        path: 'profit/referrer/records/:id',
-        name: 'ReferrerProfitDetail',
-        component: () => import('@/views/profit/ReferrerProfitDetail.vue'),
-        meta: { title: '申报详情', tab: 'profit', hideTab: true },
-      },
-      {
-        path: 'commission/list/:id',
-        name: 'CommissionDetail',
-        component: () => import('@/views/commission/CommissionDetail.vue'),
-        meta: { title: '佣金详情', tab: 'me', hideTab: true },
-      },
-      {
-        path: 'commission/list',
-        name: 'CommissionList',
-        component: () => import('@/views/commission/CommissionList.vue'),
-        meta: { title: '佣金流水', tab: 'me', hideTab: true },
+        path: 'settlement/:id',
+        name: 'SettlementDetail',
+        component: () => import('@/views/settlement/SettlementDetail.vue'),
+        meta: { title: '结算详情', hideTab: true },
       },
       {
         path: 'me/profile',
@@ -122,18 +116,6 @@ const routes = [
         component: () => import('@/views/me/TeamStats.vue'),
         meta: { title: '团队统计', tab: 'me', hideTab: true },
       },
-      {
-        path: 'admin/pending',
-        name: 'PendingProfits',
-        component: () => import('@/views/admin/PendingProfits.vue'),
-        meta: { title: '待审核收益', requiresAdmin: true, hideTab: true },
-      },
-      {
-        path: 'admin/strategies',
-        name: 'StrategyManage',
-        component: () => import('@/views/admin/StrategyManage.vue'),
-        meta: { title: '策略管理', requiresAdmin: true, hideTab: true },
-      },
     ],
   },
   {
@@ -154,7 +136,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
-  document.title = (to.meta.title && `${to.meta.title} - 推荐分佣`) || '推荐分佣'
+  document.title = (to.meta.title && `${to.meta.title} - 金砖分润`) || '金砖分润'
 
   const isPublic = to.matched.some((r) => r.meta.public)
   const requiresAuth = to.matched.some((r) => r.meta.requiresAuth)

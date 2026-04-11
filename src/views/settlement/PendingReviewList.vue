@@ -1,6 +1,7 @@
 <template>
   <div>
-    <AppHeader title="下级申报审核" />
+    <AppHeader title="待审核下级结算" />
+    <p class="intro">直属下级上报利润并提交结算凭证后，由您审核；通过后由系统逐级向上推进，拒绝则本链路暂停。</p>
     <van-tabs v-model:active="activeStatus" shrink sticky>
       <van-tab title="全部" name="all" />
       <van-tab title="待审核" name="PENDING" />
@@ -18,15 +19,15 @@
         <van-cell
           v-for="item in list"
           :key="item.id"
-          :title="listTitle(item)"
+          :title="titleLine(item)"
           is-link
-          :to="{ name: 'ReferrerProfitDetail', params: { id: item.id } }"
+          :to="detailTo(item)"
         >
           <template #label>
-            <span class="list__meta">{{ listMetaLine(item) }}</span>
+            <span class="meta">{{ metaLine(item) }}</span>
           </template>
           <template #value>
-            <span class="list__amount">{{ formatMoney(item.profitAmount) }}</span>
+            <span class="amt">{{ formatMoney(amountField(item)) }}</span>
           </template>
         </van-cell>
         <EmptyState v-if="!loading && !list.length && loaded" />
@@ -44,9 +45,9 @@
 import { ref, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchReferrerProfitRecords } from '@/api/profit'
+import { fetchMyPendingReviewSettlements } from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatMoney, formatDateTime, formatProfitRecordStatus } from '@/utils/format'
+import { formatMoney, formatDateTime, formatSettlementStatus } from '@/utils/format'
 
 const activeStatus = ref('all')
 const list = ref([])
@@ -62,30 +63,32 @@ function statusQuery() {
   return activeStatus.value === 'all' ? undefined : activeStatus.value
 }
 
-/** 列表项：id、recordNo、userMobile、profitAmount、commissionRate、netAmount、status、submitTime；可无 userId（旧数据） */
-function listTitle(item) {
-  const no = item.recordNo
+function titleLine(item) {
+  const no = item.profitRecordNo ?? item.recordNo ?? item.settlementNo
   if (no != null && String(no).trim() !== '') return String(no)
-  if (item.id != null) return `申报 #${item.id}`
-  return '—'
+  return item.id != null ? `结算 #${item.id}` : '—'
 }
 
-function listMetaLine(item) {
-  const parts = [formatProfitRecordStatus(item.status)]
-  const mobile = item.userMobile != null ? String(item.userMobile).trim() : ''
-  // if (mobile) {
-  //   parts.push(`手机 ${mobile}`)
-  // } else if (item.userId != null) {
-  //   parts.push(`用户 ID ${item.userId}`)
-  // }
-  if (item.submitTime) {
-    parts.push(formatDateTime(item.submitTime))
+function metaLine(item) {
+  const parts = [formatSettlementStatus(item.status)]
+  const nick = item.subordinateNickname ?? item.userNickname ?? item.userMobile
+  if (nick) parts.push(String(nick))
+  if (item.submitTime ?? item.createdTime) {
+    parts.push(formatDateTime(item.submitTime ?? item.createdTime))
   }
   return parts.join(' · ')
 }
 
+function amountField(item) {
+  return item.profitAmount ?? item.amount ?? 0
+}
+
+function detailTo(item) {
+  return item.id != null ? { name: 'SettlementDetail', params: { id: String(item.id) } } : undefined
+}
+
 async function fetchPage(p) {
-  const raw = await fetchReferrerProfitRecords({
+  const raw = await fetchMyPendingReviewSettlements({
     page: p,
     pageSize: pageSize.value,
     status: statusQuery(),
@@ -139,14 +142,18 @@ function next() {
 </script>
 
 <style scoped>
-.list__meta {
+.intro {
+  margin: 10px 16px 0;
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+.meta {
   font-size: 12px;
   color: #969799;
-  line-height: 1.4;
 }
-.list__amount {
+.amt {
   font-weight: 600;
-  color: #323233;
 }
 .pager {
   display: flex;

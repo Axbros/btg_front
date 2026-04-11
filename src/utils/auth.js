@@ -2,7 +2,7 @@ const TOKEN_KEY = 'commission_token'
 const USER_KEY = 'commission_user'
 
 /**
- * 规范化 GET /api/user/me 的 data。
+ * 规范化 GET /api/v1/me（或 /api/v1/user/me）的 data。
  * 后端若返回 {} 或缺少可识别用户字段，按「无用户信息」处理（避免 {} 被当成 truthy）。
  */
 export function normalizeUserMePayload(u) {

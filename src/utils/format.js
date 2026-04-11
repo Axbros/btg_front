@@ -42,11 +42,17 @@ const STATUS_MAP = {
   ENABLED: '启用',
 }
 
-/** ProfitRecordStatus：后端 @JsonValue 为数字 1/2/3 */
-const PROFIT_STATUS_NUM = {
-  1: '待审核',
-  2: '已通过',
+/** btg_profit_report.status：1 待直属上级审核；2 已进入结算链；3 拒绝；4 全链路完成 */
+const PROFIT_REPORT_STATUS_NUM = {
+  1: '待直属上级审核',
+  2: '结算进行中',
   3: '已拒绝',
+  4: '全链路完成',
+}
+
+/** 兼容旧利润单状态码 */
+const PROFIT_STATUS_NUM = {
+  ...PROFIT_REPORT_STATUS_NUM,
 }
 
 /** CommissionRecordStatus：1 = CONFIRMED */
@@ -81,15 +87,56 @@ export function formatStatus(val) {
   return STATUS_MAP[key] || String(val)
 }
 
+const PROFIT_REPORT_STATUS_STR = {
+  PENDING_DIRECT_REVIEW: '待直属上级审核',
+  IN_SETTLEMENT_CHAIN: '结算进行中',
+  REJECTED: '已拒绝',
+  ALL_COMPLETED: '全链路完成',
+}
+
 export function formatProfitRecordStatus(val) {
   if (val === null || val === undefined || val === '') return '-'
+  if (typeof val === 'number' && PROFIT_REPORT_STATUS_NUM[val] != null) return PROFIT_REPORT_STATUS_NUM[val]
   if (typeof val === 'number' && PROFIT_STATUS_NUM[val] != null) return PROFIT_STATUS_NUM[val]
+  const sk = String(val).toUpperCase()
+  if (PROFIT_REPORT_STATUS_STR[sk]) return PROFIT_REPORT_STATUS_STR[sk]
   return formatStatus(val)
 }
 
 export function formatCommissionRecordStatus(val) {
   if (val === null || val === undefined || val === '') return '-'
   if (typeof val === 'number' && COMMISSION_STATUS_NUM[val] != null) return COMMISSION_STATUS_NUM[val]
+  return formatStatus(val)
+}
+
+/** btg_settlement_order.status：1 INIT；2 待提交凭证；3 待上级审核；4 通过；5 拒绝 */
+const SETTLEMENT_STATUS_NUM = {
+  1: '未激活',
+  2: '待提交凭证',
+  3: '待上级审核',
+  4: '已通过',
+  5: '已拒绝',
+}
+
+/** 结算单状态（兼容数字枚举与字符串） */
+const SETTLEMENT_STATUS_STR = {
+  PENDING: '待审核',
+  PENDING_REVIEW: '待上级审核',
+  PENDING_SUBMIT: '待提交凭证',
+  INIT: '未激活',
+  PENDING_PAYMENT: '待支付',
+  PENDING_PAY: '待支付',
+  APPROVED: '已通过',
+  REJECTED: '已拒绝',
+  CONFIRMED: '已确认',
+}
+
+export function formatSettlementStatus(val) {
+  if (val === null || val === undefined || val === '') return '-'
+  if (typeof val === 'number' && SETTLEMENT_STATUS_NUM[val] != null) return SETTLEMENT_STATUS_NUM[val]
+  const key = String(val).toUpperCase()
+  if (SETTLEMENT_STATUS_STR[key]) return SETTLEMENT_STATUS_STR[key]
+  if (typeof val === 'number' && PROFIT_STATUS_NUM[val] != null) return PROFIT_STATUS_NUM[val]
   return formatStatus(val)
 }
 

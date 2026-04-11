@@ -1,6 +1,6 @@
 <template>
   <div>
-    <AppHeader title="全部下级" />
+    <AppHeader title="我的全部下级" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
         <van-cell-group v-if="list.length">
@@ -11,13 +11,7 @@
             icon="user-o"
             is-link
             @click="openDetail(row)"
-          >
-            <template #value>
-              <van-tag plain :type="kycStatusTagType(kycVal(row))">
-                {{ formatKycStatus(kycVal(row)) }}
-              </van-tag>
-            </template>
-          </van-cell>
+          />
         </van-cell-group>
         <EmptyState v-else-if="!loading && loadedOnce" description="暂无下级成员" />
         <p v-if="loadedOnce" class="team-page-meta">共 {{ total }} 人</p>
@@ -32,8 +26,6 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchDescendantsTeam } from '@/api/user'
 import { usePagedTeamList } from '@/composables/usePagedTeamList'
-import { formatKycStatus, kycStatusTagType } from '@/utils/format'
-
 const router = useRouter()
 
 const { list, total, loading, finished, refreshing, loadedOnce, onLoad, onRefresh } = usePagedTeamList(
@@ -42,10 +34,6 @@ const { list, total, loading, finished, refreshing, loadedOnce, onLoad, onRefres
 
 function rowKey(row, i) {
   return String(row.id ?? `i-${i}`)
-}
-
-function kycVal(row) {
-  return row.kycStatus ?? row.kyc_status
 }
 
 function openDetail(row) {

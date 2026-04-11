@@ -4,7 +4,55 @@ import { getStoredToken } from '@/utils/auth'
 import { triggerSessionExpired } from '@/utils/session'
 import router from '@/router'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+
+const TOAST_FALLBACK = '请求失败'
+
+/**
+ * Vant Toast 的 message 只能是可展示的字符串/数字；后端若返回对象/数组会导致白块无文案。
+ */
+function normalizeToastMessage(raw) {
+  if (raw == null) return TOAST_FALLBACK
+  if (typeof raw === 'string') {
+    const t = raw.trim()
+    return t.length > 0 ? t : TOAST_FALLBACK
+  }
+  if (typeof raw === 'number' || typeof raw === 'boolean') {
+    return String(raw)
+  }
+  if (raw instanceof Error) {
+    const t = String(raw.message || '').trim()
+    return t.length > 0 ? t : TOAST_FALLBACK
+  }
+  if (Array.isArray(raw)) {
+    const parts = raw
+      .map((x) => normalizeToastMessage(x))
+      .filter((s) => s && s !== TOAST_FALLBACK)
+    if (parts.length) return [...new Set(parts)].join('；')
+    return TOAST_FALLBACK
+  }
+  if (typeof raw === 'object') {
+    const nested = raw.message ?? raw.msg ?? raw.error
+    if (nested != null && nested !== raw) {
+      const s = normalizeToastMessage(nested)
+      if (s !== TOAST_FALLBACK) return s
+    }
+    try {
+      const s = JSON.stringify(raw)
+      return s.length > 280 ? `${s.slice(0, 280)}…` : s
+    } catch {
+      return TOAST_FALLBACK
+    }
+  }
+  return TOAST_FALLBACK
+}
+
+function toastApiMessage(raw) {
+  showToast({
+    message: normalizeToastMessage(raw),
+    wordBreak: 'break-all',
+  })
+}
 
 const instance = axios.create({
   baseURL,
@@ -82,14 +130,14 @@ instance.interceptors.response.use(
       redirectToLogin()
       const msg =
         toastMessageFromErrorBody(status, body) || '登录已失效，请重新登录'
-      // showToast(msg)
+      toastApiMessage(msg)
       return Promise.reject(new Error('unauthorized'))
     }
 
     if (status < 200 || status >= 400) {
       const msg = toastMessageFromErrorBody(status, body) || `请求失败 (${status})`
-      // showToast(msg)
-      return Promise.reject(new Error(String(msg)))
+      toastApiMessage(msg)
+      return Promise.reject(new Error(normalizeToastMessage(msg)))
     }
 
     const wrapped = normalizeEnvelope(body)
@@ -102,21 +150,21 @@ instance.interceptors.response.use(
       envelope.code === '403'
     ) {
       redirectToLogin()
-      // showToast(envelope.message || envelope.msg || '登录已失效，请重新登录')
+      toastApiMessage(envelope.message || envelope.msg || '登录已失效，请重新登录')
       return Promise.reject(new Error('unauthorized'))
     }
 
     if (businessCodeIsError(envelope.code)) {
-      const msg = envelope.message || envelope.msg || '请求失败'
-      // showToast(msg)
-      return Promise.reject(new Error(msg))
+      const msg = envelope.message || envelope.msg || TOAST_FALLBACK
+      toastApiMessage(msg)
+      return Promise.reject(new Error(normalizeToastMessage(msg)))
     }
 
     return { ...res, data: envelope.data }
   },
   (err) => {
     if (!err.response) {
-      // showToast(err.message || '网络异常')
+      toastApiMessage(err?.message || '网络异常')
       return Promise.reject(err)
     }
 
@@ -126,15 +174,15 @@ instance.interceptors.response.use(
     if (status === 401 || status === 403) {
       redirectToLogin()
       const msg = toastMessageFromErrorBody(status, body) || '登录已失效，请重新登录'
-      //showToast(String(msg))
+      toastApiMessage(msg)
       return Promise.reject(err)
     }
 
     const msg =
       toastMessageFromErrorBody(status, body) ||
-      err.message ||
+      err?.message ||
       '网络异常'
-    //showToast(String(msg))
+    toastApiMessage(msg)
     return Promise.reject(err)
   },
 )

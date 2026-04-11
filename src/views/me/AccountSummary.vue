@@ -4,10 +4,10 @@
     <div v-if="summary" class="account">
       <div class="account__grid">
         <SummaryCard label="累计盈利" :value="formatMoney(summary.totalProfitAmount)" />
-        <SummaryCard label="累计分出佣金" :value="formatMoney(summary.totalCommissionOutAmount)" />
-        <SummaryCard label="累计收到佣金" :value="formatMoney(summary.totalCommissionInAmount)" />
-        <SummaryCard label="待审核分出佣金" :value="formatMoney(summary.pendingCommissionOutAmount)" />
-        <SummaryCard label="待审核应收佣金" :value="formatMoney(summary.pendingCommissionInAmount)" />
+        <SummaryCard label="累计分出分润" :value="formatMoney(summary.totalCommissionOutAmount)" />
+        <SummaryCard label="累计收到分润" :value="formatMoney(summary.totalCommissionInAmount)" />
+        <SummaryCard label="待审核分出分润" :value="formatMoney(summary.pendingCommissionOutAmount)" />
+        <SummaryCard label="待审核应收分润" :value="formatMoney(summary.pendingCommissionInAmount)" />
       </div>
     </div>
     <van-loading v-else-if="loading" class="account__loading" vertical>加载中…</van-loading>

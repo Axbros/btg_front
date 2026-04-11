@@ -4,7 +4,7 @@ import instance from './request'
  * POST /api/files/upload
  * @param {File|Blob} file
  * @param {'ID_CARD_FRONT'|'ID_CARD_BACK'|'FACE'|'PROFIT'|'TRANSFER'|'OTHER'} [type]
- * @returns {Promise<{ url, attachmentId, originalFilename, fileType }>}
+ * @returns {Promise<{ url, attachmentId?, originalFilename, fileType }>} attachmentId 通用上传为 null
  */
 export function uploadFile(file, type = 'OTHER') {
   const formData = new FormData()

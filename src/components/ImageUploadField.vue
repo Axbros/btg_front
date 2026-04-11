@@ -16,6 +16,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { showToast } from 'vant'
+import { useCustomFieldValue } from '@vant/use'
 import { uploadFile } from '@/api/files'
 
 const props = defineProps({
@@ -29,6 +30,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+/** 让外层 van-field（#input 插槽）校验的是图片 URL 字符串，而不是内层 Uploader 的文件列表 */
+useCustomFieldValue(() => props.modelValue)
 
 const fileList = ref([])
 

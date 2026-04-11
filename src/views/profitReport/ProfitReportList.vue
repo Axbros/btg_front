@@ -1,9 +1,9 @@
 <template>
   <div>
-    <AppHeader title="我的收益记录" />
+    <AppHeader title="我的利润上报记录" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 12px;">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <ProfitRecordCard v-for="item in list" :key="item.id" :item="item" />
+        <ProfitRecordCard v-for="item in list" :key="item.id" :item="item" show-distribution-link />
         <EmptyState v-if="!loading && !list.length && loaded" />
       </van-list>
     </van-pull-refresh>
@@ -20,7 +20,7 @@ import { ref } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import ProfitRecordCard from '@/components/ProfitRecordCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchMyProfits } from '@/api/profit'
+import { fetchMyProfitReports } from '@/api/profitReport'
 import { parsePageResponse } from '@/utils/pagination'
 
 const list = ref([])
@@ -33,8 +33,7 @@ const hasMore = ref(false)
 const loaded = ref(false)
 
 async function fetchPage(p) {
-  /** MyBatis Page：page、size */
-  const raw = await fetchMyProfits({ page: p, size: pageSize.value })
+  const raw = await fetchMyProfitReports({ page: p, size: pageSize.value })
   const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
   list.value = rows
   hasMore.value = more

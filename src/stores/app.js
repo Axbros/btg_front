@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useAppStore = defineStore('app', () => {
-  const pageTitle = ref('推荐分佣')
+  const pageTitle = ref('金砖分润')
 
   function setPageTitle(t) {
-    pageTitle.value = t || '推荐分佣'
+    pageTitle.value = t || '金砖分润'
   }
 
   return {

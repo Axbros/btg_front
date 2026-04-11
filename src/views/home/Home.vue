@@ -1,26 +1,24 @@
 <template>
   <div class="home">
     <div class="home__hero">
-      <div class="home__welcome">欢迎回来</div>
+      <div class="home__welcome">工作台</div>
       <UserCard v-if="!heroLoading && userInfo" :user="userInfo" :sub="heroSub" />
       <UserCard v-else :user="null" :sub="heroPlaceholder" />
     </div>
 
     <van-grid :column-num="2" :gutter="10" class="home__grid" clickable>
+      <van-grid-item icon="friends-o" text="我的直属下级" to="/team/direct" />
+      <van-grid-item icon="cluster-o" text="我的全部下级" to="/team/descendants" />
+      <van-grid-item icon="edit" text="利润上报" to="/profit-report/submit" />
+      <van-grid-item icon="records" text="我的利润上报记录" to="/profit-report/mine" />
+      <van-grid-item icon="balance-pay" text="待支付给上级" to="/settlement/pending-pay" />
+      <van-grid-item icon="passed" text="待审核下级结算" to="/settlement/pending-review" />
       <van-grid-item icon="balance-o" text="账户汇总" to="/me/account" />
-      <!-- <van-grid-item icon="friends-o" text="直属下级" to="/team/direct" /> -->
-      <van-grid-item icon="cluster-o" text="全部下级" to="/team/descendants" />
-      <!-- <van-grid-item icon="gold-coin-o" text="分佣策略" to="/strategies" /> -->
-      <van-grid-item icon="records" text="我的收益" to="/profit/list" />
-      <van-grid-item icon="description" text="下级申报审核" to="/profit/referrer/records" />
-      <van-grid-item icon="logistics" text="佣金流水" to="/commission/list" />
-      <!-- <van-grid-item icon="edit" text="收益申报" to="/profit/submit" /> -->
       <van-grid-item icon="chart-trending-o" text="团队统计" to="/me/team-stats" />
     </van-grid>
 
     <van-cell-group v-if="auth.isAdmin" inset title="管理员" class="home__admin">
       <van-cell title="待审核收益" is-link to="/admin/pending" />
-      <van-cell title="策略管理" is-link to="/admin/strategies" />
     </van-cell-group>
   </div>
 </template>
