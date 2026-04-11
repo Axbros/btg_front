@@ -131,10 +131,19 @@ const rejectRemark = ref('')
 const transferFileRef = ref(null)
 const submittingTransfer = ref(false)
 
-const settlementId = computed(() => {
-  const n = Number(route.params.id)
+/** 结算单主键：来自接口详情，用于提交/审核/上传（勿用路由 id，付款人详情路由里 id 为 root_report_id） */
+const detailSettlementPk = computed(() => {
+  const d = detail.value
+  if (!d) return null
+  const n = Number(d.id)
   return Number.isFinite(n) && n > 0 ? n : null
 })
+
+function parsePositiveLongParam(v) {
+  if (v == null || v === '') return null
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
 
 function isPendingReview(s) {
   if (!s) return false
@@ -359,7 +368,7 @@ async function onTransferFileChange(ev) {
   const input = ev.target
   const file = input.files?.[0]
   if (input) input.value = ''
-  if (!file || settlementId.value == null) return
+  if (!file || detailSettlementPk.value == null) return
   submittingTransfer.value = true
   try {
     const vo = await uploadFile(file, FILE_UPLOAD_TYPES.TRANSFER)
@@ -368,7 +377,7 @@ async function onTransferFileChange(ev) {
       showToast('上传未返回地址')
       return
     }
-    await submitSettlementTransfer(settlementId.value, { transferScreenshotUrl: String(url).trim() })
+    await submitSettlementTransfer(detailSettlementPk.value, { transferScreenshotUrl: String(url).trim() })
     showToast('已提交，待上级审核')
     await load()
   } catch {
@@ -379,15 +388,20 @@ async function onTransferFileChange(ev) {
 }
 
 async function load() {
-  const id = settlementId.value
-  if (id == null) {
+  const rowId = parsePositiveLongParam(route.params.rowId)
+  const rootReportId = parsePositiveLongParam(route.params.id)
+  const useRow = route.name === 'SettlementDetailByRow' || rowId != null
+  const fetchId = useRow ? rowId : rootReportId
+  if (fetchId == null) {
     detail.value = null
     loading.value = false
     return
   }
   loading.value = true
   try {
-    detail.value = await fetchSettlementById(id)
+    detail.value = useRow
+      ? await fetchSettlementRowById(fetchId)
+      : await fetchSettlementByRootReportId(fetchId)
   } catch {
     detail.value = null
   } finally {
@@ -397,12 +411,12 @@ async function load() {
 
 onMounted(load)
 watch(
-  () => route.params.id,
+  () => [route.name, route.params.id, route.params.rowId],
   () => load(),
 )
 
 function openApproveDialog() {
-  if (settlementId.value == null) {
+  if (detailSettlementPk.value == null) {
     showToast('无效单据')
     return
   }
@@ -411,7 +425,7 @@ function openApproveDialog() {
 
 async function onApproveDialogBeforeClose(action) {
   if (action === 'cancel') return true
-  const id = settlementId.value
+  const id = detailSettlementPk.value
   if (id == null) return false
   try {
     await approveSettlement(id, {})
@@ -430,7 +444,7 @@ function openReject() {
 
 async function onRejectDialogBeforeClose(action) {
   if (action === 'cancel') return true
-  const id = settlementId.value
+  const id = detailSettlementPk.value
   if (id == null) return false
   try {
     const remark = rejectRemark.value.trim()
