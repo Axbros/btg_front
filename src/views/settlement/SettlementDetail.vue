@@ -8,7 +8,7 @@
         <van-cell title="利润上报单号" :value="txt(reportNoText)" />
         <van-cell title="上报审核状态">
           <template #value>
-            <van-tag :type="settlementStatusTagType" plain round>
+            <van-tag :type="settlementTagType" plain round>
               {{ formatSettlementStatus(detail.status) }}
             </van-tag>
           </template>
@@ -123,7 +123,12 @@ import {
   rejectSettlement,
   submitSettlementTransfer,
 } from '@/api/settlement'
-import { formatMoney, formatDateTime, formatSettlementStatus } from '@/utils/format'
+import {
+  formatMoney,
+  formatDateTime,
+  formatSettlementStatus,
+  settlementStatusTagType,
+} from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -248,22 +253,7 @@ const reportNoText = computed(() => {
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
 })
 
-/** van-tag type：与结算单 status 数字/字符串枚举对应 */
-const settlementStatusTagType = computed(() => {
-  const s = detail.value?.status
-  if (s === 'APPROVED' || s === 4) return 'success'
-  if (s === 'REJECTED' || s === 5) return 'danger'
-  if (s === 'PENDING_REVIEW' || s === 'PENDING' || s === 3) return 'primary'
-  if (s === 'PENDING_SUBMIT' || s === 2) return 'warning'
-  if (s === 'INIT' || s === 1) return 'default'
-  const n = Number(s)
-  if (n === 4) return 'success'
-  if (n === 5) return 'danger'
-  if (n === 3) return 'primary'
-  if (n === 2) return 'warning'
-  if (n === 1) return 'default'
-  return 'default'
-})
+const settlementTagType = computed(() => settlementStatusTagType(detail.value?.status))
 
 const rootReportIdText = computed(() => {
   const d = detail.value

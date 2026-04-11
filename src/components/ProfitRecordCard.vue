@@ -5,9 +5,14 @@
     :class="{ 'profit-card--clickable': linkToSettlement }"
     @click="onCardClick"
   >
-    <van-cell :title="orderNo" :value="statusText" :is-link="linkToSettlement">
+    <van-cell :is-link="linkToSettlement">
       <template #title>
         <span class="profit-card__title">{{ orderNo }}</span>
+      </template>
+      <template #value>
+        <van-tag :type="profitRecordStatusTagType(item.status)" plain round>
+          {{ statusText }}
+        </van-tag>
       </template>
     </van-cell>
     <van-cell title="总利润" :value="formatMoney(item.profitAmount)" />
@@ -31,7 +36,13 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { formatMoney, formatDateTime, formatRate, formatProfitRecordStatus } from '@/utils/format'
+import {
+  formatMoney,
+  formatDateTime,
+  formatRate,
+  formatProfitRecordStatus,
+  profitRecordStatusTagType,
+} from '@/utils/format'
 
 const props = defineProps({
   item: { type: Object, required: true },

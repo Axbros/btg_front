@@ -1,8 +1,8 @@
 <template>
   <div class="auth-page">
     <div class="auth-brand">
-      <div class="auth-brand__title">金砖·分润结算</div>
-      <div class="auth-brand__sub">打造一流现货系统</div>
+      <div class="auth-brand__title">吞金授·分润结算</div>
+      <div class="auth-brand__sub">打造一流现货交易系统</div>
     </div>
     <van-form scroll-to-error :show-error-message="true" @submit="onSubmit">
       <van-cell-group inset>
@@ -70,20 +70,23 @@ async function onSubmit() {
     })
     const token = pickTokenFromLoginData(data)
     if (!token) {
-      
       showToast('登录成功但未返回 token')
       return
     }
     auth.setToken(token)
     let user = pickUserFromLoginData(data)
-    if (!user) {
-      try {
-        user = await fetchMe()
-      } catch {
-        user = null
-      }
+    try {
+      const me = await fetchMe()
+      if (me) user = me
+    } catch {
+      if (!user) user = pickUserFromLoginData(data)
     }
     if (user) auth.setUserInfo(user)
+    if (auth.isProfileOnlyLocked) {
+      showToast('账户资料待完善，请补全后提交审核')
+      router.replace('/me/profile-complete')
+      return
+    }
     showToast('登录成功')
     const redirect = route.query.redirect || '/home'
     router.replace(String(redirect))

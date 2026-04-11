@@ -12,7 +12,12 @@
           :to="detailTo(item)"
         >
           <template #label>
-            <span class="meta">{{ metaLine(item) }}</span>
+            <div class="meta-row">
+              <van-tag :type="settlementStatusTagType(item.status)" plain round class="meta-row__tag">
+                {{ formatSettlementStatus(item.status) }}
+              </van-tag>
+              <span class="meta-row__rest">{{ metaRestLine(item) }}</span>
+            </div>
           </template>
           <template #value>
             <span class="amt">{{ formatMoney(amountField(item)) }}</span>
@@ -35,7 +40,12 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchMyPendingPaySettlements } from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatMoney, formatDateTime, formatSettlementStatus } from '@/utils/format'
+import {
+  formatMoney,
+  formatDateTime,
+  formatSettlementStatus,
+  settlementStatusTagType,
+} from '@/utils/format'
 
 const list = ref([])
 const loading = ref(false)
@@ -51,8 +61,8 @@ function titleLine(item) {
   return no != null ? `结算 #${no}` : '结算单'
 }
 
-function metaLine(item) {
-  const parts = [formatSettlementStatus(item.status)]
+function metaRestLine(item) {
+  const parts = []
   if (item.createdTime ?? item.submitTime) {
     parts.push(formatDateTime(item.createdTime ?? item.submitTime))
   }
@@ -126,9 +136,20 @@ function next() {
   color: #646566;
   line-height: 1.5;
 }
-.meta {
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 2px;
+}
+.meta-row__tag {
+  flex-shrink: 0;
+}
+.meta-row__rest {
   font-size: 12px;
   color: #969799;
+  line-height: 1.4;
 }
 .amt {
   font-weight: 600;

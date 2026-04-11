@@ -29,10 +29,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { fetchMe } from '@/api/user'
 import UserCard from '@/components/UserCard.vue'
 
+const router = useRouter()
 const auth = useAuthStore()
 const { userInfo } = storeToRefs(auth)
 
@@ -56,6 +58,10 @@ onMounted(async () => {
   try {
     const me = await fetchMe()
     auth.setUserInfo(me)
+    if (Number(me?.status) === -1) {
+      router.replace('/me/profile-complete')
+      return
+    }
   } catch {
     /* 失败时保留本地已有 userInfo */
   } finally {

@@ -39,6 +39,7 @@
           label="邀请码"
           placeholder="必填"
           required
+          disabled
           :rules="invitationCodeRules"
         />
       </van-cell-group>

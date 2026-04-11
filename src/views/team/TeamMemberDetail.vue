@@ -10,7 +10,13 @@
         <van-cell title="手机号" :value="txt(user.mobile)" />
         <van-cell title="昵称" :value="txt(user.nickname)" />
         <van-cell title="上级用户" :value="referrerNicknameText" />
-        <van-cell title="账号状态" :value="formatUserStatus(user.status)" />
+        <van-cell title="账号状态">
+          <template #value>
+            <van-tag :type="userStatusTagType(user.status)" plain round>
+              {{ formatUserStatus(user.status) }}
+            </van-tag>
+          </template>
+        </van-cell>
       </van-cell-group>
 
       <van-cell-group v-if="profile" inset title="证件资料">
@@ -29,11 +35,37 @@
         <van-cell title="本金金额" :value="moneyTxt(profile.principalAmount)" />
       </van-cell-group>
 
-      <van-cell-group inset title="分润比例配置">
+      <van-cell-group  v-if="Number(user.status) === 1"  inset title="分润比例配置">
         <van-cell title="子级总利润占比" :value="rateTxt(childProfitRatioField)" />
       </van-cell-group>
 
-      <div class="actions">
+      <div v-if="canReviewProfile" class="actions">
+        <van-button
+          round
+          block
+          type="primary"
+          :loading="reviewLoading"
+          :disabled="reviewLoading"
+          @click="onApproveProfile"
+        >
+          通过审核
+        </van-button>
+        <van-button
+          round
+          block
+          plain
+          type="danger"
+          class="actions__btn-spaced"
+          :loading="reviewLoading"
+          :disabled="reviewLoading"
+          @click="onRejectProfile"
+        >
+          退回待完善
+        </van-button>
+        <p class="actions__hint">仅直属上级可操作：通过后该下级为正常可用；退回后需重新填写资料。</p>
+      </div>
+
+      <div v-if="Number(user.status) === 1" class="actions">
         <van-button round block type="primary" @click="onRatioConfigClick">调整分润比例</van-button>
         <p class="actions__hint">仅可为直属下级设置</p>
       </div>
@@ -44,17 +76,27 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
+import { showConfirmDialog, showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchUserDetail } from '@/api/user'
-import { formatMoney, formatRate, formatUserStatus } from '@/utils/format'
+import {
+  approveTeamMemberProfile,
+  fetchUserDetail,
+  rejectTeamMemberProfile,
+} from '@/api/user'
+import { useAuthStore } from '@/stores/auth'
+import { formatMoney, formatRate, formatUserStatus, userStatusTagType } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
+const { userInfo } = storeToRefs(auth)
 
 const detail = ref(null)
 const loading = ref(true)
+const reviewLoading = ref(false)
 
 const user = computed(() => detail.value?.user ?? {})
 const profile = computed(() => detail.value?.profile ?? null)
@@ -69,6 +111,30 @@ const referrerNicknameText = computed(() => {
 const childProfitRatioField = computed(
   () => detail.value?.childLineProfitRatio ?? detail.value?.child_line_profit_ratio ?? null,
 )
+
+function pickSelfUserId() {
+  const u = userInfo.value
+  if (!u) return null
+  const v = u.id ?? u.userId ?? u.user_id
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function pickMemberReferrerId(u) {
+  if (!u || typeof u !== 'object') return null
+  const v = u.referrerUserId ?? u.referrer_user_id ?? u.referrerId ?? u.referrer_id
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** 下级 status 为 0（待审核）且当前用户为其直属上级时可审核 */
+const canReviewProfile = computed(() => {
+  if (Number(user.value.status) !== 0) return false
+  const selfId = pickSelfUserId()
+  const refId = pickMemberReferrerId(user.value)
+  if (selfId == null || refId == null) return false
+  return selfId === refId
+})
 
 function memberIdNum() {
   const n = Number(route.params.memberId)
@@ -96,6 +162,61 @@ function onRatioConfigClick() {
   router.push({ name: 'ChildProfitRatioEdit', params: { memberId: String(id) } })
 }
 
+async function loadMemberDetail() {
+  const id = memberIdNum()
+  if (id == null) {
+    detail.value = null
+    return
+  }
+  detail.value = await fetchUserDetail(id)
+}
+
+async function onApproveProfile() {
+  const id = memberIdNum()
+  if (id == null) return
+  try {
+    await showConfirmDialog({
+      title: '通过审核',
+      message: '确认将该下级设为正常可用？',
+    })
+  } catch {
+    return
+  }
+  reviewLoading.value = true
+  try {
+    await approveTeamMemberProfile(id)
+    showToast('已通过审核')
+    await loadMemberDetail()
+  } catch {
+    /* 错误由请求拦截器提示 */
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+async function onRejectProfile() {
+  const id = memberIdNum()
+  if (id == null) return
+  try {
+    await showConfirmDialog({
+      title: '退回待完善',
+      message: '确认退回？下级将需重新填写资料后再提交。',
+    })
+  } catch {
+    return
+  }
+  reviewLoading.value = true
+  try {
+    await rejectTeamMemberProfile(id)
+    showToast('已退回待完善')
+    await loadMemberDetail()
+  } catch {
+    /* 错误由请求拦截器提示 */
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
 onMounted(async () => {
   const id = memberIdNum()
   if (id == null) {
@@ -104,7 +225,7 @@ onMounted(async () => {
   }
   loading.value = true
   try {
-    detail.value = await fetchUserDetail(id)
+    await loadMemberDetail()
   } catch {
     detail.value = null
   } finally {
@@ -121,6 +242,9 @@ onMounted(async () => {
 }
 .actions {
   margin: 20px 16px 0;
+}
+.actions__btn-spaced {
+  margin-top: 12px;
 }
 .actions__hint {
   margin: 10px 0 0;

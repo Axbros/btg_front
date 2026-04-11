@@ -190,7 +190,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
-  document.title = (to.meta.title && `${to.meta.title} - 金砖分润`) || '金砖分润'
+  document.title = (to.meta.title && `${to.meta.title} - 吞金授`) || '吞金授'
 
   const isPublic = to.matched.some((r) => r.meta.public)
   const requiresAuth = to.matched.some((r) => r.meta.requiresAuth)
@@ -209,6 +209,14 @@ router.beforeEach((to, from, next) => {
   if (requiresAdmin && !isUserAdmin(auth.userInfo)) {
     next({ path: '/home' })
     return
+  }
+
+  /** status === -1（待完善）：仅允许 /me/profile-complete，禁止其它需登录页 */
+  if (requiresAuth && auth.isLogin && auth.isProfileOnlyLocked) {
+    if (to.path !== '/me/profile-complete') {
+      next({ path: '/me/profile-complete', replace: true })
+      return
+    }
   }
 
   next()

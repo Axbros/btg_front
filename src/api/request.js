@@ -137,7 +137,6 @@ function toastApiMessage(raw) {
     type: 'text',
     message: visible.length > 0 ? visible : TOAST_FALLBACK,
     duration: 3200,
-    className: 'toast-api-error',
     wordBreak: 'break-word',
   })
 }
@@ -231,7 +230,7 @@ instance.interceptors.response.use(
     const status = res.status
     const body = res.data
 
-    if (status === 401 || status === 403) {
+    if (status === 401 ) {
       redirectToLogin()
       const msg =
         toastMessageFromErrorBody(status, body) || '登录已失效，请重新登录'
@@ -249,12 +248,7 @@ instance.interceptors.response.use(
     let envelope = wrapped ?? { code: 200, message: 'success', data: body }
     envelope = unwrapNestedBusinessEnvelope(envelope)
 
-    if (
-      envelope.code === 401 ||
-      envelope.code === 403 ||
-      envelope.code === '401' ||
-      envelope.code === '403'
-    ) {
+    if (envelope.code === 401 ) {
       redirectToLogin()
       toastApiMessage(pickRawErrorMessage(envelope) ?? '登录已失效，请重新登录')
       return Promise.reject(new Error('unauthorized'))

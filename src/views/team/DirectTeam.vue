@@ -11,7 +11,13 @@
             icon="user-o"
             is-link
             @click="openDetail(row)"
-          />
+          >
+            <template #value>
+              <van-tag :type="userStatusTagType(row.status)" plain round>
+                {{ formatUserStatus(row.status) }}
+              </van-tag>
+            </template>
+          </van-cell>
         </van-cell-group>
         <EmptyState v-else-if="!loading && loadedOnce" description="暂无直属下级" />
         <p v-if="loadedOnce" class="team-page-meta">共 {{ total }} 人</p>
@@ -26,6 +32,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchDirectTeam } from '@/api/user'
 import { usePagedTeamList } from '@/composables/usePagedTeamList'
+import { formatUserStatus, userStatusTagType } from '@/utils/format'
 const router = useRouter()
 
 const { list, total, loading, finished, refreshing, loadedOnce, onLoad, onRefresh } = usePagedTeamList(

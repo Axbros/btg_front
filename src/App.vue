@@ -28,16 +28,17 @@ body,
 }
 
 /**
- * 接口错误 Toast（request.js）：部分环境下 Vant 变量被覆盖会出现「白底 + 白字、宽度随文案」。
- * 与官方默认语义一致：深底浅色字。
+ * 全站 Toast：部分环境/主题会把 --van-toast-* 弄成「浅底 + 白字」，看起来像空白。
+ * 统一拉回 Vant 默认语义（深底 + 白字），含 Profile、表单提示与 request 等所有 showToast。
  */
-body .van-toast.toast-api-error {
+body .van-toast {
   --van-toast-background: rgba(50, 50, 51, 0.92);
   --van-toast-text-color: #fff;
+  --van-toast-loading-icon-color: #fff;
   background: var(--van-toast-background) !important;
   color: var(--van-toast-text-color) !important;
 }
-body .van-toast.toast-api-error .van-toast__text {
+body .van-toast .van-toast__text {
   color: #fff !important;
 }
 </style>

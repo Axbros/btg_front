@@ -66,9 +66,10 @@ const STRATEGY_STATUS_NUM = {
   1: '启用',
 }
 
-/** UserStatus：0 DISABLED, 1 NORMAL */
+/** UserStatus：-1 待完善；0 待审核；1 正常 */
 const USER_STATUS_NUM = {
-  0: '已停用',
+  [-1]: '待完善',
+  0: '待审核',
   1: '正常',
 }
 
@@ -101,6 +102,22 @@ export function formatProfitRecordStatus(val) {
   const sk = String(val).toUpperCase()
   if (PROFIT_REPORT_STATUS_STR[sk]) return PROFIT_REPORT_STATUS_STR[sk]
   return formatStatus(val)
+}
+
+/** 利润上报记录 status → van-tag type */
+export function profitRecordStatusTagType(val) {
+  if (val === null || val === undefined || val === '') return 'default'
+  const sk = String(val).toUpperCase()
+  if (sk === 'REJECTED') return 'danger'
+  if (sk === 'ALL_COMPLETED' || sk === 'IN_SETTLEMENT_CHAIN') return 'success'
+  if (sk === 'PENDING_DIRECT_REVIEW') return 'warning'
+  const n = Number(val)
+  if (!Number.isNaN(n)) {
+    if (n === 3) return 'danger'
+    if (n === 4 || n === 2) return 'success'
+    if (n === 1) return 'warning'
+  }
+  return 'default'
 }
 
 export function formatCommissionRecordStatus(val) {
@@ -140,6 +157,24 @@ export function formatSettlementStatus(val) {
   return formatStatus(val)
 }
 
+/** 结算单 status → van-tag type */
+export function settlementStatusTagType(val) {
+  const s = val
+  if (s === 'APPROVED' || s === 4) return 'success'
+  if (s === 'REJECTED' || s === 5) return 'danger'
+  if (s === 'PENDING_REVIEW' || s === 'PENDING' || s === 3) return 'primary'
+  if (s === 'PENDING_SUBMIT' || s === 2) return 'warning'
+  if (s === 'INIT' || s === 1) return 'default'
+  const n = Number(s)
+  if (Number.isNaN(n)) return 'default'
+  if (n === 4) return 'success'
+  if (n === 5) return 'danger'
+  if (n === 3) return 'primary'
+  if (n === 2) return 'warning'
+  if (n === 1) return 'default'
+  return 'default'
+}
+
 export function formatStrategyStatus(val) {
   if (val === null || val === undefined || val === '') return '-'
   if (typeof val === 'number' && STRATEGY_STATUS_NUM[val] != null) return STRATEGY_STATUS_NUM[val]
@@ -148,8 +183,18 @@ export function formatStrategyStatus(val) {
 
 export function formatUserStatus(val) {
   if (val === null || val === undefined || val === '') return '-'
-  if (typeof val === 'number' && USER_STATUS_NUM[val] != null) return USER_STATUS_NUM[val]
+  const n = Number(val)
+  if (!Number.isNaN(n) && USER_STATUS_NUM[n] != null) return USER_STATUS_NUM[n]
   return formatStatus(val)
+}
+
+/** 账号 status：-1 待完善；0 待审核；1 正常 */
+export function userStatusTagType(val) {
+  const n = Number(val)
+  if (n === 1) return 'success'
+  if (n === 0) return 'primary'
+  if (n === -1) return 'warning'
+  return 'default'
 }
 
 /** 下级列表 KYC：0 未提交 1 待审核 2 通过 3 拒绝 */

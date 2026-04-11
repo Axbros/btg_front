@@ -17,11 +17,18 @@
           />
           <p v-else-if="inviteQrFailed" class="invite-qr__err">二维码生成失败，请点下方「邀请码」复制链接</p>
         </div>
-        <p class="invite-qr__hint">扫码打开注册页；也可点下方「邀请码」复制链接</p>
+        <p class="invite-qr__hint">扫码打开注册页</p>
       </div>
       <van-cell-group inset>
-        <van-cell title="手机号" :value="String(userInfo.mobile ?? '—')" />
-        <van-cell title="昵称" :value="String(userInfo.nickname ?? '—')" />
+        <van-cell title="登陆手机" :value="String(userInfo.mobile ?? '—')" />
+        <van-cell title="登陆昵称" :value="String(userInfo.nickname ?? '—')" />
+        <van-cell title="账号状态">
+          <template #value>
+            <van-tag :type="userStatusTagType(userInfo.status)" plain round>
+              {{ formatUserStatus(userInfo.status) }}
+            </van-tag>
+          </template>
+        </van-cell>
         <van-cell
           title="邀请码"
           :value="String(userInfo.invitationCode ?? '—')"
@@ -31,14 +38,33 @@
         <van-cell title="上级用户" :value="referrerNick(userInfo)" />
       </van-cell-group>
 
-      <van-cell-group inset title="分润与结算" class="profile__block">
+      <van-cell-group v-if="profileTradeRows.length" inset title="交易与账户信息" class="profile__block">
+        <van-cell
+          v-for="row in profileTradeRows"
+          :key="row.key"
+          :title="row.title"
+          :value="row.value"
+        />
+      </van-cell-group>
+
+      <!-- <van-cell-group inset title="分润与结算" class="profile__block">
         <van-cell title="利润上报" is-link to="/profit-report/submit" />
         <van-cell title="我的利润上报记录" is-link to="/profit-report/mine" />
         <van-cell title="待支付给上级" is-link to="/settlement/pending-pay" />
         <van-cell title="待审核下级结算" is-link to="/settlement/pending-review" />
-      </van-cell-group>
+      </van-cell-group> -->
 
-      <van-cell-group inset title="资料编辑" class="profile__edit">
+      <div v-if="profileApprovedNoEdit" class="profile__tip-wrap">
+        <van-notice-bar
+          left-icon="info-o"
+          color="#646566"
+          background="#f7f8fa"
+          :scrollable="false"
+          wrapable
+          text="资料一旦提交并且审核通过之后就不能再更改，必要时候请联系管理员。"
+        />
+      </div>
+      <van-cell-group v-else inset title="资料编辑" class="profile__edit">
         <van-cell title="完善资料" is-link to="/me/profile-complete" />
       </van-cell-group>
       <div class="profile__logout">
@@ -66,6 +92,43 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
 import { fetchMe } from '@/api/user'
+import { formatMoney, formatUserStatus, userStatusTagType } from '@/utils/format'
+
+function pickProfile(u) {
+  const p = u?.profile
+  if (!p || typeof p !== 'object') return null
+  return {
+    serverName: p.serverName ?? p.server_name,
+    tradingAccountId: p.tradingAccountId ?? p.trading_account_id,
+    exchangeUid: p.exchangeUid ?? p.exchange_uid,
+    principalAmount: p.principalAmount ?? p.principal_amount,
+  }
+}
+
+const profileTradeRows = computed(() => {
+  const p = pickProfile(userInfo.value)
+  if (!p) return []
+  const rows = []
+  if (p.serverName != null && String(p.serverName).trim() !== '') {
+    rows.push({ key: 'server', title: '服务器名称', value: String(p.serverName) })
+  }
+  if (p.tradingAccountId != null && String(p.tradingAccountId).trim() !== '') {
+    rows.push({ key: 'tid', title: '交易账户ID', value: String(p.tradingAccountId) })
+  }
+  if (p.exchangeUid != null && String(p.exchangeUid).trim() !== '') {
+    rows.push({ key: 'ex', title: '交易所UID', value: String(p.exchangeUid) })
+  }
+  if (p.principalAmount != null && String(p.principalAmount).trim() !== '') {
+    const n = Number(p.principalAmount)
+    rows.push({
+      key: 'principal',
+      title: '底仓本金',
+      value: Number.isFinite(n) ? formatMoney(n) : String(p.principalAmount),
+    })
+  }
+  return rows
+})
+
 function referrerNick(u) {
   const n = u?.referrerNickname ?? u?.referrer_nickname
   return n != null && String(n).trim() !== '' ? String(n) : '—'
@@ -74,6 +137,9 @@ function referrerNick(u) {
 const auth = useAuthStore()
 const { userInfo } = storeToRefs(auth)
 const router = useRouter()
+
+/** status === 1：后端约定资料已审核通过，关闭自助修改入口 */
+const profileApprovedNoEdit = computed(() => Number(userInfo.value?.status) === 1)
 
 const loading = ref(true)
 const logoutDialogShow = ref(false)
@@ -224,5 +290,8 @@ function onLogoutConfirm() {
 }
 .profile__logout {
   margin: 24px 16px 0;
+}
+.profile__tip-wrap {
+  margin: 12px 16px 0;
 }
 </style>

@@ -3,6 +3,15 @@
     <AppHeader title="完善资料" />
     <van-loading v-if="!pageReady" class="page__loading" vertical>加载中…</van-loading>
     <template v-else>
+      <van-notice-bar
+        v-if="auth.isProfileOnlyLocked"
+        left-icon="warning-o"
+        color="#ed6a0c"
+        background="#fff7e6"
+        :scrollable="false"
+        wrapable
+        text="您的账户当前为待完善状态，请补全资料并提交，待直属上级审核通过后方可使用其它功能。"
+      />
       <p class="tip">保存后将更新昵称与扩展资料。</p>
       <van-form scroll-to-error :show-error-message="true" @submit="onSubmit">
         <van-cell-group inset title="基本资料">
@@ -117,6 +126,9 @@
         <div class="actions">
           <van-button round block type="primary" native-type="submit" :loading="loading">保存资料</van-button>
         </div>
+        <div v-if="auth.isProfileOnlyLocked" class="locked-exit">
+          <van-button block round plain type="danger" @click="onLogout">退出登录</van-button>
+        </div>
       </van-form>
 
       <van-dialog
@@ -136,7 +148,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showConfirmDialog, showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { completeUserProfile, fetchMe } from '@/api/user'
@@ -183,15 +195,50 @@ const form = reactive({
   principalAmount: '',
 })
 
+function applyMeProfileToForm(me) {
+  if (!me || typeof me !== 'object') return
+  if (me.nickname != null && String(me.nickname).trim() !== '') {
+    form.nickname = String(me.nickname)
+  }
+  const p = me.profile
+  if (!p || typeof p !== 'object') return
+  const g = (a, b) => p[a] ?? p[b]
+  const rs = (v) => (v != null && String(v).trim() !== '' ? String(v).trim() : '')
+  const r = g('realName', 'real_name')
+  if (r) form.realName = rs(r)
+  const idc = g('idCardNo', 'id_card_no')
+  if (idc) form.idCardNo = rs(idc)
+  const sn = g('serverName', 'server_name')
+  if (sn) form.serverName = rs(sn)
+  const tid = g('tradingAccountId', 'trading_account_id')
+  if (tid) form.tradingAccountId = rs(tid)
+  const ex = g('exchangeUid', 'exchange_uid')
+  if (ex) form.exchangeUid = rs(ex)
+  const pr = g('principalAmount', 'principal_amount')
+  if (pr !== '' && pr != null && !Number.isNaN(Number(pr))) {
+    form.principalAmount = String(pr)
+  }
+}
+
+async function onLogout() {
+  try {
+    await showConfirmDialog({ title: '确认退出登录？' })
+    auth.logout()
+    router.replace('/login')
+  } catch {
+    /* 取消 */
+  }
+}
+
 onMounted(async () => {
   pageReady.value = false
   try {
     const me = await fetchMe()
     auth.setUserInfo(me)
-    if (me?.nickname) form.nickname = String(me.nickname)
+    applyMeProfileToForm(me)
   } catch {
     const u = auth.userInfo
-    if (u?.nickname) form.nickname = String(u.nickname)
+    if (u) applyMeProfileToForm(u)
   } finally {
     pageReady.value = true
   }
@@ -221,14 +268,20 @@ async function onSubmitDialogBeforeClose(action) {
     }
 
     await completeUserProfile(body)
-    showToast('保存成功')
     try {
       const me = await fetchMe()
       auth.setUserInfo(me)
+      if (Number(me?.status) === -1) {
+        showToast('资料已保存，请等待审核')
+        router.replace('/me/profile-complete')
+      } else {
+        showToast('保存成功')
+        router.replace('/home')
+      }
     } catch {
-      /* ignore */
+      showToast('保存成功')
+      router.replace('/home')
     }
-    router.back()
     return true
   } catch {
     return false
@@ -260,6 +313,9 @@ async function onSubmitDialogBeforeClose(action) {
 }
 .blocked__actions {
   margin: 16px 24px 0;
+}
+.locked-exit {
+  margin: 16px 16px 0;
 }
 .submit-dialog-msg {
   margin: 0;
