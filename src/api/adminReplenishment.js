@@ -8,9 +8,13 @@ export function fetchAdminPendingReplenishments(params = {}) {
   })
 }
 
-/** POST /api/admin/replenishments/{id}/approve */
-export function approveReplenishmentAdmin(id, remark) {
-  return postAdmin(`/admin/replenishments/${id}/approve`, remark ? { remark } : {})
+/**
+ * POST /api/admin/replenishments/{id}/approve
+ * @param {string} data.transferScreenshotUrl 必填
+ * @param {string} [data.transferRemark] 选填
+ */
+export function approveReplenishmentAdmin(id, data) {
+  return postAdmin(`/admin/replenishments/${id}/approve`, data)
 }
 
 /** POST /api/admin/replenishments/{id}/reject */

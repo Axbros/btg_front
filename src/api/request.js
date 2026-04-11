@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { showToast } from 'vant'
+import { showFailToast } from 'vant'
 import { getStoredToken } from '@/utils/auth'
 import { triggerSessionExpired } from '@/utils/session'
 import router from '@/router'
@@ -8,20 +8,97 @@ const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
 const TOAST_FALLBACK = '请求失败'
 
+/** BOM / 零宽等：trim() 去不掉，会导致 Toast「有 message 但肉眼空白」 */
+const INVISIBLE_CHARS_RE = /\uFEFF|\u200B|\u200C|\u200D|\u2060|\u2061|\u2062|\u2063|\u2064|\u180E/g
+
+function stripInvisibleAndTrim(str) {
+  if (typeof str !== 'string') return ''
+  return str.replace(INVISIBLE_CHARS_RE, '').trim()
+}
+
+/** 业务码非 200（支持数字或字符串）；0 视为成功，避免误解析嵌套 data */
+function businessCodeIsError(code) {
+  if (code === undefined || code === null || code === '') return false
+  const n = Number(code)
+  if (Number.isNaN(n)) return false
+  if (n === 0) return false
+  return n !== 200
+}
+
+/**
+ * 外层 code=200、真实错误在 data.code 时的包装（否则会 Toast 到外层的「success」等短文案）。
+ */
+function unwrapNestedBusinessEnvelope(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj
+  const inner = obj.data
+  if (
+    inner &&
+    typeof inner === 'object' &&
+    !Array.isArray(inner) &&
+    'code' in inner &&
+    businessCodeIsError(inner.code) &&
+    Number(obj.code) === 200
+  ) {
+    return inner
+  }
+  return obj
+}
+
+/**
+ * 从 HTTP / 业务错误 JSON 中尽量取出原始文案（可为 string、number、数组），再交给 normalizeToastMessage。
+ * 避免使用 `a || b` 把合法数字 0 当「无文案」丢掉。
+ */
+function pickRawErrorMessage(body) {
+  if (body == null || typeof body !== 'object' || Array.isArray(body)) return null
+  const keys = [
+    'message',
+    'msg',
+    'Message',
+    'detail',
+    'description',
+    'error_description',
+    'errorMessage',
+    'error_msg',
+    'resultMessage',
+    'errorMsg',
+    'reason',
+    'title',
+    'error',
+  ]
+  for (const k of keys) {
+    if (!(k in body)) continue
+    const v = body[k]
+    if (v == null) continue
+    if (typeof v === 'string') {
+      if (stripInvisibleAndTrim(v).length > 0) return v
+      continue
+    }
+    if (typeof v === 'number' && Number.isFinite(v)) return v
+    if (typeof v === 'boolean') return v ? 'true' : 'false'
+    if (Array.isArray(v) && v.length > 0) return v
+  }
+  const errs = body.errors
+  if (Array.isArray(errs) && errs.length > 0) return errs
+  if (typeof body.data === 'string' && stripInvisibleAndTrim(body.data).length > 0) {
+    return body.data
+  }
+  return null
+}
+
 /**
  * Vant Toast 的 message 只能是可展示的字符串/数字；后端若返回对象/数组会导致白块无文案。
  */
 function normalizeToastMessage(raw) {
   if (raw == null) return TOAST_FALLBACK
   if (typeof raw === 'string') {
-    const t = raw.trim()
+    const t = stripInvisibleAndTrim(raw)
     return t.length > 0 ? t : TOAST_FALLBACK
   }
   if (typeof raw === 'number' || typeof raw === 'boolean') {
     return String(raw)
   }
   if (raw instanceof Error) {
-    const t = String(raw.message || '').trim()
+    const t = stripInvisibleAndTrim(String(raw.message || ''))
     return t.length > 0 ? t : TOAST_FALLBACK
   }
   if (Array.isArray(raw)) {
@@ -32,7 +109,11 @@ function normalizeToastMessage(raw) {
     return TOAST_FALLBACK
   }
   if (typeof raw === 'object') {
-    const nested = raw.message ?? raw.msg ?? raw.error
+    const nested =
+      pickRawErrorMessage(raw) ??
+      raw.message ??
+      raw.msg ??
+      raw.error
     if (nested != null && nested !== raw) {
       const s = normalizeToastMessage(nested)
       if (s !== TOAST_FALLBACK) return s
@@ -48,9 +129,12 @@ function normalizeToastMessage(raw) {
 }
 
 function toastApiMessage(raw) {
-  showToast({
-    message: normalizeToastMessage(raw),
-    wordBreak: 'break-all',
+  const normalized = normalizeToastMessage(raw)
+  const asString = typeof normalized === 'string' ? normalized : String(normalized)
+  const visible = stripInvisibleAndTrim(asString)
+  showFailToast({
+    message: visible.length > 0 ? visible : TOAST_FALLBACK,
+    duration: 3200,
   })
 }
 
@@ -91,25 +175,19 @@ function normalizeEnvelope(payload) {
   return { code: 200, message: 'success', data: payload }
 }
 
-/** 业务码非 200（支持数字或字符串） */
-function businessCodeIsError(code) {
-  if (code === undefined || code === null || code === '') return false
-  const n = Number(code)
-  if (Number.isNaN(n)) return false
-  return n !== 200
-}
-
 /** HTTP 异常或 Spring 等无 code 字段时的提示文案 */
 function toastMessageFromErrorBody(status, body) {
   if (body != null && typeof body === 'object' && !Array.isArray(body)) {
-    if (businessCodeIsError(body.code)) {
-      return body.message || body.msg || '请求失败'
-    }
-    if (body.message || body.msg) {
-      return body.message || body.msg
-    }
+    const b = unwrapNestedBusinessEnvelope(body)
+    const picked = pickRawErrorMessage(b)
+    if (picked != null) return picked
+    if (businessCodeIsError(b.code)) return TOAST_FALLBACK
+    return null
   }
-  if (typeof body === 'string' && body.trim()) return body.trim()
+  if (typeof body === 'string') {
+    const t = stripInvisibleAndTrim(body)
+    if (t.length > 0) return t
+  }
   if (status >= 400) return `请求失败 (${status})`
   return null
 }
@@ -164,7 +242,8 @@ instance.interceptors.response.use(
     }
 
     const wrapped = normalizeEnvelope(body)
-    const envelope = wrapped ?? { code: 200, message: 'success', data: body }
+    let envelope = wrapped ?? { code: 200, message: 'success', data: body }
+    envelope = unwrapNestedBusinessEnvelope(envelope)
 
     if (
       envelope.code === 401 ||
@@ -173,12 +252,12 @@ instance.interceptors.response.use(
       envelope.code === '403'
     ) {
       redirectToLogin()
-      toastApiMessage(envelope.message || envelope.msg || '登录已失效，请重新登录')
+      toastApiMessage(pickRawErrorMessage(envelope) ?? '登录已失效，请重新登录')
       return Promise.reject(new Error('unauthorized'))
     }
 
     if (businessCodeIsError(envelope.code)) {
-      const msg = envelope.message || envelope.msg || TOAST_FALLBACK
+      const msg = pickRawErrorMessage(envelope) ?? TOAST_FALLBACK
       toastApiMessage(msg)
       return Promise.reject(new Error(normalizeToastMessage(msg)))
     }

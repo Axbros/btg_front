@@ -24,6 +24,15 @@
               <a v-if="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" :href="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" target="_blank" rel="noopener">查看</a>
               <span v-else>—</span>
             </van-cell>
+            <van-cell title="资方转账凭证">
+              <a v-if="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" :href="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" target="_blank" rel="noopener">查看资方凭证</a>
+              <span v-else>—</span>
+            </van-cell>
+            <van-cell
+              v-if="txt(row.transferRemark ?? row.transfer_remark) !== '—'"
+              title="资方转账备注"
+              :value="txt(row.transferRemark ?? row.transfer_remark)"
+            />
             <van-cell title="提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
           </van-cell-group>
         </div>

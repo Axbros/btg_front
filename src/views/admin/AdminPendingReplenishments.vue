@@ -14,6 +14,14 @@
               <a v-if="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" :href="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" target="_blank" rel="noopener">查看</a>
               <span v-else>—</span>
             </van-cell>
+            <van-cell v-if="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" title="资方转账凭证">
+              <a :href="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" target="_blank" rel="noopener">查看</a>
+            </van-cell>
+            <van-cell
+              v-if="txt(row.transferRemark ?? row.transfer_remark) !== '—'"
+              title="资方转账备注"
+              :value="txt(row.transferRemark ?? row.transfer_remark)"
+            />
             <van-cell title="提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
             <van-cell>
               <div class="card__actions">
@@ -32,12 +40,43 @@
       <van-button size="small" :disabled="!hasMore" @click="changePage(1)">下一页</van-button>
     </div>
 
-    <van-dialog
-      v-model:show="approveShow"
-      title="确认通过该补仓申请？"
-      show-cancel-button
-      :before-close="onApproveBeforeClose"
-    />
+    <van-popup v-model:show="approvePopupShow" position="bottom" round :style="{ maxHeight: '88%' }">
+      <div class="approve-popup">
+        <div class="approve-popup__title">审核通过（需上传资方转账凭证）</div>
+        <van-cell-group inset>
+          <van-field
+            v-model="approveForm.transferScreenshotUrl"
+            name="transferScreenshotUrl"
+            label="转账凭证"
+            readonly
+            placeholder="请上传凭证"
+            :rules="[{ required: true, message: '请上传资方转账凭证' }]"
+          >
+            <template #input>
+              <ImageUploadField
+                v-model="approveForm.transferScreenshotUrl"
+                upload-type="TRANSFER"
+                hint="资方给申请人的打款凭证"
+              />
+            </template>
+          </van-field>
+          <van-field
+            v-model="approveForm.transferRemark"
+            label="转账备注"
+            type="textarea"
+            rows="2"
+            autosize
+            maxlength="500"
+            show-word-limit
+            placeholder="选填"
+          />
+        </van-cell-group>
+        <div class="approve-popup__actions">
+          <van-button block round @click="closeApprovePopup">取消</van-button>
+          <van-button block round type="primary" :loading="approveSubmitting" @click="submitApprove">确认通过</van-button>
+        </div>
+      </div>
+    </van-popup>
 
     <van-dialog
       v-model:show="rejectShow"
@@ -64,10 +103,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import ImageUploadField from '@/components/ImageUploadField.vue'
 import {
   fetchAdminPendingReplenishments,
   approveReplenishmentAdmin,
@@ -85,8 +125,14 @@ const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
 
-const approveShow = ref(false)
+const approvePopupShow = ref(false)
 const approveTarget = ref(null)
+const approveSubmitting = ref(false)
+const approveForm = reactive({
+  transferScreenshotUrl: '',
+  transferRemark: '',
+})
+
 const rejectShow = ref(false)
 const rejectTarget = ref(null)
 const rejectRemark = ref('')
@@ -97,6 +143,47 @@ function txt(v) {
 
 function img(u) {
   return u ? String(u) : ''
+}
+
+function resetApproveForm() {
+  approveForm.transferScreenshotUrl = ''
+  approveForm.transferRemark = ''
+}
+
+function openApprove(row) {
+  approveTarget.value = row
+  resetApproveForm()
+  approvePopupShow.value = true
+}
+
+function closeApprovePopup() {
+  approvePopupShow.value = false
+  approveTarget.value = null
+  resetApproveForm()
+}
+
+async function submitApprove() {
+  const url = approveForm.transferScreenshotUrl?.trim()
+  if (!url) {
+    showToast('请上传资方转账凭证')
+    return
+  }
+  const id = approveTarget.value?.id
+  if (id == null) return
+  approveSubmitting.value = true
+  try {
+    await approveReplenishmentAdmin(id, {
+      transferScreenshotUrl: url,
+      transferRemark: approveForm.transferRemark?.trim() || undefined,
+    })
+    showToast({ type: 'success', message: '审核通过' })
+    closeApprovePopup()
+    await fetchPage(page.value)
+  } catch {
+    /* Toast 由请求层 */
+  } finally {
+    approveSubmitting.value = false
+  }
 }
 
 async function fetchPage(p) {
@@ -135,29 +222,6 @@ function changePage(delta) {
   if (delta > 0 && !hasMore.value) return
   page.value = next
   fetchPage(page.value)
-}
-
-function openApprove(row) {
-  approveTarget.value = row
-  approveShow.value = true
-}
-
-async function onApproveBeforeClose(action) {
-  if (action === 'cancel') {
-    approveTarget.value = null
-    return true
-  }
-  const id = approveTarget.value?.id
-  if (id == null) return false
-  try {
-    await approveReplenishmentAdmin(id, null)
-    showToast('已通过')
-    approveTarget.value = null
-    await fetchPage(page.value)
-    return true
-  } catch {
-    return false
-  }
 }
 
 function openReject(row) {
@@ -212,5 +276,19 @@ async function onRejectBeforeClose(action) {
 }
 .dialog-field-wrap {
   padding: 0 8px 8px;
+}
+.approve-popup {
+  padding: 16px 0 20px;
+}
+.approve-popup__title {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 16px 12px;
+}
+.approve-popup__actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 0;
 }
 </style>
