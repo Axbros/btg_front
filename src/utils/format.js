@@ -175,3 +175,50 @@ export function kycStatusTagType(val) {
   if (n === 1) return 'warning'
   return 'default'
 }
+
+/** 补仓：1 待审核 2 通过 3 拒绝 4 部分归还 5 已结清 6 关闭 */
+const REPLENISHMENT_STATUS_NUM = {
+  1: '待审核',
+  2: '审核通过',
+  3: '审核拒绝',
+  4: '部分归还',
+  5: '已结清',
+  6: '已关闭',
+}
+
+export function formatReplenishmentStatus(val) {
+  if (val === null || val === undefined || val === '') return '—'
+  const n = Number(val)
+  if (!Number.isNaN(n) && REPLENISHMENT_STATUS_NUM[n] != null) return REPLENISHMENT_STATUS_NUM[n]
+  return String(val)
+}
+
+/** 归仓：1 待审核 2 通过 3 拒绝 */
+const REPAY_STATUS_NUM = {
+  1: '待审核',
+  2: '审核通过',
+  3: '审核拒绝',
+}
+
+export function formatRepayStatus(val) {
+  if (val === null || val === undefined || val === '') return '—'
+  const n = Number(val)
+  if (!Number.isNaN(n) && REPAY_STATUS_NUM[n] != null) return REPAY_STATUS_NUM[n]
+  return String(val)
+}
+
+export function replenishmentStatusTagType(val) {
+  const n = Number(val)
+  if (n === 2 || n === 5) return 'success'
+  if (n === 3 || n === 6) return 'danger'
+  if (n === 1 || n === 4) return 'warning'
+  return 'default'
+}
+
+export function repayStatusTagType(val) {
+  const n = Number(val)
+  if (n === 2) return 'success'
+  if (n === 3) return 'danger'
+  if (n === 1) return 'warning'
+  return 'default'
+}

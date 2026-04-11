@@ -121,6 +121,29 @@ function redirectToLogin() {
   }
 }
 
+/**
+ * 资方接口在 {@code /api/admin}，与业务 {@code /api/v1} 分离。
+ */
+function resolveAdminBaseUrl() {
+  const def = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  if (typeof def === 'string' && /\/v1\/?$/.test(def)) {
+    return def.replace(/\/v1\/?$/, '') || '/api'
+  }
+  return '/api'
+}
+
+/** GET {@code /api/admin/...} */
+export function getAdmin(url, params, config = {}) {
+  return instance
+    .get(url, { ...config, params, baseURL: resolveAdminBaseUrl() })
+    .then((res) => res.data)
+}
+
+/** POST {@code /api/admin/...} */
+export function postAdmin(url, data, config = {}) {
+  return instance.post(url, data, { ...config, baseURL: resolveAdminBaseUrl() }).then((res) => res.data)
+}
+
 instance.interceptors.response.use(
   (res) => {
     const status = res.status

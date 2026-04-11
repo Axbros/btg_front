@@ -3,6 +3,7 @@
  */
 export function isUserAdmin(user) {
   if (!user || typeof user !== 'object') return false
+  if (user.isRoot === true || user.is_root === true) return true
   if (user.isAdmin === true) return true
   if (user.role === 'ADMIN' || user.role === 'admin') return true
   const roles = user.roles

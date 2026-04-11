@@ -15,10 +15,13 @@
       <van-grid-item icon="passed" text="待审核下级结算" to="/settlement/pending-review" />
       <van-grid-item icon="balance-o" text="账户汇总" to="/me/account" />
       <van-grid-item icon="chart-trending-o" text="团队统计" to="/me/team-stats" />
+      <van-grid-item icon="gold-coin-o" text="补仓与归仓" to="/replenishment" />
     </van-grid>
 
     <van-cell-group v-if="auth.isAdmin" inset title="管理员" class="home__admin">
       <van-cell title="待审核收益" is-link to="/admin/pending" />
+      <van-cell title="待审核补仓" is-link to="/admin/replenishments/pending" />
+      <van-cell title="待审核归仓" is-link to="/admin/replenishments/repays/pending" />
     </van-cell-group>
   </div>
 </template>
