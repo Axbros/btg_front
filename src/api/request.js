@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { showFailToast } from 'vant'
+import { showToast } from 'vant'
 import { getStoredToken } from '@/utils/auth'
 import { triggerSessionExpired } from '@/utils/session'
 import router from '@/router'
@@ -132,9 +132,13 @@ function toastApiMessage(raw) {
   const normalized = normalizeToastMessage(raw)
   const asString = typeof normalized === 'string' ? normalized : String(normalized)
   const visible = stripInvisibleAndTrim(asString)
-  showFailToast({
+  /** type 用 text；className 配合 App.vue 内样式，避免主题/继承把 Toast 变成白底白字 */
+  showToast({
+    type: 'text',
     message: visible.length > 0 ? visible : TOAST_FALLBACK,
     duration: 3200,
+    className: 'toast-api-error',
+    wordBreak: 'break-word',
   })
 }
 
