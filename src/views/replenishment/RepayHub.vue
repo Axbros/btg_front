@@ -1,6 +1,6 @@
 <template>
   <div>
-    <AppHeader title="补仓" />
+    <AppHeader title="归仓" />
     <div v-if="current" class="hub-banner">
       <van-tag :type="replenishmentStatusTagType(current.status)" plain round class="hub-banner__tag">
         {{ formatReplenishmentStatus(current.status) }}
@@ -19,9 +19,18 @@
         :value="transferRemarkText"
       />
     </van-cell-group>
-    <van-cell-group inset title="补仓">
-      <van-cell title="提交补仓申请" is-link to="/replenishment/submit" />
-      <van-cell title="我的补仓记录" is-link to="/replenishment/mine" />
+    <van-notice-bar
+      v-else
+      left-icon="info-o"
+      color="#646566"
+      background="#f7f8fa"
+      :scrollable="false"
+      wrapable
+      text="暂无进行中的补仓单时仍可查看归仓记录；提交归仓需先有审核通过的补仓。"
+    />
+    <van-cell-group inset title="归仓" class="repay-hub__actions">
+      <van-cell title="提交归仓申请" is-link to="/replenishment/repay-submit" />
+      <van-cell title="我的归仓记录" is-link to="/replenishment/repay-mine" />
     </van-cell-group>
   </div>
 </template>
@@ -69,6 +78,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.repay-hub__actions {
+  margin-top: 12px;
+}
 .hub-current {
   margin-bottom: 12px;
 }

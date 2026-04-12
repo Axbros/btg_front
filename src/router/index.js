@@ -30,19 +30,17 @@ const routes = [
       },
       {
         path: 'team',
-        redirect: '/team/direct',
+        redirect: '/team/descendants',
       },
       {
         path: 'team/direct',
-        name: 'DirectTeam',
-        component: () => import('@/views/team/DirectTeam.vue'),
-        meta: { title: '我的直属下级', tab: 'team' },
+        redirect: '/team/descendants',
       },
       {
         path: 'team/descendants',
         name: 'DescendantsTeam',
         component: () => import('@/views/team/DescendantsTeam.vue'),
-        meta: { title: '我的全部下级', tab: 'team' },
+        meta: { title: '我的团队', tab: 'team' },
       },
       {
         path: 'team/member/:memberId/profit-ratio',
@@ -126,7 +124,13 @@ const routes = [
         path: 'replenishment',
         name: 'ReplenishmentHub',
         component: () => import('@/views/replenishment/ReplenishmentHub.vue'),
-        meta: { title: '补仓与归仓', tab: 'home', hideTab: true },
+        meta: { title: '补仓', tab: 'home', hideTab: true },
+      },
+      {
+        path: 'repay',
+        name: 'RepayHub',
+        component: () => import('@/views/replenishment/RepayHub.vue'),
+        meta: { title: '归仓', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/submit',
@@ -141,6 +145,12 @@ const routes = [
         meta: { title: '我的补仓记录', tab: 'home', hideTab: true },
       },
       {
+        path: 'replenishment/mine/:id',
+        name: 'ReplenishmentMineDetail',
+        component: () => import('@/views/replenishment/ReplenishmentMineDetail.vue'),
+        meta: { title: '补仓详情', tab: 'home', hideTab: true },
+      },
+      {
         path: 'replenishment/repay-submit',
         name: 'RepaySubmit',
         component: () => import('@/views/replenishment/RepaySubmit.vue'),
@@ -151,6 +161,12 @@ const routes = [
         name: 'RepayMine',
         component: () => import('@/views/replenishment/RepayMine.vue'),
         meta: { title: '我的归仓记录', tab: 'home', hideTab: true },
+      },
+      {
+        path: 'replenishment/repay/:id',
+        name: 'RepayMineDetail',
+        component: () => import('@/views/replenishment/RepayMineDetail.vue'),
+        meta: { title: '归仓详情', tab: 'home', hideTab: true },
       },
       {
         path: 'admin/pending',
@@ -169,6 +185,12 @@ const routes = [
         name: 'AdminPendingRepays',
         component: () => import('@/views/admin/AdminPendingRepays.vue'),
         meta: { title: '待审核归仓', requiresAdmin: true, hideTab: true },
+      },
+      {
+        path: 'admin/replenishments/repays/:id',
+        name: 'AdminRepayDetail',
+        component: () => import('@/views/admin/AdminRepayDetail.vue'),
+        meta: { title: '归仓详情', requiresAdmin: true, hideTab: true },
       },
     ],
   },

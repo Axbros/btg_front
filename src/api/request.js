@@ -203,7 +203,7 @@ function redirectToLogin() {
 }
 
 /**
- * 资方接口在 {@code /api/admin}，与业务 {@code /api/v1} 分离。
+ * 管理端部分旧接口在 {@code /api/admin/...}（去掉默认 base 的 /v1 后拼接），与业务 {@code /api/v1} 分离。
  */
 function resolveAdminBaseUrl() {
   const def = import.meta.env.VITE_API_BASE_URL || '/api/v1'

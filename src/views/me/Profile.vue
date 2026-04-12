@@ -30,23 +30,15 @@
           </template>
         </van-cell>
         <van-cell
-          title="邀请码"
+          class="profile-invite-cell"
+          title="邀请码（点击复制）"
+        
           :value="String(userInfo.invitationCode ?? '—')"
           is-link
           @click="copyInviteRegisterUrl"
         />
         <van-cell title="上级用户" :value="referrerNick(userInfo)" />
       </van-cell-group>
-
-      <van-cell-group v-if="profileTradeRows.length" inset title="交易与账户信息" class="profile__block">
-        <van-cell
-          v-for="row in profileTradeRows"
-          :key="row.key"
-          :title="row.title"
-          :value="row.value"
-        />
-      </van-cell-group>
-
       <!-- <van-cell-group inset title="分润与结算" class="profile__block">
         <van-cell title="利润上报" is-link to="/profit-report/submit" />
         <van-cell title="我的利润上报记录" is-link to="/profit-report/mine" />
@@ -91,6 +83,7 @@ import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
 import { formatMoney, formatUserStatus, userStatusTagType } from '@/utils/format'
 
@@ -135,6 +128,7 @@ function referrerNick(u) {
 }
 
 const auth = useAuthStore()
+const dashboard = useDashboardStore()
 const { userInfo } = storeToRefs(auth)
 const router = useRouter()
 
@@ -196,6 +190,7 @@ onMounted(async () => {
   try {
     const me = await fetchMe()
     auth.setUserInfo(me)
+    dashboard.fetchPendingSummary().catch(() => {})
   } catch {
     /* 保留本地已有 userInfo，避免整页空白 */
   } finally {

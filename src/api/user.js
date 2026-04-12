@@ -19,25 +19,12 @@ export function completeUserProfile(data) {
 }
 
 /**
- * 直属下级（referrer_user_id = 当前用户）
- * GET /api/user/team/direct，需登录。Query：page、pageSize。
+ * 全部下级树（网关 /api/user/team/descendants → 反代 /api/v1/...）
+ * GET /api/user/team/descendants，需登录。
+ * 返回 data 为数组：{ id, nickname, status, children[] } 根节点列表，非分页 PageVo。
  */
-export function fetchDirectTeam(params = {}) {
-  return get('/user/team/direct', {
-    page: params.page ?? 1,
-    pageSize: params.pageSize ?? 20,
-  })
-}
-
-/**
- * 全部下级多级
- * GET /api/user/team/descendants，需登录。Query：page、pageSize。
- */
-export function fetchDescendantsTeam(params = {}) {
-  return get('/user/team/descendants', {
-    page: params.page ?? 1,
-    pageSize: params.pageSize ?? 20,
-  })
+export function fetchDescendantsTeam() {
+  return get('/user/team/descendants')
 }
 
 /** POST /api/v1/user/team/{userId}/approve-profile — 直属上级通过资料，下级 status 0→1 */

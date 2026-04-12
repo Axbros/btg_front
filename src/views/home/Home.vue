@@ -1,28 +1,69 @@
 <template>
   <div class="home">
+    <AppHeader :title="siteTitle" :show-back="false" show-logo />
     <div class="home__hero">
-      <div class="home__welcome">工作台</div>
+      <van-swipe
+        class="home__ads"
+        :autoplay="4000"
+        circular
+        lazy-render
+        indicator-color="#fff"
+      >
+        <van-swipe-item v-for="(ad, i) in adBanners" :key="i">
+          <img class="home__ad-img" :src="ad.src" :alt="ad.alt" width="750" height="280" loading="lazy" />
+        </van-swipe-item>
+      </van-swipe>
       <UserCard v-if="!heroLoading && userInfo" :user="userInfo" :sub="heroSub" />
       <UserCard v-else :user="null" :sub="heroPlaceholder" />
     </div>
 
     <van-grid :column-num="2" :gutter="10" class="home__grid" clickable>
-      <!-- <van-grid-item icon="friends-o" text="我的直属下级" to="/team/direct" /> -->
-      <van-grid-item icon="cluster-o" text="我的全部下级" to="/team/descendants" />
-      <!-- <van-grid-item icon="edit" text="利润上报" to="/profit-report/submit" /> -->
+      <!-- <van-grid-item icon="cluster-o" text="我的全部下级" to="/team/descendants" /> -->
+      <van-grid-item icon="edit" text="利润上报" to="/profit-report/submit" />
       <van-grid-item icon="records" text="我的利润上报记录" to="/profit-report/mine" />
       <van-grid-item icon="balance-pay" text="待支付给上级" to="/settlement/pending-pay" />
-      <van-grid-item icon="passed" text="待审核下级结算" to="/settlement/pending-review" />
+      <van-grid-item
+        icon="passed"
+        text="待审核下级结算"
+        to="/settlement/pending-review"
+        :badge="settlementBadge"
+      />
       <van-grid-item icon="balance-o" text="账户汇总" to="/me/account" />
       <van-grid-item icon="chart-trending-o" text="团队统计" to="/me/team-stats" />
-      <van-grid-item icon="gold-coin-o" text="补仓与归仓" to="/replenishment" />
+      <van-grid-item icon="gold-coin-o" text="补仓" to="/replenishment" />
+      <van-grid-item icon="balance-list-o" text="归仓" to="/repay" />
     </van-grid>
 
     <van-cell-group v-if="auth.isAdmin" inset title="管理员" class="home__admin">
-      <van-cell title="待审核收益" is-link to="/admin/pending" />
-      <van-cell title="待审核补仓" is-link to="/admin/replenishments/pending" />
-      <van-cell title="待审核归仓" is-link to="/admin/replenishments/repays/pending" />
+      <van-cell is-link to="/admin/pending">
+        <template #title>
+          <span class="home__menu-title">
+            <span>待审核收益</span>
+            <van-badge v-if="profitReviewBadge > 0" :content="profitReviewBadge" max="99" />
+          </span>
+        </template>
+      </van-cell>
+      <van-cell is-link to="/admin/replenishments/pending">
+        <template #title>
+          <span class="home__menu-title">
+            <span>待审核补仓</span>
+            <van-badge v-if="replenishmentReviewBadge > 0" :content="replenishmentReviewBadge" max="99" />
+          </span>
+        </template>
+      </van-cell>
+      <van-cell is-link to="/admin/replenishments/repays/pending">
+        <template #title>
+          <span class="home__menu-title">
+            <span>待审核归仓</span>
+            <van-badge v-if="repayReviewBadge > 0" :content="repayReviewBadge" max="99" />
+          </span>
+        </template>
+      </van-cell>
     </van-cell-group>
+
+    <footer class="home__footer">
+      <p class="home__copyright">{{ copyrightText }}</p>
+    </footer>
   </div>
 </template>
 
@@ -31,14 +72,57 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
+import AppHeader from '@/components/AppHeader.vue'
 import UserCard from '@/components/UserCard.vue'
+
+/** 与 index.html 标题一致；可在 .env 中配置 VITE_APP_TITLE 覆盖 */
+const siteTitle = import.meta.env.VITE_APP_TITLE || '吞金授'
+
+const base = import.meta.env.BASE_URL || '/'
+const publicPath = (file) => (base.endsWith('/') ? `${base}${file}` : `${base}/${file}`)
+
+/** 首页轮播广告：替换 public/banners/ad-*.svg 或改为 .jpg 等 */
+const adBanners = [
+  { src: publicPath('banners/ad-1.svg'), alt: '广告 1' },
+  { src: publicPath('banners/ad-2.svg'), alt: '广告 2' },
+  { src: publicPath('banners/ad-3.svg'), alt: '广告 3' },
+]
 
 const router = useRouter()
 const auth = useAuthStore()
+const dashboard = useDashboardStore()
 const { userInfo } = storeToRefs(auth)
+const { pendingSummary } = storeToRefs(dashboard)
 
 const heroLoading = ref(false)
+
+/** 仅数量 > 0 时传给 van-grid-item / van-badge，避免显示 0 */
+function countBadge(n) {
+  const v = Number(n) || 0
+  return v > 0 ? (v > 99 ? '99+' : v) : undefined
+}
+
+const settlementBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingSettlementReviewCount),
+)
+const profitReviewBadge = computed(
+  () => Number(pendingSummary.value?.pendingProfitReportReviewCount) || 0,
+)
+const replenishmentReviewBadge = computed(
+  () => Number(pendingSummary.value?.pendingReplenishmentReviewCount) || 0,
+)
+const repayReviewBadge = computed(
+  () => Number(pendingSummary.value?.pendingReplenishmentRepayReviewCount) || 0,
+)
+
+const copyrightText = computed(() => {
+  const custom = import.meta.env.VITE_APP_COPYRIGHT
+  if (custom != null && String(custom).trim() !== '') return String(custom).trim()
+  const y = new Date().getFullYear()
+  return `© ${y} ${siteTitle} 版权所有`
+})
 
 const heroSub = computed(() => {
   const u = userInfo.value
@@ -67,15 +151,45 @@ onMounted(async () => {
   } finally {
     heroLoading.value = false
   }
+  try {
+    await dashboard.fetchPendingSummary()
+  } catch {
+    /* store 内已兜底，不阻塞首页 */
+  }
 })
 </script>
 
 <style scoped>
 .home {
   padding: 12px 0 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
 }
 .home__hero {
   padding: 0 12px 8px;
+}
+.home__ads {
+  margin-bottom: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  aspect-ratio: 750 / 280;
+}
+.home__ads :deep(.van-swipe__track) {
+  height: 100%;
+}
+.home__ads :deep(.van-swipe-item) {
+  height: 100%;
+  line-height: 0;
+}
+.home__ads :deep(.van-swipe__indicator--active) {
+  width: 14px;
+  border-radius: 3px;
+}
+.home__ad-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .home__welcome {
   font-size: 15px;
@@ -86,8 +200,24 @@ onMounted(async () => {
 .home__grid {
   margin-top: 4px;
 }
+.home__menu-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .home__admin,
 .home__links {
   margin-top: 12px;
+}
+.home__footer {
+  margin-top: 28px;
+  padding: 0 20px 12px;
+  text-align: center;
+}
+.home__copyright {
+  margin: 0;
+  font-size: 12px;
+  color: #969799;
+  line-height: 1.6;
 }
 </style>

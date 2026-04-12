@@ -1,41 +1,60 @@
-import { getAdmin, postAdmin } from './request'
+import { get, post } from './request'
 
-/** GET /api/admin/replenishments/pending */
+/** GET /api/v1/admin/replenishments/pending */
 export function fetchAdminPendingReplenishments(params = {}) {
-  return getAdmin('/admin/replenishments/pending', {
+  return get('/admin/replenishments/pending', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
 }
 
 /**
- * POST /api/admin/replenishments/{id}/approve
+ * POST /api/v1/admin/replenishments/{id}/approve
  * @param {string} data.transferScreenshotUrl 必填
  * @param {string} [data.transferRemark] 选填
  */
 export function approveReplenishmentAdmin(id, data) {
-  return postAdmin(`/admin/replenishments/${id}/approve`, data)
+  return post(`/admin/replenishments/${id}/approve`, data)
 }
 
-/** POST /api/admin/replenishments/{id}/reject */
+/** POST /api/v1/admin/replenishments/{id}/reject */
 export function rejectReplenishmentAdmin(id, remark) {
-  return postAdmin(`/admin/replenishments/${id}/reject`, remark ? { remark } : {})
+  return post(`/admin/replenishments/${id}/reject`, remark ? { remark } : {})
 }
 
-/** GET /api/admin/replenishments/repays/pending */
-export function fetchAdminPendingRepays(params = {}) {
-  return getAdmin('/admin/replenishments/repays/pending', {
+/**
+ * 待审核归仓列表（分页项仅含 id、repayNo 等简要字段）。
+ * GET /api/v1/admin/replenishments/repays/pending
+ *
+ * @typedef {{ id: number, repayNo?: string, repay_no?: string }} RepayPendingBrief
+ * @param {{ page?: number, size?: number, pageSize?: number }} [params]
+ */
+export function fetchAdminRepaysPending(params = {}) {
+  return get('/admin/replenishments/repays/pending', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
 }
 
-/** POST /api/admin/replenishments/repays/{id}/approve */
-export function approveRepayAdmin(id, remark) {
-  return postAdmin(`/admin/replenishments/repays/${id}/approve`, remark ? { remark } : {})
+/** @deprecated 请使用 {@link fetchAdminRepaysPending} */
+export const fetchAdminPendingRepays = fetchAdminRepaysPending
+
+/**
+ * 归仓申请详情（完整 RepayApplyVO）。
+ * GET /api/v1/admin/replenishments/repays/{id}
+ *
+ * @param {string|number} id
+ */
+export function fetchAdminRepayDetail(id) {
+  return get(`/admin/replenishments/repays/${id}`)
 }
 
-/** POST /api/admin/replenishments/repays/{id}/reject */
+/** POST /api/v1/admin/replenishments/repays/{id}/approve */
+export function approveRepayAdmin(id, remark) {
+  return post(`/admin/replenishments/repays/${id}/approve`, remark ? { remark } : {})
+}
+
+/** POST /api/v1/admin/replenishments/repays/{id}/reject */
 export function rejectRepayAdmin(id, remark) {
-  return postAdmin(`/admin/replenishments/repays/${id}/reject`, remark ? { remark } : {})
+  return post(`/admin/replenishments/repays/${id}/reject`, remark ? { remark } : {})
 }

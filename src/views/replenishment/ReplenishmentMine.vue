@@ -3,39 +3,23 @@
     <AppHeader title="我的补仓记录" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <div v-for="(row, idx) in list" :key="row.id ?? idx" class="card">
-          <van-cell-group inset>
-            <van-cell title="申请单号" :value="txt(row.applyNo ?? row.apply_no)" />
-            <van-cell title="状态">
-              <template #value>
-                <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
-                  {{ formatReplenishmentStatus(row.status) }}
-                </van-tag>
-              </template>
-            </van-cell>
-            <van-cell title="底仓本金" :value="formatMoney(row.principalAmount ?? row.principal_amount)" />
-            <van-cell title="申报余额" :value="formatMoney(row.balanceAmount ?? row.balance_amount)" />
-            <van-cell title="补仓额度" :value="formatMoney(row.replenishAmount ?? row.replenish_amount)" />
-            <van-cell title="已通过额度" :value="formatMoney(row.approvedAmount ?? row.approved_amount)" />
-            <van-cell title="已归还" :value="formatMoney(row.repaidAmount ?? row.repaid_amount)" />
-            <van-cell title="待审归仓" :value="formatMoney(row.pendingRepayAmount ?? row.pending_repay_amount)" />
-            <van-cell title="剩余待归还" :value="formatMoney(row.remainingAmount ?? row.remaining_amount)" />
-            <van-cell title="余额截图">
-              <a v-if="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" :href="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" target="_blank" rel="noopener">查看</a>
-              <span v-else>—</span>
-            </van-cell>
-            <van-cell title="资方转账凭证">
-              <a v-if="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" :href="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" target="_blank" rel="noopener">查看资方凭证</a>
-              <span v-else>—</span>
-            </van-cell>
-            <van-cell
-              v-if="txt(row.transferRemark ?? row.transfer_remark) !== '—'"
-              title="资方转账备注"
-              :value="txt(row.transferRemark ?? row.transfer_remark)"
-            />
-            <van-cell title="提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
-          </van-cell-group>
-        </div>
+        <van-cell-group v-if="list.length">
+          <van-cell
+            v-for="(row, idx) in list"
+            :key="row.id ?? idx"
+            is-link
+            @click="goDetail(row)"
+          >
+            <template #title>
+              <span class="repl-mine__no">{{ txt(row.applyNo ?? row.apply_no) }}</span>
+            </template>
+            <template #value>
+              <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
+                {{ formatReplenishmentStatus(row.status) }}
+              </van-tag>
+            </template>
+          </van-cell>
+        </van-cell-group>
         <EmptyState v-if="!loading && !list.length && loaded" />
       </van-list>
     </van-pull-refresh>
@@ -49,16 +33,14 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchReplenishmentMine } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import {
-  formatMoney,
-  formatDateTime,
-  formatReplenishmentStatus,
-  replenishmentStatusTagType,
-} from '@/utils/format'
+import { formatReplenishmentStatus, replenishmentStatusTagType } from '@/utils/format'
+
+const router = useRouter()
 
 const list = ref([])
 const loading = ref(false)
@@ -73,8 +55,10 @@ function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'
 }
 
-function img(u) {
-  return u ? String(u) : ''
+function goDetail(row) {
+  const id = row?.id
+  if (id == null) return
+  router.push({ name: 'ReplenishmentMineDetail', params: { id: String(id) } })
 }
 
 async function fetchPage(p) {
@@ -121,8 +105,9 @@ function next() {
 </script>
 
 <style scoped>
-.card {
-  margin-bottom: 10px;
+.repl-mine__no {
+  font-size: 15px;
+  color: #323233;
 }
 .pager {
   display: flex;

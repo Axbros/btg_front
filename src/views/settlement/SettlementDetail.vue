@@ -36,7 +36,21 @@
         </van-cell>
         <van-cell title="上缴/划转凭证">
           <template #value>
-            <a v-if="img(transferShotUrl)" :href="img(transferShotUrl)" target="_blank" rel="noopener">查看</a>
+            <img
+              v-if="img(transferShotUrl) && isLikelyImageUrl(transferShotUrl)"
+              class="settle-shot"
+              :src="transferShotUrl"
+              alt="划转凭证"
+              loading="eager"
+              decoding="async"
+              fetchpriority="high"
+            />
+            <a
+              v-else-if="img(transferShotUrl)"
+              :href="img(transferShotUrl)"
+              target="_blank"
+              rel="noopener"
+            >打开文件</a>
             <van-button
               v-else-if="needSubmitTransferProof"
               type="primary"
@@ -57,8 +71,23 @@
           @change="onTransferFileChange"
         />
         <van-cell title="利润截图">
-          <a v-if="img(profitShotUrl)" :href="img(profitShotUrl)" target="_blank" rel="noopener">查看</a>
-          <span v-else>—</span>
+          <template #value>
+            <img
+              v-if="img(profitShotUrl) && isLikelyImageUrl(profitShotUrl)"
+              class="settle-shot"
+              :src="profitShotUrl"
+              alt="利润截图"
+              loading="eager"
+              decoding="async"
+            />
+            <a
+              v-else-if="img(profitShotUrl)"
+              :href="img(profitShotUrl)"
+              target="_blank"
+              rel="noopener"
+            >打开文件</a>
+            <span v-else>—</span>
+          </template>
         </van-cell>
         <van-cell title="提交时间" :value="formatDateTime(detail.submitTime ?? detail.createdAt)" />
         <van-cell v-if="detail.auditTime" title="审核时间" :value="formatDateTime(detail.auditTime)" />
@@ -366,6 +395,14 @@ function img(u) {
   return u ? String(u) : ''
 }
 
+/** 内联展示图片；仅明确为 PDF 时用链接（无后缀的直链按图加载，与上传类型一致） */
+function isLikelyImageUrl(u) {
+  const s = String(u || '')
+    .split('?')[0]
+    .toLowerCase()
+  return !/\.pdf($|[?#])/i.test(s)
+}
+
 function onPickTransferProof() {
   transferFileRef.value?.click()
 }
@@ -492,6 +529,14 @@ async function onRejectDialogBeforeClose(action) {
 .hint-cell :deep(.van-cell__title) {
   flex: 1;
   max-width: 100%;
+}
+.settle-shot {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  object-fit: contain;
+  vertical-align: top;
 }
 .visually-hidden {
   position: absolute;

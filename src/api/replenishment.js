@@ -5,12 +5,24 @@ export function submitReplenishment(data) {
   return post('/replenishments', data)
 }
 
-/** GET /api/v1/replenishments/mine */
+/**
+ * 我的补仓分页（列表项仅 id、applyNo 等简要字段）。
+ * GET /api/v1/replenishments/mine
+ */
 export function fetchReplenishmentMine(params = {}) {
   return get('/replenishments/mine', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
+}
+
+/**
+ * 补仓详情（聚合）。
+ * GET /api/v1/replenishments/{id}
+ * data: { replenishment: ReplenishmentVO, approvedRepays: RepayBrief[] }
+ */
+export function fetchReplenishmentMineDetail(id) {
+  return get(`/replenishments/${id}`)
 }
 
 /** GET /api/v1/replenishments/current */
@@ -23,10 +35,21 @@ export function submitRepay(data) {
   return post('/replenishments/repays', data)
 }
 
-/** GET /api/v1/replenishments/repays/mine */
+/**
+ * 我的归仓分页（列表项仅 id、repayNo 等简要字段）。
+ * GET /api/v1/replenishments/repays/mine
+ */
 export function fetchRepayMine(params = {}) {
   return get('/replenishments/repays/mine', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
+}
+
+/**
+ * 归仓详情（完整 VO，含 replenishmentApply）。
+ * GET /api/v1/replenishments/repays/{id}
+ */
+export function fetchRepayMineDetail(id) {
+  return get(`/replenishments/repays/${id}`)
 }

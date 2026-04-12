@@ -3,25 +3,23 @@
     <AppHeader title="我的归仓记录" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <div v-for="(row, idx) in list" :key="row.id ?? idx" class="card">
-          <van-cell-group inset>
-            <van-cell title="归仓单号" :value="txt(row.repayNo ?? row.repay_no)" />
-            <van-cell title="状态">
-              <template #value>
-                <van-tag :type="repayStatusTagType(row.status)" plain round>
-                  {{ formatRepayStatus(row.status) }}
-                </van-tag>
-              </template>
-            </van-cell>
-            <van-cell title="关联补仓 ID" :value="String(row.replenishApplyId ?? row.replenish_apply_id ?? '—')" />
-            <van-cell title="归还金额" :value="formatMoney(row.repayAmount ?? row.repay_amount)" />
-            <van-cell title="转账截图">
-              <a v-if="img(row.repayScreenshotUrl ?? row.repay_screenshot_url)" :href="img(row.repayScreenshotUrl ?? row.repay_screenshot_url)" target="_blank" rel="noopener">查看</a>
-              <span v-else>—</span>
-            </van-cell>
-            <van-cell title="提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
-          </van-cell-group>
-        </div>
+        <van-cell-group v-if="list.length">
+          <van-cell
+            v-for="(row, idx) in list"
+            :key="row.id ?? idx"
+            is-link
+            @click="goDetail(row)"
+          >
+            <template #title>
+              <span class="repay-mine__no">{{ txt(row.repayNo ?? row.repay_no) }}</span>
+            </template>
+            <template #value>
+              <van-tag :type="repayStatusTagType(row.status)" plain round>
+                {{ formatRepayStatus(row.status) }}
+              </van-tag>
+            </template>
+          </van-cell>
+        </van-cell-group>
         <EmptyState v-if="!loading && !list.length && loaded" />
       </van-list>
     </van-pull-refresh>
@@ -35,11 +33,14 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchRepayMine } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatMoney, formatDateTime, formatRepayStatus, repayStatusTagType } from '@/utils/format'
+import { formatRepayStatus, repayStatusTagType } from '@/utils/format'
+
+const router = useRouter()
 
 const list = ref([])
 const loading = ref(false)
@@ -54,8 +55,10 @@ function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'
 }
 
-function img(u) {
-  return u ? String(u) : ''
+function goDetail(row) {
+  const id = row?.id
+  if (id == null) return
+  router.push({ name: 'RepayMineDetail', params: { id: String(id) } })
 }
 
 async function fetchPage(p) {
@@ -102,8 +105,9 @@ function next() {
 </script>
 
 <style scoped>
-.card {
-  margin-bottom: 10px;
+.repay-mine__no {
+  font-size: 15px;
+  color: #323233;
 }
 .pager {
   display: flex;

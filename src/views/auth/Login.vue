@@ -45,12 +45,14 @@ import { showToast } from 'vant'
 import { login } from '@/api/auth'
 import { fetchMe } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
 import { pickTokenFromLoginData, pickUserFromLoginData } from '@/utils/token'
 import { mobileRules, loginPasswordRules } from '@/utils/formRules'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const dashboard = useDashboardStore()
 
 const mobile = ref('')
 const password = ref('')
@@ -87,6 +89,7 @@ async function onSubmit() {
       router.replace('/me/profile-complete')
       return
     }
+    dashboard.fetchPendingSummary().catch(() => {})
     showToast('登录成功')
     const redirect = route.query.redirect || '/home'
     router.replace(String(redirect))

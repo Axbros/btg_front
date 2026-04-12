@@ -8,6 +8,7 @@ import {
   normalizeUserMePayload,
 } from '@/utils/auth'
 import { isUserAdmin } from '@/utils/permission'
+import { useDashboardStore } from '@/stores/dashboard'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(getStoredToken())
@@ -29,6 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
     userInfo.value = null
     setStoredToken('')
     setStoredUser(null)
+    useDashboardStore().clearPendingSummary()
   }
 
   const isLogin = computed(() => !!token.value)
