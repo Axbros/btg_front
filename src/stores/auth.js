@@ -39,6 +39,9 @@ export const useAuthStore = defineStore('auth', () => {
   /** /me 返回 status === -1：待完善资料，仅允许进入完善资料页 */
   const isProfileOnlyLocked = computed(() => Number(userInfo.value?.status) === -1)
 
+  /** /me 返回 status === 0：资料待审核 */
+  const isProfilePendingReview = computed(() => Number(userInfo.value?.status) === 0)
+
   return {
     token,
     userInfo,
@@ -48,5 +51,6 @@ export const useAuthStore = defineStore('auth', () => {
     isLogin,
     isAdmin,
     isProfileOnlyLocked,
+    isProfilePendingReview,
   }
 })

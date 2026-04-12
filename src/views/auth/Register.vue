@@ -1,6 +1,6 @@
 <template>
   <div class="auth-page">
-    <AppHeader title="注册账号" />
+    <AppHeader title="注册账号" :show-back="false" />
     <van-form scroll-to-error :show-error-message="true" @submit="onSubmit">
       <van-cell-group inset title="注册信息">
         <van-field

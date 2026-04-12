@@ -19,11 +19,11 @@
         </van-cell>
       </van-cell-group>
 
-      <van-cell-group v-if="profile" inset title="证件资料">
-        <van-cell title="真实姓名" :value="txt(profile.realName)" />
-        <van-cell title="身份证号" :value="txt(profile.idCardNo)" />
+      <van-cell-group v-if="profile" inset title="券商资料">
+        <van-cell title="券商名称" :value="txt(profile.walletName)" />
+        <van-cell title="钱包地址（TRC20）" :value="txt(profile.walletAddress)" />
       </van-cell-group>
-      <van-cell-group v-else inset title="认证与资料">
+      <van-cell-group v-else inset title="券商资料">
         <van-cell title="资料" value="尚未录入" />
       </van-cell-group>
 

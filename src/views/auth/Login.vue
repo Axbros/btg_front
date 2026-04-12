@@ -30,9 +30,9 @@
         <van-button round block type="primary" native-type="submit" :loading="loading">
           登录
         </van-button>
-        <van-button round block plain type="primary" class="auth-actions__link" @click="goRegister">
+        <!-- <van-button round block plain type="primary" class="auth-actions__link" @click="goRegister">
           没有账号？去注册
-        </van-button>
+        </van-button> -->
       </div>
     </van-form>
   </div>

@@ -13,7 +13,7 @@ export function fetchUserDetail(id) {
   return get(`/user/${id}`)
 }
 
-/** PUT /api/user/profile — ProfileCompleteRequest */
+/** PUT /api/user/profile（含 walletName、walletAddress 等驼峰字段；tradingAccountPassword 可选） */
 export function completeUserProfile(data) {
   return put('/user/profile', data)
 }

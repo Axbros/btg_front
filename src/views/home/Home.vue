@@ -18,32 +18,32 @@
     </div>
 
     <van-grid :column-num="2" :gutter="10" class="home__grid" clickable>
-      <!-- <van-grid-item icon="cluster-o" text="我的全部下级" to="/team/descendants" /> -->
-      <van-grid-item icon="edit" text="利润上报" to="/profit-report/submit" />
-      <van-grid-item icon="records" text="我的利润上报记录" to="/profit-report/mine" />
-      <van-grid-item icon="balance-pay" text="待支付给上级" to="/settlement/pending-pay" />
+      <!-- <van-grid-item icon="cluster-o" text="我的全部下级" @click="goHomeNav('/team/descendants')" /> -->
+      <van-grid-item icon="edit" text="利润上报" @click="goHomeNav('/profit-report/submit')" />
+      <van-grid-item icon="records" text="我的利润上报记录" @click="goHomeNav('/profit-report/mine')" />
+      <van-grid-item icon="balance-pay" text="待支付给上级" @click="goHomeNav('/settlement/pending-pay')" />
       <van-grid-item
         icon="passed"
         text="待审核下级结算"
-        to="/settlement/pending-review"
+        @click="goHomeNav('/settlement/pending-review')"
         :badge="settlementBadge"
       />
-      <van-grid-item icon="balance-o" text="账户汇总" to="/me/account" />
-      <van-grid-item icon="chart-trending-o" text="团队统计" to="/me/team-stats" />
-      <van-grid-item icon="gold-coin-o" text="补仓" to="/replenishment" />
-      <van-grid-item icon="balance-list-o" text="归仓" to="/repay" />
+      <van-grid-item icon="balance-o" text="账户汇总" @click="goHomeNav('/me/account')" />
+      <van-grid-item icon="chart-trending-o" text="团队统计" @click="goHomeNav('/me/team-stats')" />
+      <van-grid-item icon="gold-coin-o" text="补仓" @click="goHomeNav('/replenishment')" />
+      <van-grid-item icon="balance-list-o" text="归仓" @click="goHomeNav('/repay')" />
     </van-grid>
 
     <van-cell-group v-if="auth.isAdmin" inset title="管理员" class="home__admin">
-      <van-cell is-link to="/admin/pending">
+      <!-- <van-cell is-link to="/admin/pending">
         <template #title>
           <span class="home__menu-title">
             <span>待审核收益</span>
             <van-badge v-if="profitReviewBadge > 0" :content="profitReviewBadge" max="99" />
           </span>
         </template>
-      </van-cell>
-      <van-cell is-link to="/admin/replenishments/pending">
+      </van-cell> -->
+      <van-cell is-link @click="goHomeNav('/admin/replenishments/pending')">
         <template #title>
           <span class="home__menu-title">
             <span>待审核补仓</span>
@@ -51,7 +51,7 @@
           </span>
         </template>
       </van-cell>
-      <van-cell is-link to="/admin/replenishments/repays/pending">
+      <van-cell is-link @click="goHomeNav('/admin/replenishments/repays/pending')">
         <template #title>
           <span class="home__menu-title">
             <span>待审核归仓</span>
@@ -71,6 +71,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
@@ -135,6 +136,14 @@ const heroPlaceholder = computed(() => {
   if (heroLoading.value) return '加载用户信息…'
   return '暂无法获取用户信息，请稍后重试'
 })
+
+function goHomeNav(to) {
+  if (auth.isProfilePendingReview) {
+    showToast('资料审核中，暂不可操作')
+    return
+  }
+  router.push(to)
+}
 
 onMounted(async () => {
   if (!auth.isLogin) return

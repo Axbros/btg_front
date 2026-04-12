@@ -34,7 +34,7 @@
             <span class="transfer-hint">请向收款人完成打款后，上传划转凭证提交上级审核。</span>
           </template>
         </van-cell>
-        <van-cell title="上缴/划转凭证">
+        <van-cell title="划转凭证">
           <template #value>
             <img
               v-if="img(transferShotUrl) && isLikelyImageUrl(transferShotUrl)"

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <AppHeader title="利润上报" :show-back="false" />
+    <AppHeader title="利润上报" />
     <van-notice-bar
       v-if="contextLoading"
       left-icon="info-o"
@@ -142,10 +142,10 @@ const contextSummaryText = computed(() => {
   const child = pickNum(c.childProfitRatio, c.child_profit_ratio)
   if (child != null) parts.push(`子级利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
   const pr = payableRatio.value
-  if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属上级划转约 ${formatRate(pr)} 的利润部分`)
-  if (parentExchangeUid.value) {
-    parts.push(`直属上级交易所 UID：${parentExchangeUid.value}`)
-  }
+  if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属上级划转 ${formatRate(pr)} 的利润部分`)
+  // if (parentExchangeUid.value) {
+  //   parts.push(`直属上级交易所 UID：${parentExchangeUid.value}`)
+  // }
   return parts.join('；')
 })
 

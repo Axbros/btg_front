@@ -1,11 +1,11 @@
 <template>
   <div>
     <AppHeader title="我的团队" :show-back="false" />
-    <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 10px;">
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div v-if="loading && !tree.length" class="team-loading">
         <van-loading type="spinner" vertical>加载中…</van-loading>
       </div>
-      <van-cell-group v-else-if="tree.length" inset>
+      <van-cell-group v-else-if="tree.length">
         <TeamTreeList :nodes="tree" :depth="0" />
       </van-cell-group>
       <EmptyState v-else-if="loaded" description="暂无下级成员" />

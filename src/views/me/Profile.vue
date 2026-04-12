@@ -29,16 +29,26 @@
             </van-tag>
           </template>
         </van-cell>
-        <van-cell
+       
+        <van-cell title="上级用户" :value="referrerNick(userInfo)" />
+         <van-cell
           class="profile-invite-cell"
           title="邀请码（点击复制）"
-        
           :value="String(userInfo.invitationCode ?? '—')"
           is-link
           @click="copyInviteRegisterUrl"
         />
-        <van-cell title="上级用户" :value="referrerNick(userInfo)" />
       </van-cell-group>
+
+      <van-cell-group v-if="profileDetailRows.length" inset title="资料信息" class="profile__block">
+        <van-cell
+          v-for="(row, idx) in profileDetailRows"
+          :key="idx"
+          :title="row.title"
+          :value="row.value"
+        />
+      </van-cell-group>
+
       <!-- <van-cell-group inset title="分润与结算" class="profile__block">
         <van-cell title="利润上报" is-link to="/profit-report/submit" />
         <van-cell title="我的利润上报记录" is-link to="/profit-report/mine" />
@@ -46,17 +56,7 @@
         <van-cell title="待审核下级结算" is-link to="/settlement/pending-review" />
       </van-cell-group> -->
 
-      <div v-if="profileApprovedNoEdit" class="profile__tip-wrap">
-        <van-notice-bar
-          left-icon="info-o"
-          color="#646566"
-          background="#f7f8fa"
-          :scrollable="false"
-          wrapable
-          text="资料一旦提交并且审核通过之后就不能再更改，必要时候请联系管理员。"
-        />
-      </div>
-      <van-cell-group v-else inset title="资料编辑" class="profile__edit">
+      <van-cell-group inset title="资料编辑" class="profile__edit">
         <van-cell title="完善资料" is-link to="/me/profile-complete" />
       </van-cell-group>
       <div class="profile__logout">
@@ -91,39 +91,50 @@ function pickProfile(u) {
   const p = u?.profile
   if (!p || typeof p !== 'object') return null
   return {
-    serverName: p.serverName ?? p.server_name,
-    tradingAccountId: p.tradingAccountId ?? p.trading_account_id,
-    exchangeUid: p.exchangeUid ?? p.exchange_uid,
-    principalAmount: p.principalAmount ?? p.principal_amount,
+    nickname: p.nickname,
+    realName: p.realName,
+    idCardNo: p.idCardNo,
+    serverName: p.serverName,
+    tradingAccountId: p.tradingAccountId,
+    exchangeUid: p.exchangeUid,
+    principalAmount: p.principalAmount,
+    walletName: p.walletName,
+    walletAddress: p.walletAddress,
   }
 }
 
-const profileTradeRows = computed(() => {
+/** 后端 /me profile 块：有值才展示 */
+const profileDetailRows = computed(() => {
   const p = pickProfile(userInfo.value)
   if (!p) return []
   const rows = []
-  if (p.serverName != null && String(p.serverName).trim() !== '') {
-    rows.push({ key: 'server', title: '服务器名称', value: String(p.serverName) })
+  const push = (title, raw) => {
+    if (raw == null) return
+    const s = String(raw).trim()
+    if (s === '') return
+    rows.push({ title, value: s })
   }
-  if (p.tradingAccountId != null && String(p.tradingAccountId).trim() !== '') {
-    rows.push({ key: 'tid', title: '交易账户ID', value: String(p.tradingAccountId) })
-  }
-  if (p.exchangeUid != null && String(p.exchangeUid).trim() !== '') {
-    rows.push({ key: 'ex', title: '交易所UID', value: String(p.exchangeUid) })
-  }
+  // push('资料昵称', p.nickname)
+  // push('真实姓名', p.realName)
+  // push('身份证号', p.idCardNo)
+  push('服务器名称', p.serverName)
+  push('交易账户ID', p.tradingAccountId)
+  push('交易所UID', p.exchangeUid)
+  push('券商名称', p.walletName)
+  push('钱包地址（TRC20）', p.walletAddress)
   if (p.principalAmount != null && String(p.principalAmount).trim() !== '') {
     const n = Number(p.principalAmount)
+    const amount = Number.isFinite(n) ? formatMoney(n) : String(p.principalAmount).trim()
     rows.push({
-      key: 'principal',
       title: '底仓本金',
-      value: Number.isFinite(n) ? formatMoney(n) : String(p.principalAmount),
+      value: `${amount} USD`,
     })
   }
   return rows
 })
 
 function referrerNick(u) {
-  const n = u?.referrerNickname ?? u?.referrer_nickname
+  const n = u?.referrerNickname
   return n != null && String(n).trim() !== '' ? String(n) : '—'
 }
 
@@ -131,9 +142,6 @@ const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const { userInfo } = storeToRefs(auth)
 const router = useRouter()
-
-/** status === 1：后端约定资料已审核通过，关闭自助修改入口 */
-const profileApprovedNoEdit = computed(() => Number(userInfo.value?.status) === 1)
 
 const loading = ref(true)
 const logoutDialogShow = ref(false)
@@ -286,7 +294,9 @@ function onLogoutConfirm() {
 .profile__logout {
   margin: 24px 16px 0;
 }
-.profile__tip-wrap {
-  margin: 12px 16px 0;
+.profile-invite-cell :deep(.van-cell__title),
+.profile-invite-cell :deep(.van-cell__value) {
+  color: #ee0a24;
+  font-weight: 700;
 }
 </style>
