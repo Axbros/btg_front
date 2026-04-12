@@ -7,11 +7,25 @@ export function fetchMyPendingPaySettlements(params = {}) {
   return get('/settlements/mine-payables', { page, size })
 }
 
-/** GET /api/v1/settlements/pending-review */
+/** GET /api/v1/settlements/pending-review — 本人为收款上级的待审核；Page<SettlementOrder> */
 export function fetchMyPendingReviewSettlements(params = {}) {
   const page = params.page ?? 1
   const size = params.size ?? params.pageSize ?? 10
   return get('/settlements/pending-review', { page, size })
+}
+
+/** GET /api/v1/settlements/approved — 已通过（同上 to_user）；分页同 pending-review */
+export function fetchMyApprovedSettlements(params = {}) {
+  const page = params.page ?? 1
+  const size = params.size ?? params.pageSize ?? 10
+  return get('/settlements/approved', { page, size })
+}
+
+/** GET /api/v1/settlements/rejected — 已拒绝（同上）；分页同 pending-review */
+export function fetchMyRejectedSettlements(params = {}) {
+  const page = params.page ?? 1
+  const size = params.size ?? params.pageSize ?? 10
+  return get('/settlements/rejected', { page, size })
 }
 
 /** GET /api/v1/settlements/{rootReportId} — id 为 root_report_id，且本人为付款人 */

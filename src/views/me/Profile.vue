@@ -3,7 +3,7 @@
     <AppHeader title="我的信息" />
     <van-loading v-if="loading" class="profile__loading" vertical>加载个人信息…</van-loading>
     <div v-else-if="userInfo" class="profile">
-      <div v-if="inviteRegisterUrl" class="invite-qr">
+      <div v-if="auth.canShowInviteCode && inviteRegisterUrl" class="invite-qr">
         <div class="invite-qr__title">邀请注册</div>
         <div class="invite-qr__canvas-wrap">
           <van-loading v-if="inviteQrLoading" type="spinner" size="28px" vertical>生成二维码…</van-loading>
@@ -31,7 +31,8 @@
         </van-cell>
        
         <van-cell title="上级用户" :value="referrerNick(userInfo)" />
-         <van-cell
+        <van-cell
+          v-if="auth.canShowInviteCode"
           class="profile-invite-cell"
           title="邀请码（点击复制）"
           :value="String(userInfo.invitationCode ?? '—')"
@@ -146,8 +147,9 @@ const router = useRouter()
 const loading = ref(true)
 const logoutDialogShow = ref(false)
 
-/** 带邀请码的完整注册页 URL，用于二维码与复制 */
+/** 带邀请码的完整注册页 URL，用于二维码与复制（仅审核通过用户展示） */
 const inviteRegisterUrl = computed(() => {
+  if (!auth.canShowInviteCode) return ''
   const code = String(userInfo.value?.invitationCode ?? '').trim()
   if (!code) return ''
   const { fullPath } = router.resolve({

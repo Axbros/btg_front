@@ -42,6 +42,14 @@ export const useAuthStore = defineStore('auth', () => {
   /** /me 返回 status === 0：资料待审核 */
   const isProfilePendingReview = computed(() => Number(userInfo.value?.status) === 0)
 
+  /** 待完善或待审核：登录后仅允许「完善资料」页（与路由守卫一致） */
+  const isRestrictedToProfileComplete = computed(
+    () => isProfileOnlyLocked.value || isProfilePendingReview.value,
+  )
+
+  /** 仅审核通过（正常）后展示邀请注册/推荐码 */
+  const canShowInviteCode = computed(() => Number(userInfo.value?.status) === 1)
+
   return {
     token,
     userInfo,
@@ -52,5 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isProfileOnlyLocked,
     isProfilePendingReview,
+    isRestrictedToProfileComplete,
+    canShowInviteCode,
   }
 })

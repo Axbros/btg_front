@@ -233,8 +233,8 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  /** status === -1（待完善）：仅允许 /me/profile-complete，禁止其它需登录页 */
-  if (requiresAuth && auth.isLogin && auth.isProfileOnlyLocked) {
+  /** status -1 待完善 / 0 待审核：仅允许 /me/profile-complete */
+  if (requiresAuth && auth.isLogin && auth.isRestrictedToProfileComplete) {
     if (to.path !== '/me/profile-complete') {
       next({ path: '/me/profile-complete', replace: true })
       return

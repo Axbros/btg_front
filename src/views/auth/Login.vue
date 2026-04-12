@@ -89,6 +89,11 @@ async function onSubmit() {
       router.replace('/me/profile-complete')
       return
     }
+    if (auth.isProfilePendingReview) {
+      showToast('资料审核中，请耐心等待上级通过')
+      router.replace('/me/profile-complete')
+      return
+    }
     dashboard.fetchPendingSummary().catch(() => {})
     showToast('登录成功')
     const redirect = route.query.redirect || '/home'

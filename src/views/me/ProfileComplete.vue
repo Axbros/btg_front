@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page" :class="{ 'page--pending-footer': auth.isProfilePendingReview }">
     <AppHeader title="完善资料" />
     <van-loading v-if="!pageReady" class="page__loading" vertical>加载中…</van-loading>
     <template v-else>
@@ -12,7 +12,21 @@
         wrapable
         text="您的账户当前为待完善状态，请补全资料并提交，待直属上级审核通过后方可使用其它功能。"
       />
-      <p class="tip">保存后将更新昵称与扩展资料。登录手机号以注册账号为准，不可在此修改。</p>
+      <van-notice-bar
+        v-else-if="auth.isProfilePendingReview"
+        left-icon="info-o"
+        color="#1989fa"
+        background="#ecf9ff"
+        :scrollable="false"
+        wrapable
+        text="资料正在等待直属上级审核，请耐心等待。审核完成之前您只能在本页面查看或修改资料，无法使用系统其它功能。"
+      />
+      <p v-if="!auth.isProfilePendingReview" class="tip">
+        保存后将更新昵称与扩展资料。登录手机号以注册账号为准，不可在此修改。
+      </p>
+      <p v-else class="tip tip--pending">
+        审核期间仍可修改并保存资料；如需更换账号请使用底部「退出登录」。
+      </p>
       <van-form scroll-to-error :show-error-message="true" @submit="onSubmit">
         <van-cell-group inset title="账号信息">
           <van-cell title="登录手机" :value="mobileDisplay" />
@@ -155,6 +169,10 @@
           <van-button block round plain type="danger" @click="onLogout">退出登录</van-button>
         </div>
       </van-form>
+
+      <div v-if="auth.isProfilePendingReview" class="page__pending-bar">
+        <van-button block round plain type="danger" @click="onLogout">退出登录</van-button>
+      </div>
 
       <van-dialog
         v-model:show="submitDialogShow"
@@ -349,6 +367,23 @@ async function onSubmitDialogBeforeClose(action) {
 <style scoped>
 .page {
   padding-bottom: 32px;
+}
+.page--pending-footer {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+.page__pending-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+}
+.tip--pending {
+  color: #646566;
 }
 .page__loading {
   padding: 48px 0;

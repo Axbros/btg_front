@@ -155,8 +155,9 @@ const heroPlaceholder = computed(() => {
 })
 
 function goHomeNav(to) {
-  if (auth.isProfilePendingReview) {
-    showToast('资料审核中，暂不可操作')
+  if (auth.isRestrictedToProfileComplete) {
+    showToast('请先完成资料流程')
+    router.replace('/me/profile-complete')
     return
   }
   router.push(to)
@@ -168,7 +169,7 @@ onMounted(async () => {
   try {
     const me = await fetchMe()
     auth.setUserInfo(me)
-    if (Number(me?.status) === -1) {
+    if (Number(me?.status) === -1 || Number(me?.status) === 0) {
       router.replace('/me/profile-complete')
       return
     }

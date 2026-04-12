@@ -1,16 +1,15 @@
 <template>
   <div>
     <AppHeader title="待审核下级结算" />
-    <p class="intro">直属下级上报利润并提交结算凭证后，由您审核；通过后由系统逐级向上推进，拒绝则本链路暂停。</p>
-    <van-tabs v-model:active="activeStatus" shrink sticky>
-      <van-tab title="全部" name="all" />
-      <van-tab title="待审核" name="PENDING" />
-      <van-tab title="已通过" name="APPROVED" />
-      <van-tab title="已拒绝" name="REJECTED" />
+    <!-- <p class="intro">直属下级上报利润并提交结算凭证后，由您审核；通过后由系统逐级向上推进，拒绝则本链路暂停。</p> -->
+    <van-tabs v-model:active="activeTab" shrink sticky>
+      <van-tab title="待审核" name="pending" />
+      <van-tab title="已通过" name="approved" />
+      <van-tab title="已拒绝" name="rejected" />
     </van-tabs>
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 8px;">
       <van-list
-        :key="activeStatus"
+        :key="activeTab"
         v-model:loading="loading"
         :finished="finished"
         finished-text="没有更多了"
@@ -50,7 +49,11 @@
 import { ref, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchMyPendingReviewSettlements } from '@/api/settlement'
+import {
+  fetchMyApprovedSettlements,
+  fetchMyPendingReviewSettlements,
+  fetchMyRejectedSettlements,
+} from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
 import {
   formatMoney,
@@ -59,7 +62,8 @@ import {
   settlementStatusTagType,
 } from '@/utils/format'
 
-const activeStatus = ref('all')
+/** pending | approved | rejected — 分别对应 pending-review / approved / rejected */
+const activeTab = ref('pending')
 const list = ref([])
 const loading = ref(false)
 const finished = ref(false)
@@ -68,10 +72,6 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
-
-function statusQuery() {
-  return activeStatus.value === 'all' ? undefined : activeStatus.value
-}
 
 function titleLine(item) {
   const no = item.profitRecordNo ?? item.recordNo ?? item.settlementNo
@@ -100,11 +100,15 @@ function detailTo(item) {
 }
 
 async function fetchPage(p) {
-  const raw = await fetchMyPendingReviewSettlements({
-    page: p,
-    pageSize: pageSize.value,
-    status: statusQuery(),
-  })
+  const params = { page: p, pageSize: pageSize.value }
+  let raw
+  if (activeTab.value === 'approved') {
+    raw = await fetchMyApprovedSettlements(params)
+  } else if (activeTab.value === 'rejected') {
+    raw = await fetchMyRejectedSettlements(params)
+  } else {
+    raw = await fetchMyPendingReviewSettlements(params)
+  }
   const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
   list.value = rows
   hasMore.value = more
@@ -133,7 +137,7 @@ async function onRefresh() {
   }
 }
 
-watch(activeStatus, () => {
+watch(activeTab, () => {
   page.value = 1
   list.value = []
   loaded.value = false
