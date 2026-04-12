@@ -12,12 +12,15 @@ function num(v) {
 export function normalizePendingSummary(raw) {
   const d = raw != null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
   const pendingSettlementReviewCount = num(d.pendingSettlementReviewCount)
+  /** 待支付给上级（本人应付给上级的结算单） */
+  const pendingSettlementPayableCount = num(d.pendingSettlementPayableCount)
   const pendingProfitReportReviewCount = num(d.pendingProfitReportReviewCount)
   const pendingReplenishmentReviewCount = num(d.pendingReplenishmentReviewCount)
   const pendingReplenishmentRepayReviewCount = num(d.pendingReplenishmentRepayReviewCount)
   let totalPendingCount = num(d.totalPendingCount)
   const sum =
     pendingSettlementReviewCount +
+    pendingSettlementPayableCount +
     pendingProfitReportReviewCount +
     pendingReplenishmentReviewCount +
     pendingReplenishmentRepayReviewCount
@@ -28,6 +31,7 @@ export function normalizePendingSummary(raw) {
   return {
     hasPending,
     pendingSettlementReviewCount,
+    pendingSettlementPayableCount,
     pendingProfitReportReviewCount,
     pendingReplenishmentReviewCount,
     pendingReplenishmentRepayReviewCount,
@@ -38,6 +42,7 @@ export function normalizePendingSummary(raw) {
 const emptySummary = () => ({
   hasPending: false,
   pendingSettlementReviewCount: 0,
+  pendingSettlementPayableCount: 0,
   pendingProfitReportReviewCount: 0,
   pendingReplenishmentReviewCount: 0,
   pendingReplenishmentRepayReviewCount: 0,

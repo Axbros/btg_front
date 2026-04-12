@@ -36,21 +36,12 @@
         </van-cell>
         <van-cell title="划转凭证">
           <template #value>
-            <img
-              v-if="img(transferShotUrl) && isLikelyImageUrl(transferShotUrl)"
-              class="settle-shot"
-              :src="transferShotUrl"
+            <PreviewableRemoteImage
+              v-if="img(transferShotUrl)"
+              :url="transferShotUrl"
               alt="划转凭证"
-              loading="eager"
-              decoding="async"
-              fetchpriority="high"
+              size="large"
             />
-            <a
-              v-else-if="img(transferShotUrl)"
-              :href="img(transferShotUrl)"
-              target="_blank"
-              rel="noopener"
-            >打开文件</a>
             <van-button
               v-else-if="needSubmitTransferProof"
               type="primary"
@@ -72,20 +63,12 @@
         />
         <van-cell title="利润截图">
           <template #value>
-            <img
-              v-if="img(profitShotUrl) && isLikelyImageUrl(profitShotUrl)"
-              class="settle-shot"
-              :src="profitShotUrl"
+            <PreviewableRemoteImage
+              v-if="img(profitShotUrl)"
+              :url="profitShotUrl"
               alt="利润截图"
-              loading="eager"
-              decoding="async"
+              size="large"
             />
-            <a
-              v-else-if="img(profitShotUrl)"
-              :href="img(profitShotUrl)"
-              target="_blank"
-              rel="noopener"
-            >打开文件</a>
             <span v-else>—</span>
           </template>
         </van-cell>
@@ -143,6 +126,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { useAuthStore } from '@/stores/auth'
 import { uploadFile, FILE_UPLOAD_TYPES } from '@/api/files'
 import {
@@ -395,14 +379,6 @@ function img(u) {
   return u ? String(u) : ''
 }
 
-/** 内联展示图片；仅明确为 PDF 时用链接（无后缀的直链按图加载，与上传类型一致） */
-function isLikelyImageUrl(u) {
-  const s = String(u || '')
-    .split('?')[0]
-    .toLowerCase()
-  return !/\.pdf($|[?#])/i.test(s)
-}
-
 function onPickTransferProof() {
   transferFileRef.value?.click()
 }
@@ -529,14 +505,6 @@ async function onRejectDialogBeforeClose(action) {
 .hint-cell :deep(.van-cell__title) {
   flex: 1;
   max-width: 100%;
-}
-.settle-shot {
-  display: block;
-  max-width: 100%;
-  max-height: 240px;
-  border-radius: 8px;
-  object-fit: contain;
-  vertical-align: top;
 }
 .visually-hidden {
   position: absolute;

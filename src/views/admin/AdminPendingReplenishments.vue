@@ -11,11 +11,22 @@
             <van-cell title="申报余额" :value="formatMoney(row.balanceAmount ?? row.balance_amount)" />
             <van-cell title="补仓额度" :value="formatMoney(row.replenishAmount ?? row.replenish_amount)" />
             <van-cell title="余额截图">
-              <a v-if="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" :href="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)" target="_blank" rel="noopener">查看</a>
-              <span v-else>—</span>
+              <template #value>
+                <PreviewableRemoteImage
+                  v-if="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)"
+                  :url="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)"
+                  alt="余额截图"
+                />
+                <span v-else>—</span>
+              </template>
             </van-cell>
             <van-cell v-if="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" title="资方转账凭证">
-              <a :href="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)" target="_blank" rel="noopener">查看</a>
+              <template #value>
+                <PreviewableRemoteImage
+                  :url="img(row.transferScreenshotUrl ?? row.transfer_screenshot_url)"
+                  alt="资方转账凭证"
+                />
+              </template>
             </van-cell>
             <van-cell
               v-if="txt(row.transferRemark ?? row.transfer_remark) !== '—'"
@@ -108,6 +119,7 @@ import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import {
   fetchAdminPendingReplenishments,
   approveReplenishmentAdmin,

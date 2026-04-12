@@ -30,16 +30,10 @@
       :value="remainingToRepayText"
     />
     <van-cell title="归仓转账凭证">
-      <template v-if="screenshotUrl">
-        <img
-          class="repay-detail__shot"
-          :src="screenshotUrl"
-          alt="归仓转账凭证"
-          loading="lazy"
-          @click="previewUrl(screenshotUrl)"
-        />
+      <template #value>
+        <PreviewableRemoteImage v-if="screenshotUrl" :url="screenshotUrl" alt="归仓转账凭证" size="large" />
+        <span v-else>—</span>
       </template>
-      <span v-else>—</span>
     </van-cell>
     <van-cell title="归仓提交时间" :value="formatDateTime(pick('submitTime', 'submit_time'))" />
     <van-cell-group v-if="replenishmentApply"  title="关联补仓申请" class="repay-detail__repl-group">
@@ -56,25 +50,15 @@
       <van-cell title="已还金额" :value="formatMoney(pickReplen('repaidAmount', 'repaid_amount'))" />
       <van-cell title="待还金额" :value="formatMoney(pickReplen('pendingRepayAmount', 'pending_repay_amount'))" />
       <van-cell title="补仓截图">
-        <template v-if="replBalanceShotUrl">
-          <img
-            class="repay-detail__shot"
-            :src="replBalanceShotUrl"
-            alt="余额截图"
-            loading="lazy"
-            @click="previewUrl(replBalanceShotUrl)"
-          />
+        <template #value>
+          <PreviewableRemoteImage v-if="replBalanceShotUrl" :url="replBalanceShotUrl" alt="余额截图" size="large" />
+          <span v-else>—</span>
         </template>
-        <span v-else>—</span>
       </van-cell>
       <van-cell v-if="replTransferShotUrl" title="资方补仓凭证">
-        <img
-          class="repay-detail__shot"
-          :src="replTransferShotUrl"
-          alt="资方转账凭证"
-          loading="lazy"
-          @click="previewUrl(replTransferShotUrl)"
-        />
+        <template #value>
+          <PreviewableRemoteImage :url="replTransferShotUrl" alt="资方转账凭证" size="large" />
+        </template>
       </van-cell>
       <van-cell
         v-if="txt(pickReplen('transferRemark', 'transfer_remark')) !== '—'"
@@ -91,7 +75,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { showImagePreview } from 'vant'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import {
   formatMoney,
   formatDateTime,
@@ -168,24 +152,12 @@ const remainingToRepayText = computed(() => {
   return formatMoney(a - b)
 })
 
-function previewUrl(url) {
-  if (!url) return
-  showImagePreview([url])
-}
 </script>
 
 <style scoped>
 :deep(.repay-detail__amount) {
   color: #ee0a24;
   font-weight: 700;
-}
-.repay-detail__shot {
-  display: block;
-  max-width: 100%;
-  max-height: 220px;
-  border-radius: 8px;
-  object-fit: contain;
-  cursor: pointer;
 }
 .repay-detail__repl-group {
   margin-top: 8px;

@@ -4,7 +4,9 @@
     <van-notice-bar v-if="profileLoading" left-icon="info-o" :scrollable="false" text="正在加载资料…" />
     <van-form v-else scroll-to-error :show-error-message="true" @submit="onSubmit" style="padding-top: 12px;">
       <van-cell-group inset>
-        <van-cell title="底仓本金（资料）" :value="formatMoney(principalNum)" />
+        <van-cell title="底仓本金" :value="formatMoney(principalNum)" />
+        <van-cell title="券商名称" :value="displayTxt(walletName)" />
+        <van-cell title="钱包地址（TRC20）" :value="displayTxt(walletAddress)" />
         <van-field
           v-model="balanceAmount"
           name="balanceAmount"
@@ -55,6 +57,8 @@ import { formatMoney } from '@/utils/format'
 const router = useRouter()
 const profileLoading = ref(true)
 const principalNum = ref(0)
+const walletName = ref('')
+const walletAddress = ref('')
 const balanceAmount = ref('')
 const balanceScreenshotUrl = ref('')
 const loading = ref(false)
@@ -72,6 +76,18 @@ const previewHint = computed(() => {
   return '实际额度以服务端校验为准'
 })
 
+function pickStr(obj, camel, snake) {
+  const v = obj?.[camel] ?? obj?.[snake]
+  if (v == null) return ''
+  const s = String(v).trim()
+  return s
+}
+
+function displayTxt(s) {
+  const t = String(s ?? '').trim()
+  return t !== '' ? t : '—'
+}
+
 onMounted(async () => {
   profileLoading.value = true
   try {
@@ -79,8 +95,12 @@ onMounted(async () => {
     const raw = prof?.principalAmount ?? prof?.principal_amount ?? 0
     principalNum.value = Number(raw)
     if (Number.isNaN(principalNum.value)) principalNum.value = 0
+    walletName.value = pickStr(prof, 'walletName', 'wallet_name')
+    walletAddress.value = pickStr(prof, 'walletAddress', 'wallet_address')
   } catch {
     principalNum.value = 0
+    walletName.value = ''
+    walletAddress.value = ''
   } finally {
     profileLoading.value = false
   }

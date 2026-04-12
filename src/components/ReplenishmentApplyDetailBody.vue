@@ -16,25 +16,15 @@
     <van-cell title="待审归仓" :value="formatMoney(pick('pendingRepayAmount', 'pending_repay_amount'))" />
     <van-cell title="剩余待归" :value="formatMoney(pick('remainingAmount', 'remaining_amount'))" />
     <van-cell title="余额截图">
-      <template v-if="balanceShotUrl">
-        <img
-          class="repl-detail__shot"
-          :src="balanceShotUrl"
-          alt="余额截图"
-          loading="lazy"
-          @click="previewUrl(balanceShotUrl)"
-        />
+      <template #value>
+        <PreviewableRemoteImage v-if="balanceShotUrl" :url="balanceShotUrl" alt="余额截图" size="large" />
+        <span v-else>—</span>
       </template>
-      <span v-else>—</span>
     </van-cell>
     <van-cell v-if="transferShotUrl" title="资方凭证">
-      <img
-        class="repl-detail__shot"
-        :src="transferShotUrl"
-        alt="资方转账凭证"
-        loading="lazy"
-        @click="previewUrl(transferShotUrl)"
-      />
+      <template #value>
+        <PreviewableRemoteImage :url="transferShotUrl" alt="资方转账凭证" size="large" />
+      </template>
     </van-cell>
     <van-cell
       v-if="txt(pick('transferRemark', 'transfer_remark')) !== '—'"
@@ -49,7 +39,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { showImagePreview } from 'vant'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import {
   formatMoney,
   formatDateTime,
@@ -87,20 +77,4 @@ const transferShotUrl = computed(() => {
   const u = pick('transferScreenshotUrl', 'transfer_screenshot_url')
   return u ? String(u) : ''
 })
-
-function previewUrl(url) {
-  if (!url) return
-  showImagePreview([url])
-}
 </script>
-
-<style scoped>
-.repl-detail__shot {
-  display: block;
-  max-width: 100%;
-  max-height: 220px;
-  border-radius: 8px;
-  object-fit: contain;
-  cursor: pointer;
-}
-</style>

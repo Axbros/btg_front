@@ -88,6 +88,9 @@ async function afterRead(item) {
 .image-upload-field {
   width: 100%;
 }
+.image-upload-field :deep(.van-uploader__preview-image) {
+  cursor: pointer;
+}
 .image-upload-field__hint {
   margin: 6px 0 0;
   font-size: 12px;

@@ -40,13 +40,31 @@ function pickId(u) {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: linear-gradient(135deg, #1989fa 0%, #39a0ff 100%);
   border-radius: 12px;
   color: #fff;
+  /* 主渐变 + 顶部高光，整体为渐变背景 */
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 48%),
+    linear-gradient(
+      128deg,
+      #0d62c9 0%,
+      #1989fa 36%,
+      #3d9dfe 68%,
+      #5ec8ff 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(25, 137, 250, 0.35);
+}
+.user-card__main {
+  min-width: 0;
 }
 .user-card__name {
   font-size: 17px;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .user-card__sub {
   margin-top: 4px;

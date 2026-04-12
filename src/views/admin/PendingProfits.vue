@@ -12,12 +12,24 @@
             <van-cell title="子级利润比例" :value="formatRate(row.commissionRate)" />
             <van-cell title="分润金额" :value="formatMoney(row.commissionAmount)" />
             <van-cell title="收益截图">
-              <a v-if="img(row.profitScreenshotUrl ?? row.profitImg)" :href="img(row.profitScreenshotUrl ?? row.profitImg)" target="_blank" rel="noopener">查看</a>
-              <span v-else>—</span>
+              <template #value>
+                <PreviewableRemoteImage
+                  v-if="img(row.profitScreenshotUrl ?? row.profitImg)"
+                  :url="img(row.profitScreenshotUrl ?? row.profitImg)"
+                  alt="收益截图"
+                />
+                <span v-else>—</span>
+              </template>
             </van-cell>
             <van-cell title="转账截图">
-              <a v-if="img(row.transferScreenshotUrl ?? row.transferImg)" :href="img(row.transferScreenshotUrl ?? row.transferImg)" target="_blank" rel="noopener">查看</a>
-              <span v-else>—</span>
+              <template #value>
+                <PreviewableRemoteImage
+                  v-if="img(row.transferScreenshotUrl ?? row.transferImg)"
+                  :url="img(row.transferScreenshotUrl ?? row.transferImg)"
+                  alt="转账截图"
+                />
+                <span v-else>—</span>
+              </template>
             </van-cell>
             <van-cell title="提交时间" :value="formatDateTime(row.submitTime)" />
             <van-cell>
@@ -73,6 +85,7 @@ import { ref } from 'vue'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { fetchPendingProfits, approveProfit, rejectProfit } from '@/api/admin'
 import { parsePageResponse } from '@/utils/pagination'
 import { formatMoney, formatDateTime, formatRate } from '@/utils/format'

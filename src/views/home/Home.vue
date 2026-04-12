@@ -1,7 +1,14 @@
 <template>
   <div class="home">
     <AppHeader :title="siteTitle" :show-back="false" show-logo />
+    <van-notice-bar
+      class="home__notice"
+      left-icon="volume-o"
+      text="吞金授目前正持续盈利中，推广福利多多，欢迎加入！"
+    />
+
     <div class="home__hero">
+    
       <van-swipe
         class="home__ads"
         :autoplay="4000"
@@ -9,6 +16,7 @@
         lazy-render
         indicator-color="#fff"
       >
+      
         <van-swipe-item v-for="(ad, i) in adBanners" :key="i">
           <img class="home__ad-img" :src="ad.src" :alt="ad.alt" width="750" height="280" loading="lazy" />
         </van-swipe-item>
@@ -21,7 +29,12 @@
       <!-- <van-grid-item icon="cluster-o" text="我的全部下级" @click="goHomeNav('/team/descendants')" /> -->
       <van-grid-item icon="edit" text="利润上报" @click="goHomeNav('/profit-report/submit')" />
       <van-grid-item icon="records" text="我的利润上报记录" @click="goHomeNav('/profit-report/mine')" />
-      <van-grid-item icon="balance-pay" text="待支付给上级" @click="goHomeNav('/settlement/pending-pay')" />
+      <van-grid-item
+        icon="balance-pay"
+        text="待支付给上级"
+        @click="goHomeNav('/settlement/pending-pay')"
+        :badge="pendingPayableBadge"
+      />
       <van-grid-item
         icon="passed"
         text="待审核下级结算"
@@ -108,6 +121,10 @@ function countBadge(n) {
 const settlementBadge = computed(() =>
   countBadge(pendingSummary.value?.pendingSettlementReviewCount),
 )
+/** 待支付给上级 */
+const pendingPayableBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingSettlementPayableCount),
+)
 const profitReviewBadge = computed(
   () => Number(pendingSummary.value?.pendingProfitReportReviewCount) || 0,
 )
@@ -170,8 +187,12 @@ onMounted(async () => {
 
 <style scoped>
 .home {
-  padding: 12px 0 8px;
+  padding: 0 0 8px;
   padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+/* 紧贴固定 AppHeader 占位底边，避免页面级 padding 顶出缝隙 */
+.home__notice {
+  margin: 0;
 }
 .home__hero {
   padding: 0 12px 8px;

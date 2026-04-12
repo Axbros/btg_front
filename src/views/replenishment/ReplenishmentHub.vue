@@ -10,8 +10,10 @@
     <van-cell-group v-if="current" inset title="当前未结清补仓" class="hub-current">
       <van-cell title="剩余待归还" :value="formatMoney(current.remainingAmount ?? current.remaining_amount ?? 0)" />
       <van-cell title="资方转账凭证">
-        <a v-if="transferProofUrl" :href="transferProofUrl" target="_blank" rel="noopener">查看资方凭证</a>
-        <span v-else>—</span>
+        <template #value>
+          <PreviewableRemoteImage v-if="transferProofUrl" :url="transferProofUrl" alt="资方转账凭证" />
+          <span v-else>—</span>
+        </template>
       </van-cell>
       <van-cell
         v-if="transferRemarkText"
@@ -29,6 +31,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { fetchReplenishmentCurrent } from '@/api/replenishment'
 import {
   formatMoney,
