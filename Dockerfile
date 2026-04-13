@@ -20,6 +20,7 @@ FROM nginx:1.26-alpine
 LABEL org.opencontainers.image.title="btg-commission-front"
 
 # envsubst 占位符（与 docker/nginx/default.conf.template 一致）
+ENV APP_DOMAIN=_
 ENV BACKEND_HOST=host.docker.internal
 ENV BACKEND_PORT=8888
 

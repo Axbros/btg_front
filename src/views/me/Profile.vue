@@ -50,6 +50,34 @@
         />
       </van-cell-group>
 
+      <van-cell-group inset title="Bitget 资产" class="profile__block profile__bitget-assets">
+        <div
+          v-if="bitgetAssetsLoading && !bitgetAssetsData && !bitgetAssetsError"
+          class="profile__bitget-assets__loading"
+        >
+          <van-loading size="24px" vertical>加载 Bitget 资产…</van-loading>
+        </div>
+        <van-empty v-else-if="bitgetAssetsError" image="error" :description="bitgetAssetsError" />
+        <template v-else-if="bitgetAssetsData">
+          <van-empty
+            v-if="bitgetAssetsData.success === false"
+            image="warning-o"
+            :description="bitgetAssetsMessage || '暂无法获取 Bitget 资产'"
+          />
+          <template v-else>
+            <van-cell title="总 USDT" :value="formatUsdtBalance(bitgetAssetsData.totalUsdtBalance)" />
+            <van-cell title="最近同步" :value="bitgetLastSyncDisplay" />
+            <van-cell
+              v-for="(acc, idx) in bitgetAccountsList"
+              :key="idx"
+              :title="acc.accountType || '账户'"
+              :value="formatUsdtBalance(acc.usdtBalance)"
+            />
+            <p v-if="!bitgetAccountsList.length" class="profile__bitget-empty-tip">暂无账户明细</p>
+          </template>
+        </template>
+      </van-cell-group>
+
       <!-- <van-cell-group inset title="分润与结算" class="profile__block">
         <van-cell title="利润上报" is-link to="/profit-report/submit" />
         <van-cell title="我的利润上报记录" is-link to="/profit-report/mine" />
@@ -57,12 +85,14 @@
         <van-cell title="待审核下级结算" is-link to="/settlement/pending-review" />
       </van-cell-group> -->
 
-      <van-cell-group inset title="资料编辑" class="profile__edit">
-        <van-cell title="完善资料" is-link to="/me/profile-complete" />
-      </van-cell-group>
+      <div class="profile__edit profile__complete-entry">
+       
+        <van-button block round type="primary" @click="goToProfileComplete">更新资料</van-button>
+      </div>
       <div class="profile__logout">
         <van-button block round type="danger" plain @click="onLogout">退出登录</van-button>
       </div>
+       
     </div>
     <EmptyState v-else description="未获取到用户信息" />
 
@@ -85,7 +115,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
-import { fetchMe } from '@/api/user'
+import { fetchBitgetAssets, fetchMe } from '@/api/user'
 import { formatMoney, formatUserStatus, userStatusTagType } from '@/utils/format'
 
 function pickProfile(u) {
@@ -106,9 +136,20 @@ function pickProfile(u) {
 
 /** 后端 /me profile 块：有值才展示 */
 const profileDetailRows = computed(() => {
-  const p = pickProfile(userInfo.value)
-  if (!p) return []
+  const u = userInfo.value
+  const raw = u?.profile
   const rows = []
+  if (raw && typeof raw === 'object') {
+    const bc = raw.bitgetConfigured === true || raw.bitget_configured === true
+    rows.push({ title: 'Bitget 绑定', value: bc ? '已绑定' : '未绑定' })
+    const mask = raw.accessKeyMasked ?? raw.access_key_masked
+    rows.push({
+      title: 'API Key 标识',
+      value: mask != null && String(mask).trim() !== '' ? String(mask).trim() : '—',
+    })
+  }
+  const p = pickProfile(u)
+  if (!p) return rows
   const push = (title, raw) => {
     if (raw == null) return
     const s = String(raw).trim()
@@ -146,6 +187,45 @@ const router = useRouter()
 
 const loading = ref(true)
 const logoutDialogShow = ref(false)
+
+const bitgetAssetsLoading = ref(false)
+const bitgetAssetsError = ref('')
+const bitgetAssetsData = ref(null)
+
+const bitgetAssetsMessage = computed(() => {
+  const m = bitgetAssetsData.value?.message
+  return m != null && String(m).trim() !== '' ? String(m).trim() : ''
+})
+
+const bitgetAccountsList = computed(() => {
+  const list = bitgetAssetsData.value?.accounts
+  return Array.isArray(list) ? list : []
+})
+
+const bitgetLastSyncDisplay = computed(() => {
+  const t = bitgetAssetsData.value?.lastSyncTime
+  return t != null && String(t).trim() !== '' ? String(t).trim() : '—'
+})
+
+/** 金额字段按字符串展示，避免 Number 精度问题 */
+function formatUsdtBalance(raw) {
+  if (raw === null || raw === undefined) return '—'
+  const s = String(raw).trim()
+  return s === '' ? '—' : s
+}
+
+async function loadBitgetAssets() {
+  bitgetAssetsLoading.value = true
+  bitgetAssetsError.value = ''
+  bitgetAssetsData.value = null
+  try {
+    bitgetAssetsData.value = await fetchBitgetAssets()
+  } catch (e) {
+    bitgetAssetsError.value = e?.message || '网络异常，请稍后重试'
+  } finally {
+    bitgetAssetsLoading.value = false
+  }
+}
 
 /** 带邀请码的完整注册页 URL，用于二维码与复制（仅审核通过用户展示） */
 const inviteRegisterUrl = computed(() => {
@@ -196,6 +276,7 @@ onMounted(async () => {
     loading.value = false
     return
   }
+  void loadBitgetAssets()
   loading.value = true
   try {
     const me = await fetchMe()
@@ -230,6 +311,10 @@ async function copyInviteRegisterUrl() {
   } catch {
     showToast('复制失败，请手动复制链接')
   }
+}
+
+function goToProfileComplete() {
+  router.push('/me/profile-complete')
 }
 
 function onLogout() {
@@ -293,6 +378,16 @@ function onLogoutConfirm() {
 .profile__block {
   margin-top: 12px;
 }
+.profile__complete-entry {
+  margin-top: 12px;
+  padding: 0 16px;
+}
+.profile__complete-entry__title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
+}
 .profile__logout {
   margin: 24px 16px 0;
 }
@@ -300,5 +395,16 @@ function onLogoutConfirm() {
 .profile-invite-cell :deep(.van-cell__value) {
   color: #ee0a24;
   font-weight: 700;
+}
+.profile__bitget-assets__loading {
+  padding: 28px 16px 24px;
+  display: flex;
+  justify-content: center;
+}
+.profile__bitget-empty-tip {
+  margin: 12px 16px 0;
+  font-size: 13px;
+  color: #969799;
+  text-align: center;
 }
 </style>

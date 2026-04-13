@@ -118,7 +118,7 @@ const routes = [
         path: 'me/profile-complete',
         name: 'ProfileComplete',
         component: () => import('@/views/me/ProfileComplete.vue'),
-        meta: { title: '完善资料', tab: 'me', hideTab: true },
+        meta: { title: '更新资料', tab: 'me', hideTab: true },
       },
       {
         path: 'me/account',

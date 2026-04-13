@@ -1,0 +1,26 @@
+# 单机 Docker：前端 + 本机/同机后端反代
+#
+# 1. DNS：将域名 A 记录指到本机公网 IP
+# 2. APP_DOMAIN：先用 "_" 可用 IP 访问；正式环境改为你的域名（多个空格分隔：app.example.com www.example.com）
+# 3. 后端在本机 8888：保持 BACKEND_HOST=host.docker.internal（Linux 已配 extra_hosts）
+# 4. 若后端也在 Compose 里，改成 BACKEND_HOST: 服务名，并加入同一 network
+# 5. HTTPS：可先只映射 80，在宿主机用 certbot 申请证书后，再挂卷加 443（见仓库 Dockerfile 同目录说明或自行加第二个 server）
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: /api/v1
+    image: btg-commission-front:latest
+    ports:
+      - "80:80"
+    environment:
+      # 与 DNS 一致；仅内网/测试可保留 "_"
+      APP_DOMAIN: "_"
+      BACKEND_HOST: host.docker.internal
+      BACKEND_PORT: "8888"
+    extra_hosts:
+      # Linux 容器访问宿主机（Docker 20.10+）；Mac/Windows 通常自带 host.docker.internal
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

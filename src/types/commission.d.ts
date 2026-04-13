@@ -81,5 +81,25 @@ export interface UserProfileVO {
   max_assignable_child_profit_ratio?: number
   invitationCode?: string | null
   status?: number
+  /** GET /me、GET /user/profile 的 profile 块：是否已配置三项 Bitget */
+  bitgetConfigured?: boolean
+  bitget_configured?: boolean
+  /** Access Key 掩码；勿展示明文 */
+  accessKeyMasked?: string | null
+  access_key_masked?: string | null
+  [key: string]: unknown
+}
+
+/** GET /me/bitget-assets 的 data；金额多为字符串，勿用 Number 长期存 */
+export interface BitgetAssetsVo {
+  success?: boolean
+  message?: string | null
+  accounts?: Array<{
+    accountType?: string
+    usdtBalance?: string | number
+    [key: string]: unknown
+  }>
+  totalUsdtBalance?: string | number | null
+  lastSyncTime?: string | null
   [key: string]: unknown
 }

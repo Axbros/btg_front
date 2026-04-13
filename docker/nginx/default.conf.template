@@ -1,9 +1,10 @@
-## nginx 官方镜像会对模板做 envsubst；仅替换 ${BACKEND_HOST}、${BACKEND_PORT}
-## 其余 nginx 变量须写成 $$var，渲染后才是 $var
+## nginx 官方镜像 envsubst：${APP_DOMAIN}、${BACKEND_HOST}、${BACKEND_PORT}
+## APP_DOMAIN 填你的域名（可多个空格分隔）；默认 _ 表示任意 Host（仅内网/调试）
+## 其余 nginx 变量写成 $$var，渲染后才是 $var
 
 server {
     listen 80;
-    server_name _;
+    server_name ${APP_DOMAIN};
     root /usr/share/nginx/html;
     index index.html;
 
