@@ -4,7 +4,7 @@
     <van-notice-bar
       class="home__notice"
       left-icon="volume-o"
-      text="吞金授目前正持续盈利中，推广福利多多，欢迎加入！"
+      text="🔥吞金授目前正持续火热盈利中，推广福利多多，佣金多多，欢迎加入！"
     />
 
     <div class="home__hero">

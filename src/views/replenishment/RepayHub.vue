@@ -30,15 +30,19 @@
       wrapable
       text="暂无进行中的补仓单时仍可查看归仓记录；提交归仓需先有审核通过的补仓。"
     />
-    <van-cell-group inset title="归仓" class="repay-hub__actions">
-      <van-cell title="提交归仓申请" is-link to="/replenishment/repay-submit" />
-      <van-cell title="我的归仓记录" is-link to="/replenishment/repay-mine" />
-    </van-cell-group>
+    <div class="hub-actions">
+      <p class="hub-actions__title">归仓</p>
+      <van-grid :column-num="2" :gutter="10" clickable class="hub-actions__grid">
+        <van-grid-item icon="balance-list-o" text="提交归仓申请" @click="goNav('/replenishment/repay')" />
+        <van-grid-item icon="records" text="我的归仓记录" @click="goNav('/replenishment/repay-mine')" />
+      </van-grid>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { fetchReplenishmentCurrent } from '@/api/replenishment'
@@ -48,7 +52,12 @@ import {
   replenishmentStatusTagType,
 } from '@/utils/format'
 
+const router = useRouter()
 const current = ref(null)
+
+function goNav(to) {
+  router.push(to)
+}
 
 const transferProofUrl = computed(() => {
   const c = current.value
@@ -81,8 +90,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.repay-hub__actions {
+.hub-actions {
   margin-top: 12px;
+}
+.hub-actions__title {
+  margin: 0 16px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
+}
+.hub-actions__grid {
+  margin-top: 4px;
 }
 .hub-current {
   margin-bottom: 12px;

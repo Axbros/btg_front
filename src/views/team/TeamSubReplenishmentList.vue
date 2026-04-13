@@ -11,10 +11,7 @@
             @click="goDetail(row)"
           >
             <template #title>
-              <div class="sub-repl__title">
-                <span class="sub-repl__no">{{ txt(row.applyNo ?? row.apply_no) }}</span>
-                <span v-if="applicantHint(row)" class="sub-repl__sub">{{ applicantHint(row) }}</span>
-              </div>
+              <span class="sub-repl__line">{{ formatRow(row) }}</span>
             </template>
             <template #value>
               <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
@@ -42,10 +39,13 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchTeamReplenishments } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatReplenishmentStatus, replenishmentStatusTagType } from '@/utils/format'
+import {
+  formatMoney,
+  formatReplenishmentStatus,
+  replenishmentStatusTagType,
+} from '@/utils/format'
 
 const router = useRouter()
-
 const list = ref([])
 const loading = ref(false)
 const finished = ref(false)
@@ -56,23 +56,23 @@ const hasMore = ref(false)
 const loaded = ref(false)
 
 function txt(v) {
-  return v != null && String(v).trim() !== '' ? String(v) : '—'
+  return v != null && String(v).trim() !== '' ? String(v).trim() : '—'
 }
 
-function applicantHint(row) {
-  const nick = row.userNickname ?? row.user_nickname
-  const mobile = row.userMobile ?? row.user_mobile
-  const n = nick != null && String(nick).trim() !== '' ? String(nick).trim() : ''
-  const m = mobile != null && String(mobile).trim() !== '' ? String(mobile).trim() : ''
-  if (n && m) return `${n}#${m}`
-  if (n) return n
-  if (m) return m
-  return ''
+/** 接口：nickname、mobile、replenishAmount → 展示 nickname(mobile)-金额 */
+function formatRow(row) {
+  const nick = txt(row.nickname)
+  const mob = txt(row.mobile)
+  const amt = formatMoney(row.replenishAmount ?? row.replenish_amount ?? 0)
+  return `${nick}(${mob})-${amt}`
 }
 
 function goDetail(row) {
   const id = row?.id
-  if (id == null) return
+  if (id == null || id === '') {
+    showToast('无法打开详情')
+    return
+  }
   router.push({ name: 'ReplenishmentMineDetail', params: { id: String(id) } })
 }
 
@@ -121,19 +121,11 @@ function next() {
 </script>
 
 <style scoped>
-.sub-repl__title {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-.sub-repl__no {
+.sub-repl__line {
   font-size: 15px;
   color: #323233;
-}
-.sub-repl__sub {
-  font-size: 12px;
-  color: #969799;
+  line-height: 1.45;
+  word-break: break-all;
 }
 .pager {
   display: flex;

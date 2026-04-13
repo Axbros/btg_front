@@ -163,10 +163,11 @@ const routes = [
         meta: { title: '补仓详情', tab: 'home', hideTab: true },
       },
       {
-        path: 'replenishment/repay-submit',
-        name: 'RepaySubmit',
+        path: 'replenishment/repay',
+        name: 'RepayApply',
         component: () => import('@/views/replenishment/RepaySubmit.vue'),
         meta: { title: '提交归仓申请', tab: 'home', hideTab: true },
+        alias: 'replenishment/repay-submit',
       },
       {
         path: 'replenishment/repay-mine',

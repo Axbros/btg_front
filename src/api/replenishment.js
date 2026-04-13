@@ -30,20 +30,42 @@ export function fetchReplenishmentCurrent() {
   return get('/replenishments/current')
 }
 
-/** POST /api/v1/replenishments/repays */
-export function submitRepay(data) {
-  return post('/replenishments/repays', data)
+/**
+ * 可归仓补仓单列表（审核通过或部分归还且仍有剩余）。
+ * GET {baseURL}/replenishments/repayable
+ */
+export function getRepayableReplenishments() {
+  return get('/replenishments/repayable')
 }
 
 /**
- * 我的归仓分页（列表项仅 id、repayNo 等简要字段）。
- * GET /api/v1/replenishments/repays/mine
+ * 提交归仓申请。
+ * POST {baseURL}/replenishments/repays
+ * @param {{ replenishApplyId: number, repayAmount: number, repayScreenshotUrl: string }} data
  */
-export function fetchRepayMine(params = {}) {
+export function submitRepayApply(data) {
+  return post('/replenishments/repays', data)
+}
+
+/** @deprecated 与 submitRepayApply 相同，保留兼容 */
+export const submitRepay = submitRepayApply
+
+/**
+ * 我的归仓申请分页。
+ * GET {baseURL}/replenishments/repays/mine
+ */
+export function getMyRepayApplyList(params = {}) {
+  const { page, size, pageSize, ...rest } = params
   return get('/replenishments/repays/mine', {
-    page: params.page ?? 1,
-    size: params.size ?? params.pageSize ?? 10,
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
   })
+}
+
+/** 兼容旧名 */
+export function fetchRepayMine(params = {}) {
+  return getMyRepayApplyList(params)
 }
 
 /**
@@ -67,6 +89,7 @@ export function fetchTeamReplenishments(params = {}) {
 
 /**
  * 下级归仓分页。GET /replenishments/repays/team
+ * 分页体与 /replenishments/team 一致：records、total、current、size、pages；行内 nickname、mobile、replenishAmount、status、id 等。
  */
 export function fetchTeamRepays(params = {}) {
   return get('/replenishments/repays/team', {

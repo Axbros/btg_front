@@ -15,6 +15,10 @@ body,
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* 配合 viewport：抑制双击缩放、避免部分 WebKit 自动调字号 */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .page-shell {

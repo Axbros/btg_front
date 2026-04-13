@@ -5,7 +5,7 @@
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
         <div v-for="(row, idx) in list" :key="row.id ?? idx" class="card">
           <van-cell-group inset>
-            <van-cell title="申请单号" :value="txt(row.applyNo ?? row.apply_no)" />
+            <van-cell title="申请单号" :value="txt(row.applyNo)" />
             <van-cell title="补仓状态">
               <template #value>
                 <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
@@ -13,11 +13,12 @@
                 </van-tag>
               </template>
             </van-cell>
-            <van-cell title="申请人" :value="applicantLine(row)" />
+            <van-cell title="申请人昵称" :value="txt(row.nickname )" />
+            <van-cell title="申请人手机号" :value="txt(row.mobile)" />
             <template v-if="hasWalletRow(row)">
-              <van-cell title="交易所名称" :value="walletNameCell(row)" />
+              <van-cell title="申请人交易所" :value="walletNameCell(row)" />
               <van-cell
-                title="钱包地址"
+                title="申请人钱包"
                 :value="walletAddressCell(row)"
                 :clickable="walletAddressCell(row) !== '—'"
                 class="wallet-address-cell"
@@ -34,10 +35,10 @@
               title="受理人"
               :value="txt(row.acceptedBy ?? row.accepted_by)"
             />
-            <van-cell title="底仓本金" :value="formatMoney(row.principalAmount ?? row.principal_amount)" />
-            <van-cell title="申报余额" :value="formatMoney(row.balanceAmount ?? row.balance_amount)" />
-            <van-cell title="补仓额度" :value="formatMoney(row.replenishAmount ?? row.replenish_amount)" />
-            <van-cell title="余额截图">
+            <van-cell title="申请人底仓本金" :value="formatMoney(row.principalAmount ?? row.principal_amount)" />
+            <van-cell title="申请人申报余额" :value="formatMoney(row.balanceAmount ?? row.balance_amount)" />
+            <van-cell title="申请人补仓额度" :value="formatMoney(row.replenishAmount ?? row.replenish_amount)" />
+            <van-cell title="申请人余额截图">
               <template #value>
                 <PreviewableRemoteImage
                   v-if="img(row.balanceScreenshotUrl ?? row.balance_screenshot_url)"
@@ -60,7 +61,7 @@
               title="资方备注"
               :value="txt(row.transferRemark ?? row.transfer_remark)"
             />
-            <van-cell title="提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
+            <van-cell title="申请人提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
             <van-cell v-if="Number(row.status) === 7" title="">
               <template #title>
                 <span class="status-hint">待资方上传打款凭证并填写备注，完成后进入终审确认。</span>
