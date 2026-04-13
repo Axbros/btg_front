@@ -57,9 +57,9 @@ export interface ReplenishmentApplyVO {
   acceptedBy?: string | number | null
 }
 
-/** 与后端 ReplenishmentApproveDTO 一致；POST /admin/replenishments/{id}/capital-voucher */
+/** POST /admin/replenishments/{id}/capital-voucher；状态 7 须传 transferScreenshotUrl，状态 8 可省略以保留原凭证 */
 export interface ReplenishmentCapitalVoucherBody {
-  transferScreenshotUrl: string
+  transferScreenshotUrl?: string
   transferRemark?: string
 }
 

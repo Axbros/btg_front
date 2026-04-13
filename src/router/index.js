@@ -205,6 +205,12 @@ const routes = [
         component: () => import('@/views/admin/AdminRepayDetail.vue'),
         meta: { title: '归仓详情', requiresAdmin: true, hideTab: true },
       },
+      {
+        path: 'admin/replenishments/:id',
+        name: 'AdminReplenishmentDetail',
+        component: () => import('@/views/admin/AdminReplenishmentDetail.vue'),
+        meta: { title: '补仓审核详情', requiresAdmin: true, hideTab: true },
+      },
     ],
   },
   {

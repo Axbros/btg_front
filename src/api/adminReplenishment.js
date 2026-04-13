@@ -1,11 +1,16 @@
 import { get, post, postWithoutBody } from './request'
 
-/** GET /api/v1/admin/replenishments/pending */
+/** GET /api/v1/admin/replenishments/pending — 列表项仅 id、nickname、mobile、replenishAmount（及分页字段） */
 export function fetchAdminPendingReplenishments(params = {}) {
   return get('/admin/replenishments/pending', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
+}
+
+/** GET /api/v1/admin/replenishments/{id} — 补仓申请完整信息（资方审核用） */
+export function fetchAdminReplenishmentDetail(id) {
+  return get(`/admin/replenishments/${id}`)
 }
 
 /**
@@ -27,14 +32,21 @@ export function acceptReplenishmentAdmin(id) {
 }
 
 /**
- * 资方上传打款凭证与备注（7→8）。POST /admin/replenishments/{id}/capital-voucher
- * Body 与 ReplenishmentApproveDTO 一致。
+ * POST /admin/replenishments/{id}/capital-voucher（资方打款凭证与备注）
+ *
+ * - 状态 7：`transferScreenshotUrl` 必填，提交后 → 8（待终审）。
+ * - 状态 8：可多次调用；传新 `transferScreenshotUrl` 则覆盖，不传或空串保留库中已有凭证；可只改备注；状态保持 8。
+ * - 其它状态：后端拒绝。
+ *
  * @param {string|number} id
- * @param {{ transferScreenshotUrl: string, transferRemark?: string }} data
+ * @param {{ transferScreenshotUrl?: string, transferRemark?: string }} data
  */
-export function submitReplenishmentCapitalVoucherAdmin(id, data) {
+export function submitCapitalVoucherForAdmin(id, data) {
   return post(`/admin/replenishments/${id}/capital-voucher`, data)
 }
+
+/** @deprecated 请使用 {@link submitCapitalVoucherForAdmin} */
+export const submitReplenishmentCapitalVoucherAdmin = submitCapitalVoucherForAdmin
 
 /**
  * 待审核归仓列表（分页项仅含 id、repayNo 等简要字段）。
