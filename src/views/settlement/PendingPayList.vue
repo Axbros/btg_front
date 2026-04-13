@@ -7,7 +7,7 @@
         <van-cell
           v-for="item in list"
           :key="item.id"
-          :title="titleLine(item)"
+          :title="settlementListTitle(item)"
           is-link
           :to="detailTo(item)"
         >
@@ -16,7 +16,7 @@
               <van-tag :type="settlementStatusTagType(item.status)" plain round class="meta-row__tag">
                 {{ formatSettlementStatus(item.status) }}
               </van-tag>
-              <span class="meta-row__rest">{{ metaRestLine(item) }}</span>
+              <span class="meta-row__rest">{{ settlementListMetaRest(item) }}</span>
             </div>
           </template>
           <template #value>
@@ -36,16 +36,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchMyPendingPaySettlements } from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
-import {
-  formatMoney,
-  formatDateTime,
-  formatSettlementStatus,
-  settlementStatusTagType,
-} from '@/utils/format'
+import { settlementListTitle, settlementListMetaRest } from '@/utils/settlementDisplay'
+import { formatMoney, formatSettlementStatus, settlementStatusTagType } from '@/utils/format'
 
 const list = ref([])
 const loading = ref(false)
@@ -55,19 +52,6 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
-
-function titleLine(item) {
-  const no = item.settlementNo ?? item.recordNo ?? item.id
-  return no != null ? `结算 #${no}` : '结算单'
-}
-
-function metaRestLine(item) {
-  const parts = []
-  if (item.createdTime ?? item.submitTime) {
-    parts.push(formatDateTime(item.createdTime ?? item.submitTime))
-  }
-  return parts.join(' · ')
-}
 
 function amountField(item) {
   return item.payAmount ?? item.payableAmount ?? item.amount ?? item.profitAmount ?? 0
@@ -102,6 +86,7 @@ async function onLoad() {
     await fetchPage(page.value)
   } catch {
     finished.value = true
+    showToast('加载失败，请稍后重试')
   } finally {
     loading.value = false
   }

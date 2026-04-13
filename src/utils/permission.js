@@ -1,4 +1,16 @@
 /**
+ * 平台根用户（与后端 isRoot 一致）：与管理员角色无关。
+ */
+export function isUserRoot(user) {
+  if (!user || typeof user !== 'object') return false
+  const v = user.isRoot ?? user.is_root
+  if (v === true || v === 1 || v === '1') return true
+  if (v === false || v === 0 || v === '0') return false
+  if (typeof v === 'string' && v.toLowerCase() === 'true') return true
+  return false
+}
+
+/**
  * 兼容多种后端管理员字段
  */
 export function isUserAdmin(user) {

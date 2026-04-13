@@ -43,6 +43,18 @@ const routes = [
         meta: { title: '我的团队', tab: 'team' },
       },
       {
+        path: 'team/sub-replenishments',
+        name: 'TeamSubReplenishments',
+        component: () => import('@/views/team/TeamSubReplenishmentList.vue'),
+        meta: { title: '下级补仓记录', tab: 'team', hideTab: true },
+      },
+      {
+        path: 'team/sub-repays',
+        name: 'TeamSubRepays',
+        component: () => import('@/views/team/TeamSubRepayList.vue'),
+        meta: { title: '下级归仓记录', tab: 'team', hideTab: true },
+      },
+      {
         path: 'team/member/:memberId/profit-ratio',
         name: 'ChildProfitRatioEdit',
         component: () => import('@/views/team/ChildProfitRatioEdit.vue'),

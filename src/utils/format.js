@@ -221,9 +221,11 @@ export function kycStatusTagType(val) {
   return 'default'
 }
 
-/** 补仓：1 待审核 2 通过 3 拒绝 4 部分归还 5 已结清 6 关闭 */
+/** 补仓：1 待受理 7 待资方补充资料 8 待资方终审确认 2 通过 3 拒绝 4 部分归还 5 已结清 6 关闭 */
 const REPLENISHMENT_STATUS_NUM = {
-  1: '待审核',
+  1: '待受理',
+  7: '待资方补充资料',
+  8: '待资方终审确认',
   2: '审核通过',
   3: '审核拒绝',
   4: '部分归还',
@@ -256,7 +258,7 @@ export function replenishmentStatusTagType(val) {
   const n = Number(val)
   if (n === 2 || n === 5) return 'success'
   if (n === 3 || n === 6) return 'danger'
-  if (n === 1 || n === 4) return 'warning'
+  if (n === 1 || n === 4 || n === 7 || n === 8) return 'warning'
   return 'default'
 }
 

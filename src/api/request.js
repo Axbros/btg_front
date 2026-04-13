@@ -296,6 +296,25 @@ export function post(url, data, config = {}) {
   return instance.post(url, data, config).then((res) => res.data)
 }
 
+/**
+ * POST 且不携带请求体（不序列化 `{}`，避免触发仅允许无体的校验）。
+ * 不传 `data`，并去掉默认 JSON Content-Type。
+ */
+export function postWithoutBody(url, config = {}) {
+  const { data: _omitData, headers: incomingHeaders, ...rest } = config
+  return instance
+    .request({
+      method: 'POST',
+      url,
+      ...rest,
+      headers: {
+        'Content-Type': false,
+        ...(incomingHeaders && typeof incomingHeaders === 'object' ? incomingHeaders : {}),
+      },
+    })
+    .then((res) => res.data)
+}
+
 export function put(url, data, config = {}) {
   return instance.put(url, data, config).then((res) => res.data)
 }

@@ -111,7 +111,10 @@ function goSettlement() {
   }
   const row = it.settlementId ?? it.settlement_id
   if (row != null && String(row).trim() !== '') {
-    router.push({ name: 'SettlementDetailByRow', params: { rowId: String(row).trim() } })
+    const rn = Number(String(row).trim())
+    if (Number.isFinite(rn) && rn > 0) {
+      router.push({ name: 'SettlementDetailByRow', params: { rowId: String(rn) } })
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { get, post } from './request'
+import { get, post, postWithoutBody } from './request'
 
 /** GET /api/v1/admin/replenishments/pending */
 export function fetchAdminPendingReplenishments(params = {}) {
@@ -10,16 +10,30 @@ export function fetchAdminPendingReplenishments(params = {}) {
 
 /**
  * POST /api/v1/admin/replenishments/{id}/approve
- * @param {string} data.transferScreenshotUrl 必填
- * @param {string} [data.transferRemark] 选填
+ * 资方终审确认（通常 8→2）；无请求体。
  */
-export function approveReplenishmentAdmin(id, data) {
-  return post(`/admin/replenishments/${id}/approve`, data)
+export function approveReplenishmentAdmin(id) {
+  return postWithoutBody(`/admin/replenishments/${id}/approve`)
 }
 
 /** POST /api/v1/admin/replenishments/{id}/reject */
 export function rejectReplenishmentAdmin(id, remark) {
   return post(`/admin/replenishments/${id}/reject`, remark ? { remark } : {})
+}
+
+/** POST /api/v1/admin/replenishments/{id}/accept — 受理（1→7） */
+export function acceptReplenishmentAdmin(id) {
+  return post(`/admin/replenishments/${id}/accept`, {})
+}
+
+/**
+ * 资方上传打款凭证与备注（7→8）。POST /admin/replenishments/{id}/capital-voucher
+ * Body 与 ReplenishmentApproveDTO 一致。
+ * @param {string|number} id
+ * @param {{ transferScreenshotUrl: string, transferRemark?: string }} data
+ */
+export function submitReplenishmentCapitalVoucherAdmin(id, data) {
+  return post(`/admin/replenishments/${id}/capital-voucher`, data)
 }
 
 /**

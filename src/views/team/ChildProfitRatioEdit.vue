@@ -1,29 +1,34 @@
 <template>
   <div>
-    <AppHeader title="调整子级利润比例" />
-    <van-notice-bar
-      left-icon="info-o"
-      wrapable
-      :scrollable="false"
-      text="子级利润比例为该直属下级整条线相对「总利润」可保留的绝对比例，须沿链路单调不增（1≥r1≥r2≥…≥0），由后端校验。"
-    />
+    <AppHeader title="调整用户利润比例" style="margin-bottom: 12px;"/>
+ 
     <van-loading v-if="loading" class="pad" vertical>加载中…</van-loading>
     <template v-else-if="childUserId && userDetail">
       <van-cell-group inset>
-        <van-cell title="下级" :value="displayUser" />
-        <van-cell title="当前子级利润比例" :value="ratioText(currentRatio)" />
-        <!-- <van-cell title="约束上限（参考）" :value="ratioText(ceilingRatio)" /> -->
+        <van-cell title="当前用户" :value="displayUser" />
+        <van-cell title="当前用户利润比例" :value="ratioText(currentRatio)" />
+        <van-cell title="最大可分配比例" :value="maxAssignableValueDisplay" />
       </van-cell-group>
+      <!-- <van-notice-bar
+        v-if="maxAssignableRatio != null"
+        left-icon="info-o"
+        color="#646566"
+        background="#f7f8fa"
+        class="ratio-cap-notice"
+        :scrollable="false"
+        wrapable
+        :text="maxAssignableNotice"
+      /> -->
       <van-form class="form" @submit="onSubmit">
         <van-cell-group inset title="新比例">
           <van-field
             v-model="ratioInput"
             name="childProfitPercent"
-            label="子级利润比"
+            label="调整利润比"
             placeholder="0～100，如 20 表示 20%"
             type="number"
             required
-            :rules="percentRules"
+            :rules="percentRulesComputed"
           >
             <template #extra>
               <span class="pct-suffix">%</span>
@@ -91,13 +96,34 @@ const currentRatio = computed(() => {
   return null
 })
 
-const ceilingRatio = computed(() => {
-  const c = matchedConfig.value
-  if (!c) return null
-  return c.maxChildProfitRatio ?? c.parentCeilingRatio ?? null
+const ratioInput = ref('')
+
+/** 接口返回：当前直属下级可设置的子级利润比例上限（小数 0～1） */
+const maxAssignableRatio = computed(() => {
+  const d = userDetail.value
+  if (!d || typeof d !== 'object') return null
+  const v = d.maxAssignableChildProfitRatio ?? d.max_assignable_child_profit_ratio
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
 })
 
-const ratioInput = ref('')
+/** 上限对应的百分比数值，用于输入校验 */
+const maxAssignablePercent = computed(() => {
+  const r = maxAssignableRatio.value
+  if (r == null || !Number.isFinite(r)) return null
+  return r > 1 ? r : r * 100
+})
+
+const maxAssignableValueDisplay = computed(() => {
+  if (maxAssignableRatio.value == null) return '—'
+  return ratioText(maxAssignableRatio.value)
+})
+
+const maxAssignableNotice = computed(() => {
+  if (maxAssignableRatio.value == null) return ''
+  const t = ratioText(maxAssignableRatio.value)
+  return `新比例为 0～100 的百分数；不可超过最大可分配比例 ${t}，保存时由服务端再次校验。`
+})
 
 /** 后端为小数 0～1，表单为百分比 0～100 */
 function decimalToPercentInput(dec) {
@@ -106,16 +132,22 @@ function decimalToPercentInput(dec) {
   return String(Number(p.toFixed(4)))
 }
 
-const percentRules = [
+const percentRulesComputed = computed(() => [
   { required: true, message: '请填写比例' },
   {
     validator: (v) => {
       const n = Number(String(v).trim())
-      return Number.isFinite(n) && n >= 0 && n <= 100
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        return '请输入 0～100 之间的数字（百分比）'
+      }
+      const cap = maxAssignablePercent.value
+      if (cap != null && n > cap + 1e-6) {
+        return `不可超过最大可分配比例 ${Number(cap.toFixed(4))}%`
+      }
+      return true
     },
-    message: '请输入 0～100 之间的数字（百分比）',
   },
-]
+])
 
 function ratioText(v) {
   if (v === null || v === undefined || v === '') return '未配置'
@@ -198,5 +230,9 @@ async function onSubmit() {
   color: #646566;
   font-size: 14px;
   flex-shrink: 0;
+}
+.ratio-cap-notice {
+  margin: 8px 16px 0;
+  border-radius: 8px;
 }
 </style>

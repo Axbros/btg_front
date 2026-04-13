@@ -21,15 +21,26 @@
           <img class="home__ad-img" :src="ad.src" :alt="ad.alt" width="750" height="280" loading="lazy" />
         </van-swipe-item>
       </van-swipe>
-      <UserCard v-if="!heroLoading && userInfo" :user="userInfo" :sub="heroSub" />
-      <UserCard v-else :user="null" :sub="heroPlaceholder" />
+      <!-- <UserCard v-if="!heroLoading && userInfo" :user="userInfo" :sub="heroSub" />
+      <UserCard v-else :user="null" :sub="heroPlaceholder" /> -->
     </div>
 
     <van-grid :column-num="2" :gutter="10" class="home__grid" clickable>
       <!-- <van-grid-item icon="cluster-o" text="我的全部下级" @click="goHomeNav('/team/descendants')" /> -->
-      <van-grid-item icon="edit" text="利润上报" @click="goHomeNav('/profit-report/submit')" />
-      <van-grid-item icon="records" text="我的利润上报记录" @click="goHomeNav('/profit-report/mine')" />
       <van-grid-item
+        v-if="!isRootUser"
+        icon="edit"
+        text="利润上报"
+        @click="goHomeNav('/profit-report/submit')"
+      />
+      <van-grid-item
+        v-if="!isRootUser"
+        icon="records"
+        text="我的利润上报记录"
+        @click="goHomeNav('/profit-report/mine')"
+      />
+      <van-grid-item
+        v-if="!isRootUser"
         icon="balance-pay"
         text="待支付给上级"
         @click="goHomeNav('/settlement/pending-pay')"
@@ -42,12 +53,43 @@
         :badge="settlementBadge"
       />
       <van-grid-item icon="balance-o" text="账户汇总" @click="goHomeNav('/me/account')" />
-      <van-grid-item icon="chart-trending-o" text="团队统计" @click="goHomeNav('/me/team-stats')" />
-      <van-grid-item icon="gold-coin-o" text="补仓" @click="goHomeNav('/replenishment')" />
-      <van-grid-item icon="balance-list-o" text="归仓" @click="goHomeNav('/repay')" />
+      <van-grid-item
+        v-if="!isRootUser"
+        icon="chart-trending-o"
+        text="团队统计"
+        @click="goHomeNav('/me/team-stats')"
+      />
+      <van-grid-item
+        v-if="!isRootUser"
+        icon="gold-coin-o"
+        text="补仓"
+        @click="goHomeNav('/replenishment')"
+      />
+      <van-grid-item
+        v-if="!isRootUser"
+        icon="balance-list-o"
+        text="归仓"
+        @click="goHomeNav('/repay')"
+      />
+      <van-grid-item icon="friends-o" text="下级补仓记录" @click="goHomeNav('/team/sub-replenishments')" />
+      <van-grid-item icon="orders-o" text="下级归仓记录" @click="goHomeNav('/team/sub-repays')" />
+      <van-grid-item
+        v-if="isRootUser && auth.isAdmin"
+        icon="gold-coin-o"
+        text="待审核补仓"
+        @click="goHomeNav('/admin/replenishments/pending')"
+        :badge="replenishmentAdminMenuBadge"
+      />
+      <van-grid-item
+        v-if="isRootUser && auth.isAdmin"
+        icon="balance-list-o"
+        text="待审核归仓"
+        @click="goHomeNav('/admin/replenishments/repays/pending')"
+        :badge="repayAdminMenuBadge"
+      />
     </van-grid>
 
-    <van-cell-group v-if="auth.isAdmin" inset title="管理员" class="home__admin">
+    <van-cell-group v-if="auth.isAdmin && !isRootUser" inset title="管理员" class="home__admin">
       <!-- <van-cell is-link to="/admin/pending">
         <template #title>
           <span class="home__menu-title">
@@ -88,6 +130,7 @@ import { showToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
+import { isUserRoot } from '@/utils/permission'
 import AppHeader from '@/components/AppHeader.vue'
 import UserCard from '@/components/UserCard.vue'
 
@@ -112,6 +155,8 @@ const { pendingSummary } = storeToRefs(dashboard)
 
 const heroLoading = ref(false)
 
+const isRootUser = computed(() => isUserRoot(userInfo.value))
+
 /** 仅数量 > 0 时传给 van-grid-item / van-badge，避免显示 0 */
 function countBadge(n) {
   const v = Number(n) || 0
@@ -133,6 +178,14 @@ const replenishmentReviewBadge = computed(
 )
 const repayReviewBadge = computed(
   () => Number(pendingSummary.value?.pendingReplenishmentRepayReviewCount) || 0,
+)
+
+/** 根用户首页九宫格角标（与管理员 cell 区数据源一致） */
+const replenishmentAdminMenuBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingReplenishmentReviewCount),
+)
+const repayAdminMenuBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingReplenishmentRepayReviewCount),
 )
 
 const copyrightText = computed(() => {

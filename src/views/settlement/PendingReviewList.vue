@@ -6,6 +6,7 @@
       <van-tab title="待审核" name="pending" />
       <van-tab title="已通过" name="approved" />
       <van-tab title="已拒绝" name="rejected" />
+      <van-tab title="全部" name="all" />
     </van-tabs>
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 8px;">
       <van-list
@@ -18,7 +19,7 @@
         <van-cell
           v-for="item in list"
           :key="item.id"
-          :title="titleLine(item)"
+          :title="settlementListTitle(item)"
           is-link
           :to="detailTo(item)"
         >
@@ -27,7 +28,7 @@
               <van-tag :type="settlementStatusTagType(item.status)" plain round class="meta-row__tag">
                 {{ formatSettlementStatus(item.status) }}
               </van-tag>
-              <span class="meta-row__rest">{{ metaRestLine(item) }}</span>
+              <span class="meta-row__rest">{{ settlementListMetaRest(item) }}</span>
             </div>
           </template>
           <template #value>
@@ -47,22 +48,20 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import {
   fetchMyApprovedSettlements,
   fetchMyPendingReviewSettlements,
   fetchMyRejectedSettlements,
+  fetchSettlementReviewAll,
 } from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
-import {
-  formatMoney,
-  formatDateTime,
-  formatSettlementStatus,
-  settlementStatusTagType,
-} from '@/utils/format'
+import { settlementListTitle, settlementListMetaRest } from '@/utils/settlementDisplay'
+import { formatMoney, formatSettlementStatus, settlementStatusTagType } from '@/utils/format'
 
-/** pending | approved | rejected — 分别对应 pending-review / approved / rejected */
+/** pending | approved | rejected | all */
 const activeTab = ref('pending')
 const list = ref([])
 const loading = ref(false)
@@ -72,22 +71,6 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
-
-function titleLine(item) {
-  const no = item.profitRecordNo ?? item.recordNo ?? item.settlementNo
-  if (no != null && String(no).trim() !== '') return String(no)
-  return item.id != null ? `结算 #${item.id}` : '—'
-}
-
-function metaRestLine(item) {
-  const parts = []
-  const nick = item.subordinateNickname ?? item.userNickname ?? item.userMobile
-  if (nick) parts.push(String(nick))
-  if (item.submitTime ?? item.createdTime) {
-    parts.push(formatDateTime(item.submitTime ?? item.createdTime))
-  }
-  return parts.join(' · ')
-}
 
 function amountField(item) {
   return item.profitAmount ?? item.payAmount ?? 0
@@ -106,6 +89,8 @@ async function fetchPage(p) {
     raw = await fetchMyApprovedSettlements(params)
   } else if (activeTab.value === 'rejected') {
     raw = await fetchMyRejectedSettlements(params)
+  } else if (activeTab.value === 'all') {
+    raw = await fetchSettlementReviewAll(params)
   } else {
     raw = await fetchMyPendingReviewSettlements(params)
   }
@@ -123,6 +108,7 @@ async function onLoad() {
     await fetchPage(page.value)
   } catch {
     finished.value = true
+    showToast('加载失败，请稍后重试')
   } finally {
     loading.value = false
   }

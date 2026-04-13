@@ -8,7 +8,12 @@ export default defineConfig({
   plugins: [
     vue(),
     Components({
-      resolvers: [VantResolver({ importStyle: true })],
+      /**
+       * 勿开 importStyle：项目已在 main.js 全量引入 vant/lib/index.css。
+       * 按需样式会打进异步 chunk，与全量样式顺序冲突时，函数式弹窗（showConfirmDialog 等）
+       * teleport 到 body 后会出现变窄、样式异常（dev 下往往不明显）。
+       */
+      resolvers: [VantResolver({ importStyle: false })],
     }),
   ],
   resolve: {

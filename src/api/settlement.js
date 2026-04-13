@@ -1,5 +1,14 @@
 import { get, post } from './request'
 
+/** 路径段须为纯数字，避免与 mine-payables、approved 等静态段混淆 */
+function settlementNumericSegment(id) {
+  const s = String(id ?? '').trim()
+  if (!/^\d+$/.test(s)) {
+    throw new Error(`结算单 id 须为数字：${id}`)
+  }
+  return s
+}
+
 /** GET /api/v1/settlements/mine-payables */
 export function fetchMyPendingPaySettlements(params = {}) {
   const page = params.page ?? 1
@@ -28,27 +37,34 @@ export function fetchMyRejectedSettlements(params = {}) {
   return get('/settlements/rejected', { page, size })
 }
 
+/** GET /api/v1/settlements/review-all — 本人审核过的全部（分页） */
+export function fetchSettlementReviewAll(params = {}) {
+  const page = params.page ?? 1
+  const size = params.size ?? params.pageSize ?? 10
+  return get('/settlements/review-all', { page, size })
+}
+
 /** GET /api/v1/settlements/{rootReportId} — id 为 root_report_id，且本人为付款人 */
 export function fetchSettlementByRootReportId(rootReportId) {
-  return get(`/settlements/${rootReportId}`)
+  return get(`/settlements/${settlementNumericSegment(rootReportId)}`)
 }
 
 /** GET /api/v1/settlements/row/{settlementId} — 结算单主键；本人为付款人或收款人 */
 export function fetchSettlementRowById(settlementId) {
-  return get(`/settlements/row/${settlementId}`)
+  return get(`/settlements/row/${settlementNumericSegment(settlementId)}`)
 }
 
 /** POST /api/v1/settlements/{id}/submit */
 export function submitSettlementTransfer(id, data) {
-  return post(`/settlements/${id}/submit`, data)
+  return post(`/settlements/${settlementNumericSegment(id)}/submit`, data)
 }
 
 /** POST /api/v1/settlements/{id}/approve */
 export function approveSettlement(id, data = {}) {
-  return post(`/settlements/${id}/approve`, data)
+  return post(`/settlements/${settlementNumericSegment(id)}/approve`, data)
 }
 
 /** POST /api/v1/settlements/{id}/reject */
 export function rejectSettlement(id, data = {}) {
-  return post(`/settlements/${id}/reject`, data)
+  return post(`/settlements/${settlementNumericSegment(id)}/reject`, data)
 }

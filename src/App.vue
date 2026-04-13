@@ -41,4 +41,13 @@ body .van-toast {
 body .van-toast .van-toast__text {
   color: #fff !important;
 }
+
+/**
+ * 函数式 Dialog / ImagePreview 等挂载在 body 下；若构建产物中 Vant 片段加载顺序异常，保底可读宽度。
+ */
+body .van-dialog {
+  width: var(--van-dialog-width, 320px);
+  max-width: min(320px, calc(100vw - 32px));
+  box-sizing: border-box;
+}
 </style>

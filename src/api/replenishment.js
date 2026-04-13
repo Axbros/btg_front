@@ -53,3 +53,24 @@ export function fetchRepayMine(params = {}) {
 export function fetchRepayMineDetail(id) {
   return get(`/replenishments/repays/${id}`)
 }
+
+/**
+ * 下级补仓分页（不含本人）。GET /replenishments/team
+ * @param {{ page?: number, size?: number, pageSize?: number }} [params]
+ */
+export function fetchTeamReplenishments(params = {}) {
+  return get('/replenishments/team', {
+    page: params.page ?? 1,
+    size: params.size ?? params.pageSize ?? 10,
+  })
+}
+
+/**
+ * 下级归仓分页。GET /replenishments/repays/team
+ */
+export function fetchTeamRepays(params = {}) {
+  return get('/replenishments/repays/team', {
+    page: params.page ?? 1,
+    size: params.size ?? params.pageSize ?? 10,
+  })
+}

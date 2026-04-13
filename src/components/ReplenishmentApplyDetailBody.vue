@@ -21,9 +21,23 @@
         <span v-else>—</span>
       </template>
     </van-cell>
+    <template v-if="hasWalletInfo">
+      <van-cell title="交易所名称" :value="walletNameDisplay" />
+      <van-cell title="钱包地址" :value="walletAddressDisplay" />
+    </template>
+    <van-cell
+      v-if="txt(pick('acceptedBy', 'accepted_by')) !== '—'"
+      title="受理人"
+      :value="txt(pick('acceptedBy', 'accepted_by'))"
+    />
+    <van-cell
+      v-if="txt(pick('acceptedAt', 'accepted_at')) !== '—'"
+      title="受理时间"
+      :value="formatDateTime(pick('acceptedAt', 'accepted_at'))"
+    />
     <van-cell v-if="transferShotUrl" title="资方凭证">
       <template #value>
-        <PreviewableRemoteImage :url="transferShotUrl" alt="资方转账凭证" size="large" />
+        <PreviewableRemoteImage :url="transferShotUrl" alt="资方凭证" size="large" />
       </template>
     </van-cell>
     <van-cell
@@ -32,7 +46,11 @@
       :value="txt(pick('transferRemark', 'transfer_remark'))"
     />
     <van-cell title="提交时间" :value="formatDateTime(pick('submitTime', 'submit_time'))" />
-    <van-cell title="审核时间" :value="formatDateTime(pick('auditTime', 'audit_time'))" />
+    <van-cell
+      v-if="txt(pick('auditTime', 'audit_time')) !== '—'"
+      title="审核时间"
+      :value="formatDateTime(pick('auditTime', 'audit_time'))"
+    />
     <!-- <van-cell v-if="txt(pick('auditBy', 'audit_by')) !== '—'" title="审核人 ID" :value="txt(pick('auditBy', 'audit_by'))" /> -->
   </van-cell-group>
 </template>
@@ -77,4 +95,12 @@ const transferShotUrl = computed(() => {
   const u = pick('transferScreenshotUrl', 'transfer_screenshot_url')
   return u ? String(u) : ''
 })
+
+const walletNameDisplay = computed(() => txt(pick('walletName', 'wallet_name')))
+
+const walletAddressDisplay = computed(() => txt(pick('walletAddress', 'wallet_address')))
+
+const hasWalletInfo = computed(
+  () => walletNameDisplay.value !== '—' || walletAddressDisplay.value !== '—',
+)
 </script>
