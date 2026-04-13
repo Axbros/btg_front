@@ -1,6 +1,8 @@
 <template>
-  <div :class="['page-shell', hideTab ? 'no-tab' : '']">
-    <router-view />
+  <div :class="['page-shell', hideTab ? 'no-tab' : '', lockViewport ? 'page-shell--fill' : '']">
+    <div class="page-shell__view">
+      <router-view />
+    </div>
     <van-tabbar v-if="!hideTab" route placeholder safe-area-inset-bottom>
       <van-tabbar-item replace to="/home" icon="home-o" :badge="homeTabBadge">首页</van-tabbar-item>
       <van-tabbar-item replace to="/team/descendants" icon="friends-o">团队</van-tabbar-item>
@@ -24,6 +26,8 @@ const dashboard = useDashboardStore()
 const { totalPendingCount } = storeToRefs(dashboard)
 
 const hideTab = computed(() => route.meta.hideTab === true)
+/** 禁止整页滚动（避免内容滑到固定导航栏下），由 App.vue 中 .page-shell--fill 实现 */
+const lockViewport = computed(() => route.meta.lockViewport === true)
 
 /** 与首页九宫格徽标一致：仅在有待办时显示，>99 为 99+ */
 const homeTabBadge = computed(() => {

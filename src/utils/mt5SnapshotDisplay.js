@@ -53,6 +53,18 @@ function humanizeKey(key) {
   return s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase())
 }
 
+const MARGIN_LEVEL_KEYS = new Set(['marginLevel', 'margin_level'])
+
+/** 保证金比例：展示为带百分号的数值 */
+function formatMarginLevelDisplay(raw) {
+  if (raw === null || raw === undefined || raw === '') return '—'
+  const n = Number(raw)
+  if (Number.isFinite(n)) return `${formatMoney(n)}%`
+  const s = String(raw).trim()
+  if (!s) return '—'
+  return /%$/.test(s) ? s : `${s}%`
+}
+
 function profitValueClass(raw) {
   const n = Number(raw)
   if (!Number.isFinite(n) || raw === null || raw === undefined) return ''
@@ -62,6 +74,7 @@ function profitValueClass(raw) {
 }
 
 function formatCellValue(key, value) {
+  if (MARGIN_LEVEL_KEYS.has(key)) return formatMarginLevelDisplay(value)
   if (value === null || value === undefined || value === '') return '—'
   if (typeof value === 'boolean') return value ? '是' : '否'
   if (typeof value === 'number' && Number.isFinite(value)) {

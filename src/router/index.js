@@ -32,7 +32,7 @@ const routes = [
         path: 'account',
         name: 'Account',
         component: () => import('@/views/me/Mt5Snapshot.vue'),
-        meta: { title: '账户', tab: 'account' },
+        meta: { title: '账户', tab: 'account', lockViewport: true },
       },
       {
         path: 'team',

@@ -32,6 +32,40 @@ body,
 }
 
 /**
+ * 锁定主布局高度为视口，禁止外层（document）纵向滚动。
+ * router-view 的宿主不参与高度传递，故用 .page-shell__view 包住再 flex:1。
+ */
+.page-shell__view {
+  min-width: 0;
+}
+
+.page-shell.page-shell--fill {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: none;
+}
+
+.page-shell.page-shell--fill .page-shell__view {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/**
+ * 带 Tab 时 van-tabbar 已用 placeholder 占位，若再保留 .page-shell 的 padding-bottom，
+ * 会在 Tab 占位下方多出一条空白，子页面里的「贴底」栏会看起来不在屏幕最底部。
+ */
+.page-shell.page-shell--fill:not(.no-tab) {
+  padding-bottom: 0;
+}
+
+/**
  * 全站 Toast：部分环境/主题会把 --van-toast-* 弄成「浅底 + 白字」，看起来像空白。
  * 统一拉回 Vant 默认语义（深底 + 白字），含 Profile、表单提示与 request 等所有 showToast。
  */

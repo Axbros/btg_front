@@ -1,55 +1,64 @@
 <template>
-  <div>
+  <div class="mt5-full">
     <AppHeader title="账户" :show-back="false" />
-    <van-loading v-if="loading" class="mt5-page__loading" vertical>加载中…</van-loading>
-    <div v-else class="mt5-page">
-      <section v-if="mt5Rows.length" class="mt5-snap" aria-label="MT5 账户快照">
-        <div class="mt5-snap__glow" aria-hidden="true" />
-        <header class="mt5-snap__head">
-          <span class="mt5-snap__badge">MT5</span>
-          <h2 class="mt5-snap__title">账户资金快照</h2>
-          <p class="mt5-snap__meta">{{ mt5AccountMeta }}</p>
-        </header>
+    <van-loading v-if="loading" class="mt5-full__loading" vertical>加载中…</van-loading>
+    <template v-else-if="mt5Rows.length">
+      <div class="mt5-full__stack">
+        <div class="mt5-full__body">
+          <section class="mt5-snap" aria-label="MT5 账户快照">
+            <div class="mt5-snap__glow" aria-hidden="true" />
+            <header class="mt5-snap__head">
+              <span class="mt5-snap__badge">MT5</span>
+              <h2 class="mt5-snap__title">账户资金快照</h2>
+              <p class="mt5-snap__meta">{{ mt5AccountMeta }}</p>
+            </header>
 
-        <div v-if="mt5HeroRow" class="mt5-snap__hero">
-          <span class="mt5-snap__hero-label">{{ mt5HeroRow.label }}</span>
-          <div class="mt5-snap__hero-line">
-            <span class="mt5-snap__hero-value">{{ mt5HeroRow.display }}</span>
-            <span class="mt5-snap__hero-unit">USD</span>
-          </div>
+            <div v-if="mt5HeroRow" class="mt5-snap__hero">
+              <span class="mt5-snap__hero-label">{{ mt5HeroRow.label }}</span>
+              <div class="mt5-snap__hero-line">
+                <span
+                  class="mt5-snap__hero-value"
+                  :class="{ 'mt5-snap__hero-value--flash': equityFlashActive }"
+                  @animationend="onEquityFlashEnd"
+                >{{ mt5HeroRow.display }}</span>
+                <span class="mt5-snap__hero-unit">USD</span>
+              </div>
+            </div>
+
+            <div v-if="mt5ProfitRow" class="mt5-snap__profit">
+              <span class="mt5-snap__profit-label">{{ mt5ProfitRow.label }}</span>
+              <span class="mt5-snap__profit-pill" :class="mt5ProfitRow.valueClass">{{ mt5ProfitRow.display }}</span>
+            </div>
+
+            <div v-if="mt5TileRows.length" class="mt5-snap__tiles">
+              <div v-for="t in mt5TileRows" :key="t.key" class="mt5-snap__tile">
+                <span class="mt5-snap__tile-label">{{ t.label }}</span>
+                <span class="mt5-snap__tile-value">{{ t.display }}</span>
+              </div>
+            </div>
+
+            <dl v-if="mt5DetailRows.length" class="mt5-snap__dl">
+              <template v-for="r in mt5DetailRows" :key="r.key">
+                <dt class="mt5-snap__dt">{{ r.label }}</dt>
+                <dd class="mt5-snap__dd" :class="r.valueClass">{{ r.display }}</dd>
+              </template>
+            </dl>
+          </section>
         </div>
-
-        <div v-if="mt5ProfitRow" class="mt5-snap__profit">
-          <span class="mt5-snap__profit-label">{{ mt5ProfitRow.label }}</span>
-          <span class="mt5-snap__profit-pill" :class="mt5ProfitRow.valueClass">{{ mt5ProfitRow.display }}</span>
-        </div>
-
-        <div v-if="mt5TileRows.length" class="mt5-snap__tiles">
-          <div v-for="t in mt5TileRows" :key="t.key" class="mt5-snap__tile">
-            <span class="mt5-snap__tile-label">{{ t.label }}</span>
-            <span class="mt5-snap__tile-value">{{ t.display }}</span>
-          </div>
-        </div>
-
-        <dl v-if="mt5DetailRows.length" class="mt5-snap__dl">
-          <template v-for="r in mt5DetailRows" :key="r.key">
-            <dt class="mt5-snap__dt">{{ r.label }}</dt>
-            <dd class="mt5-snap__dd" :class="r.valueClass">{{ r.display }}</dd>
-          </template>
-        </dl>
-
-        <footer v-if="mt5FooterRow" class="mt5-snap__foot">
-          <van-icon name="clock-o" class="mt5-snap__foot-icon" />
+        <footer v-if="mt5FooterRow" class="mt5-snap-bar">
+          <van-icon name="clock-o" class="mt5-snap-bar__icon" />
           <span>{{ mt5FooterRow.label }} · {{ mt5FooterRow.display }}</span>
         </footer>
-      </section>
-      <EmptyState v-else description="暂无 MT5 快照数据" />
+      </div>
+    </template>
+    <div v-else class="mt5-full__empty">
+      <EmptyState description="暂无 MT5 快照数据" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { fetchLatestMt5Snapshot } from '@/api/mt5'
 import { mt5SnapshotDisplayRows } from '@/utils/mt5SnapshotDisplay'
 import AppHeader from '@/components/AppHeader.vue'
@@ -74,6 +83,62 @@ const MT5_META_KEYS = new Set(['accountId', 'account_id', 'serverName', 'server_
 
 const mt5Snapshot = ref(null)
 const loading = ref(true)
+/** 净值（equity）数值变化时的主数字强调动画 */
+const equityFlashActive = ref(false)
+let pollTimer = null
+
+function numericEquity(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return null
+  const v = snapshot.equity
+  if (v === null || v === undefined || v === '') return null
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+/** 与 mt5HeroRow 一致：优先净值行，否则余额 */
+function mt5HeroKey(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return null
+  const rows = mt5SnapshotDisplayRows(snapshot)
+  if (rows.some((r) => r.key === 'equity')) return 'equity'
+  if (rows.some((r) => r.key === 'balance')) return 'balance'
+  return null
+}
+
+function triggerEquityFlash() {
+  equityFlashActive.value = false
+  void nextTick(() => {
+    equityFlashActive.value = true
+  })
+}
+
+function onEquityFlashEnd() {
+  equityFlashActive.value = false
+}
+
+async function loadMt5Snapshot({ initial = false } = {}) {
+  if (initial) loading.value = true
+  try {
+    const mt5 = await fetchLatestMt5Snapshot().catch(() => null)
+    const next = mt5 != null && typeof mt5 === 'object' && !Array.isArray(mt5) ? mt5 : null
+    if (!initial) {
+      const prev = mt5Snapshot.value
+      const oldEq = numericEquity(prev)
+      const newEq = numericEquity(next)
+      if (
+        oldEq !== null &&
+        newEq !== null &&
+        oldEq !== newEq &&
+        mt5HeroKey(prev) === 'equity' &&
+        mt5HeroKey(next) === 'equity'
+      ) {
+        triggerEquityFlash()
+      }
+    }
+    mt5Snapshot.value = next
+  } finally {
+    if (initial) loading.value = false
+  }
+}
 
 const mt5Rows = computed(() => mt5SnapshotDisplayRows(mt5Snapshot.value))
 
@@ -117,36 +182,83 @@ const mt5DetailRows = computed(() => {
   return mt5Rows.value.filter((r) => !used.has(r.key))
 })
 
-onMounted(async () => {
-  loading.value = true
-  try {
-    const mt5 = await fetchLatestMt5Snapshot().catch(() => null)
-    mt5Snapshot.value =
-      mt5 != null && typeof mt5 === 'object' && !Array.isArray(mt5) ? mt5 : null
-  } finally {
-    loading.value = false
+onMounted(() => {
+  void loadMt5Snapshot({ initial: true })
+  pollTimer = window.setInterval(() => {
+    void loadMt5Snapshot({ initial: false })
+  }, 3000)
+})
+
+onUnmounted(() => {
+  if (pollTimer != null) {
+    window.clearInterval(pollTimer)
+    pollTimer = null
   }
 })
 </script>
 
 <style scoped>
-.mt5-page {
-  padding: 12px;
-  padding-top: 8px;
+/**
+ * 全屏铺满（无页边距）：与 Tab 栏之间的区域纵向 flex，
+ * 主内容不滚动；快照时间固定在视口最底部（Tab 之上）。
+ */
+.mt5-full {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* 填满 .page-shell__view（flex 子项），才能把底部时间栏顶到 Tab 占位之上） */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
 }
-.mt5-page__loading {
+.mt5-full__loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
   padding: 48px 0;
+}
+.mt5-full__stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  /* 与时间栏同色底，避免 flex 留白透出页面浅灰 */
+  background: #0f172a;
+}
+.mt5-full__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* 主区不足一屏时，此处仍会增高；无底色会露出 body 的 #f5f6f8 */
+  background: linear-gradient(155deg, #0f172a 0%, #1e293b 38%, #172554 100%);
+}
+.mt5-full__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 .mt5-snap {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
-  padding: 20px 18px 16px;
+  margin: 0;
+  padding: 20px 16px 20px;
+  border-radius: 0;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
   background: linear-gradient(155deg, #0f172a 0%, #1e293b 38%, #172554 100%);
-  box-shadow:
-    0 12px 40px rgba(15, 23, 42, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   color: #e2e8f0;
 }
 .mt5-snap__glow {
@@ -218,6 +330,28 @@ onMounted(async () => {
   color: #fff;
   line-height: 1;
   text-shadow: 0 2px 24px rgba(56, 189, 248, 0.25);
+  display: inline-block;
+  transform-origin: left center;
+}
+.mt5-snap__hero-value--flash {
+  animation: mt5-equity-flash 0.7s ease-out;
+}
+@keyframes mt5-equity-flash {
+  0% {
+    transform: scale(1);
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(56, 189, 248, 0.25);
+  }
+  40% {
+    transform: scale(1.07);
+    color: #7dd3fc;
+    text-shadow: 0 0 28px rgba(56, 189, 248, 0.55);
+  }
+  100% {
+    transform: scale(1);
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(56, 189, 248, 0.25);
+  }
 }
 .mt5-snap__hero-unit {
   font-size: 14px;
@@ -291,7 +425,7 @@ onMounted(async () => {
   position: relative;
   z-index: 1;
   margin: 16px 0 0;
-  padding-top: 14px;
+  padding: 14px 0 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: grid;
   grid-template-columns: minmax(0, 42%) 1fr;
@@ -312,21 +446,26 @@ onMounted(async () => {
   line-height: 1.45;
   word-break: break-all;
 }
-.mt5-snap__foot {
-  position: relative;
-  z-index: 1;
+.mt5-snap-bar {
+  flex-shrink: 0;
+  margin-top: auto;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  padding: 12px 16px;
   font-size: 12px;
-  color: rgba(148, 163, 184, 0.9);
+  color: rgba(226, 232, 240, 0.88);
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 }
-.mt5-snap__foot-icon {
+.mt5-snap-bar__icon {
   flex-shrink: 0;
-  font-size: 14px;
-  opacity: 0.85;
+  font-size: 15px;
+  opacity: 0.9;
 }
 </style>
