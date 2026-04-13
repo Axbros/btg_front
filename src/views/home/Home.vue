@@ -52,7 +52,7 @@
         @click="goHomeNav('/settlement/pending-review')"
         :badge="settlementBadge"
       />
-      <van-grid-item icon="balance-o" text="账户汇总" @click="goHomeNav('/me/account')" />
+      <van-grid-item icon="balance-o" text="分润汇总" @click="goHomeNav('/me/account')" />
       <van-grid-item
         v-if="!isRootUser"
         icon="chart-trending-o"
@@ -132,7 +132,6 @@ import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
 import { isUserRoot } from '@/utils/permission'
 import AppHeader from '@/components/AppHeader.vue'
-import UserCard from '@/components/UserCard.vue'
 
 /** 与 index.html 标题一致；可在 .env 中配置 VITE_APP_TITLE 覆盖 */
 const siteTitle = import.meta.env.VITE_APP_TITLE || '吞金授'

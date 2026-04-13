@@ -29,6 +29,12 @@ const routes = [
         meta: { title: '工作台', tab: 'home' },
       },
       {
+        path: 'account',
+        name: 'Account',
+        component: () => import('@/views/me/Mt5Snapshot.vue'),
+        meta: { title: '账户', tab: 'account' },
+      },
+      {
         path: 'team',
         redirect: '/team/descendants',
       },
@@ -124,7 +130,7 @@ const routes = [
         path: 'me/account',
         name: 'AccountSummary',
         component: () => import('@/views/me/AccountSummary.vue'),
-        meta: { title: '账户汇总', tab: 'me', hideTab: true },
+        meta: { title: '分润汇总', hideTab: true },
       },
       {
         path: 'me/team-stats',

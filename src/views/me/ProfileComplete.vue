@@ -132,47 +132,6 @@
           />
         </van-cell-group>
 
-        <van-cell-group inset title="Bitget API（可选）">
-          <van-cell title="Bitget 绑定" :value="bitgetBindStatusLabel" />
-          <van-cell title="API Key 标识" :value="accessKeyMaskedDisplay" />
-          <p class="tip tip--bitget">
-            三项密钥仅随本次保存提交至服务端，接口不会回显明文；留空表示不修改该项；先点下方「清空」再点「保存资料」可从服务端删除该项已保存值。
-          </p>
-          <div class="bitget-field-wrap">
-            <van-field
-              v-model="form.bitgetAccessKey"
-              type="password"
-              name="bitgetAccessKey"
-              label="Access Key"
-              placeholder="留空则不修改"
-              autocomplete="off"
-            />
-           
-          </div>
-          <div class="bitget-field-wrap">
-            <van-field
-              v-model="form.bitgetSecretKey"
-              type="password"
-              name="bitgetSecretKey"
-              label="Secret Key"
-              placeholder="留空则不修改"
-              autocomplete="off"
-            />
-            
-          </div>
-          <div class="bitget-field-wrap">
-            <van-field
-              v-model="form.bitgetPassphrase"
-              type="password"
-              name="bitgetPassphrase"
-              label="Passphrase"
-              placeholder="留空则不修改"
-              autocomplete="off"
-            />
-            
-          </div>
-        </van-cell-group>
-
         <!-- <van-cell-group inset title="证件与照片（选填）">
           <van-field v-model="form.idCardFrontUrl" name="idCardFrontUrl" label="身份证正面" readonly>
             <template #input>
@@ -230,13 +189,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { showConfirmDialog, showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import { completeUserProfile, fetchMe } from '@/api/user'
-import { appendBitgetKeysToProfileBody } from '@/utils/bitgetProfilePut'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -248,19 +206,6 @@ const mobileDisplay = computed(() => {
   return m != null && String(m).trim() !== '' ? String(m).trim() : '—'
 })
 
-const bitgetBindStatusLabel = computed(() => {
-  const p = userInfo.value?.profile
-  if (!p || typeof p !== 'object') return '—'
-  const bc = p.bitgetConfigured === true || p.bitget_configured === true
-  return bc ? '已绑定' : '未绑定'
-})
-
-const accessKeyMaskedDisplay = computed(() => {
-  const p = userInfo.value?.profile
-  if (!p || typeof p !== 'object') return '—'
-  const mask = p.accessKeyMasked ?? p.access_key_masked
-  return mask != null && String(mask).trim() !== '' ? String(mask).trim() : '—'
-})
 const loading = ref(false)
 const submitDialogShow = ref(false)
 const pageReady = ref(false)
@@ -311,32 +256,7 @@ const form = reactive({
   principalAmount: '',
   walletName: '',
   walletAddress: '',
-  bitgetAccessKey: '',
-  bitgetSecretKey: '',
-  bitgetPassphrase: '',
 })
-
-/** 为 true 时对该项 PUT 传 "" 以清空服务端已保存值 */
-const bitgetClearFlags = reactive({
-  bitgetAccessKey: false,
-  bitgetSecretKey: false,
-  bitgetPassphrase: false,
-})
-
-function markClearBitget(key) {
-  if (!Object.prototype.hasOwnProperty.call(bitgetClearFlags, key)) return
-  form[key] = ''
-  bitgetClearFlags[key] = true
-}
-
-watch(
-  () => [form.bitgetAccessKey, form.bitgetSecretKey, form.bitgetPassphrase],
-  ([a, b, c]) => {
-    if (String(a || '').trim() !== '') bitgetClearFlags.bitgetAccessKey = false
-    if (String(b || '').trim() !== '') bitgetClearFlags.bitgetSecretKey = false
-    if (String(c || '').trim() !== '') bitgetClearFlags.bitgetPassphrase = false
-  },
-)
 
 function applyMeProfileToForm(me) {
   if (!me || typeof me !== 'object') return
@@ -421,8 +341,6 @@ async function onSubmitDialogBeforeClose(action) {
     const pwd = String(form.tradingAccountPassword || '').trim()
     if (pwd) body.tradingAccountPassword = pwd
 
-    appendBitgetKeysToProfileBody(body, form, bitgetClearFlags)
-
     await completeUserProfile(body)
     try {
       const me = await fetchMe()
@@ -438,12 +356,6 @@ async function onSubmitDialogBeforeClose(action) {
       showToast('保存成功')
       router.replace('/home')
     }
-    form.bitgetAccessKey = ''
-    form.bitgetSecretKey = ''
-    form.bitgetPassphrase = ''
-    bitgetClearFlags.bitgetAccessKey = false
-    bitgetClearFlags.bitgetSecretKey = false
-    bitgetClearFlags.bitgetPassphrase = false
     return true
   } catch {
     return false
@@ -487,9 +399,6 @@ async function onSubmitDialogBeforeClose(action) {
   color: #646566;
   font-weight: 600;
 }
-.tip--bitget {
-  margin: 8px 16px 12px;
-}
 .actions {
   margin: 20px 16px 0;
 }
@@ -511,11 +420,5 @@ async function onSubmitDialogBeforeClose(action) {
   color: #646566;
   font-size: 14px;
   flex-shrink: 0;
-}
-.bitget-field-wrap {
-  margin-bottom: 4px;
-}
-.bitget-clear-actions {
-  padding: 0 16px 12px;
 }
 </style>

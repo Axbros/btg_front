@@ -49,13 +49,3 @@ export function fetchUserProfile() {
   return get('/user/profile')
 }
 
-/**
- * Bitget 资产（独立接口，勿与 GET /me 混用）。
- * GET /me/bitget-assets — 返回 ApiResult.data：含 success、message、accounts、totalUsdtBalance、lastSyncTime 等；
- * success === false 时 HTTP 仍可能为 200，请用 data.success / data.message 分支 UI。
- */
-export function fetchBitgetAssets() {
-  return get('/user/me/bitget-assets?coin=USDT')
-}
-
-

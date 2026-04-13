@@ -1,7 +1,7 @@
 <template>
   <div class="summary-card">
     <div class="summary-card__label">{{ label }}</div>
-    <div class="summary-card__value">{{ value }}</div>
+    <div class="summary-card__value" :class="valueClass">{{ value }}</div>
     <div v-if="hint" class="summary-card__hint">{{ hint }}</div>
   </div>
 </template>
@@ -11,6 +11,8 @@ defineProps({
   label: { type: String, default: '' },
   value: { type: [String, Number], default: '' },
   hint: { type: String, default: '' },
+  /** 附加在数值上的 class，例如盈亏颜色 */
+  valueClass: { type: String, default: '' },
 })
 </script>
 
@@ -31,6 +33,15 @@ defineProps({
   font-weight: 600;
   color: #323233;
   font-variant-numeric: tabular-nums;
+}
+.summary-card__value--profit-up {
+  color: #07c160;
+}
+.summary-card__value--profit-down {
+  color: #ee0a24;
+}
+.summary-card__value--profit-flat {
+  color: #323233;
 }
 .summary-card__hint {
   margin-top: 6px;

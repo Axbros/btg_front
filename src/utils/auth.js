@@ -11,20 +11,6 @@ export function normalizeUserMePayload(u) {
   const hasId = u.id != null && u.id !== ''
   const hasMobile = u.mobile != null && String(u.mobile).trim() !== ''
   if (!hasId && !hasMobile) return null
-  if (u.profile && typeof u.profile === 'object') {
-    const p = { ...u.profile }
-    for (const k of [
-      'bitgetAccessKey',
-      'bitgetSecretKey',
-      'bitgetPassphrase',
-      'bitget_access_key',
-      'bitget_secret_key',
-      'bitget_passphrase',
-    ]) {
-      if (Object.prototype.hasOwnProperty.call(p, k)) delete p[k]
-    }
-    return { ...u, profile: p }
-  }
   return u
 }
 

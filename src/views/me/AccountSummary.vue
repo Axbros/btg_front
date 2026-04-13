@@ -1,27 +1,29 @@
 <template>
   <div>
-    <AppHeader title="账户汇总" />
-    <div v-if="summary" class="account">
-      <div class="account__grid">
-        <SummaryCard label="累计盈利" :value="formatMoney(summary.totalProfitAmount)" />
-        <SummaryCard label="累计分出分润" :value="formatMoney(summary.totalCommissionOutAmount)" />
-        <SummaryCard label="累计收到分润" :value="formatMoney(summary.totalCommissionInAmount)" />
-        <SummaryCard label="待审核分出分润" :value="formatMoney(summary.pendingCommissionOutAmount)" />
-        <SummaryCard label="待审核应收分润" :value="formatMoney(summary.pendingCommissionInAmount)" />
-      </div>
+    <AppHeader title="分润汇总" />
+    <van-loading v-if="loading" class="account__loading" vertical>加载中…</van-loading>
+    <div v-else class="account">
+      <template v-if="summary">
+        <div class="account__grid">
+          <SummaryCard label="累计盈利" :value="formatMoney(summary.totalProfitAmount)" />
+          <SummaryCard label="累计分出分润" :value="formatMoney(summary.totalCommissionOutAmount)" />
+          <SummaryCard label="累计收到分润" :value="formatMoney(summary.totalCommissionInAmount)" />
+          <SummaryCard label="待审核分出分润" :value="formatMoney(summary.pendingCommissionOutAmount)" />
+          <SummaryCard label="待审核应收分润" :value="formatMoney(summary.pendingCommissionInAmount)" />
+        </div>
+      </template>
+      <EmptyState v-else description="暂无汇总数据" />
     </div>
-    <van-loading v-else-if="loading" class="account__loading" vertical>加载中…</van-loading>
-    <EmptyState v-else description="暂无汇总数据" />
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { fetchAccountSummary } from '@/api/user'
 import { formatMoney } from '@/utils/format'
 import AppHeader from '@/components/AppHeader.vue'
 import SummaryCard from '@/components/SummaryCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchAccountSummary } from '@/api/user'
 
 const summary = ref(null)
 const loading = ref(true)
@@ -29,9 +31,8 @@ const loading = ref(true)
 onMounted(async () => {
   loading.value = true
   try {
-    summary.value = await fetchAccountSummary()
-  } catch {
-    summary.value = null
+    const sum = await fetchAccountSummary().catch(() => null)
+    summary.value = sum != null && typeof sum === 'object' ? sum : null
   } finally {
     loading.value = false
   }
@@ -41,6 +42,7 @@ onMounted(async () => {
 <style scoped>
 .account {
   padding: 12px;
+  padding-top: 8px;
 }
 .account__grid {
   display: flex;
