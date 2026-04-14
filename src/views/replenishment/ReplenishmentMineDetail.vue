@@ -13,6 +13,16 @@
           </template>
         </van-cell>
       </van-cell-group>
+      <van-cell-group v-if="showReturnedActions" inset class="repl-mine-detail__actions">
+        <van-cell title="已退回待修改">
+          <template #label>
+            <div class="repl-mine-detail__btn-row">
+              <van-button type="primary" size="small" block round @click="goResubmit">去修改并重提</van-button>
+              <van-button type="default" size="small" block round plain @click="goFlow">查看状态流</van-button>
+            </div>
+          </template>
+        </van-cell>
+      </van-cell-group>
       <van-cell-group v-if="approvedRepays.length"  title="已通过归仓" class="repl-mine-detail__repays">
         <van-cell
           v-for="(row, idx) in approvedRepays"
@@ -68,6 +78,12 @@ const showApplicantFundProgressHint = computed(() => {
   if (!r) return false
   const s = Number(r.status)
   return s === 7 || s === 8
+})
+
+const showReturnedActions = computed(() => {
+  const r = replenishment.value
+  if (!r) return false
+  return Number(r.status) === 9
 })
 
 const applicantFundProgressTip = computed(() => {
@@ -136,6 +152,18 @@ function goRepayDetail(row) {
   router.push({ name: 'RepayMineDetail', params: { id: String(id) } })
 }
 
+function goResubmit() {
+  const id = applyId.value
+  if (id == null) return
+  router.push({ name: 'ReplenishmentResubmit', params: { id: String(id) } })
+}
+
+function goFlow() {
+  const id = applyId.value
+  if (id == null) return
+  router.push({ name: 'ReplenishmentFlow', params: { id: String(id) } })
+}
+
 async function loadDetail() {
   const id = applyId.value
   if (id == null) {
@@ -194,5 +222,14 @@ watch(applyId, () => loadDetail(), { immediate: true })
   font-size: 13px;
   color: #646566;
   line-height: 1.55;
+}
+.repl-mine-detail__actions {
+  margin-top: 12px;
+}
+.repl-mine-detail__btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
 }
 </style>

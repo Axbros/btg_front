@@ -2,20 +2,33 @@
   <div>
     <AppHeader title="归仓详情" />
     <van-loading v-if="loading" class="repay-mine-detail__loading" vertical>加载中…</van-loading>
-    <RepayApplyDetailBody v-else-if="detail" :detail="detail" />
+    <template v-else-if="detail">
+      <RepayApplyDetailBody :detail="detail" />
+      <van-cell-group v-if="showReturnedActions" inset class="repay-mine-detail__actions">
+        <van-cell title="已退回待修改">
+          <template #label>
+            <div class="repay-mine-detail__btn-row">
+              <van-button type="primary" size="small" block round @click="goResubmit">去修改并重提</van-button>
+              <van-button type="default" size="small" block round plain @click="goFlow">查看状态流</van-button>
+            </div>
+          </template>
+        </van-cell>
+      </van-cell-group>
+    </template>
     <EmptyState v-else description="未获取到归仓信息" />
   </div>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import RepayApplyDetailBody from '@/components/RepayApplyDetailBody.vue'
 import { fetchRepayMineDetail } from '@/api/replenishment'
 
 const route = useRoute()
+const router = useRouter()
 
 const loading = ref(true)
 const detail = ref(null)
@@ -25,6 +38,24 @@ const repayId = computed(() => {
   const n = Number(raw)
   return Number.isFinite(n) && n > 0 ? n : null
 })
+
+const showReturnedActions = computed(() => {
+  const d = detail.value
+  if (!d || typeof d !== 'object') return false
+  return Number(d.status) === 4
+})
+
+function goResubmit() {
+  const id = repayId.value
+  if (id == null) return
+  router.push({ name: 'RepayResubmit', params: { id: String(id) } })
+}
+
+function goFlow() {
+  const id = repayId.value
+  if (id == null) return
+  router.push({ name: 'RepayFlow', params: { id: String(id) } })
+}
 
 async function loadDetail() {
   const id = repayId.value
@@ -51,5 +82,14 @@ watch(repayId, () => loadDetail(), { immediate: true })
 <style scoped>
 .repay-mine-detail__loading {
   padding: 48px 0;
+}
+.repay-mine-detail__actions {
+  margin: 12px 16px 0;
+}
+.repay-mine-detail__btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
 }
 </style>

@@ -8,7 +8,6 @@
     />
 
     <div class="home__hero">
-    
       <van-swipe
         class="home__ads"
         :autoplay="4000"
@@ -21,8 +20,6 @@
           <img class="home__ad-img" :src="ad.src" :alt="ad.alt" width="750" height="280" loading="lazy" />
         </van-swipe-item>
       </van-swipe>
-      <!-- <UserCard v-if="!heroLoading && userInfo" :user="userInfo" :sub="heroSub" />
-      <UserCard v-else :user="null" :sub="heroPlaceholder" /> -->
     </div>
 
     <van-grid :column-num="2" :gutter="10" class="home__grid" clickable>
@@ -38,19 +35,6 @@
         icon="records"
         text="我的利润上报记录"
         @click="goHomeNav('/profit-report/mine')"
-      />
-      <van-grid-item
-        v-if="!isRootUser"
-        icon="balance-pay"
-        text="待支付给上级"
-        @click="goHomeNav('/settlement/pending-pay')"
-        :badge="pendingPayableBadge"
-      />
-      <van-grid-item
-        icon="passed"
-        text="待审核下级结算"
-        @click="goHomeNav('/settlement/pending-review')"
-        :badge="settlementBadge"
       />
       <van-grid-item icon="balance-o" text="分润汇总" @click="goHomeNav('/me/account')" />
       <van-grid-item
@@ -162,13 +146,6 @@ function countBadge(n) {
   return v > 0 ? (v > 99 ? '99+' : v) : undefined
 }
 
-const settlementBadge = computed(() =>
-  countBadge(pendingSummary.value?.pendingSettlementReviewCount),
-)
-/** 待支付给上级 */
-const pendingPayableBadge = computed(() =>
-  countBadge(pendingSummary.value?.pendingSettlementPayableCount),
-)
 const profitReviewBadge = computed(
   () => Number(pendingSummary.value?.pendingProfitReportReviewCount) || 0,
 )
@@ -230,11 +207,7 @@ onMounted(async () => {
   } finally {
     heroLoading.value = false
   }
-  try {
-    await dashboard.fetchPendingSummary()
-  } catch {
-    /* store 内已兜底，不阻塞首页 */
-  }
+  await dashboard.fetchPendingSummary().catch(() => {})
 })
 </script>
 

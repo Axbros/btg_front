@@ -29,10 +29,16 @@ const routes = [
         meta: { title: '工作台', tab: 'home' },
       },
       {
-        path: 'account',
-        name: 'Account',
+        path: 'todo',
+        name: 'TodoHub',
+        component: () => import('@/views/todo/TodoHub.vue'),
+        meta: { title: '待办', tab: 'todo' },
+      },
+      {
+        path: 'me/mt5',
+        name: 'Mt5Snapshot',
         component: () => import('@/views/me/Mt5Snapshot.vue'),
-        meta: { title: '账户', tab: 'account', lockViewport: true },
+        meta: { title: '账户快照', tab: 'me', hideTab: true, lockViewport: true },
       },
       {
         path: 'team',
@@ -83,6 +89,18 @@ const routes = [
         name: 'ProfitReportList',
         component: () => import('@/views/profitReport/ProfitReportList.vue'),
         meta: { title: '我的利润上报记录', tab: 'report', hideTab: true },
+      },
+      {
+        path: 'profit-report/:profitReportId/resubmit',
+        name: 'ProfitReportResubmit',
+        component: () => import('@/views/profitReport/ProfitReportResubmit.vue'),
+        meta: { title: '利润·重新提交', tab: 'report', hideTab: true },
+      },
+      {
+        path: 'profit-report/:profitReportId/flow',
+        name: 'ProfitReportFlow',
+        component: () => import('@/views/flow/BusinessFlowDetail.vue'),
+        meta: { title: '利润·流转详情', tab: 'report', hideTab: true, flowKind: 'profit' },
       },
       {
         path: 'profit-report/:profitReportId/distribution',
@@ -163,6 +181,18 @@ const routes = [
         meta: { title: '我的补仓记录', tab: 'home', hideTab: true },
       },
       {
+        path: 'replenishment/mine/:id/resubmit',
+        name: 'ReplenishmentResubmit',
+        component: () => import('@/views/replenishment/ReplenishmentResubmit.vue'),
+        meta: { title: '补仓·重新提交', tab: 'home', hideTab: true },
+      },
+      {
+        path: 'replenishment/mine/:id/flow',
+        name: 'ReplenishmentFlow',
+        component: () => import('@/views/flow/BusinessFlowDetail.vue'),
+        meta: { title: '补仓·状态流', tab: 'home', hideTab: true, flowKind: 'replenishment' },
+      },
+      {
         path: 'replenishment/mine/:id',
         name: 'ReplenishmentMineDetail',
         component: () => import('@/views/replenishment/ReplenishmentMineDetail.vue'),
@@ -180,6 +210,18 @@ const routes = [
         name: 'RepayMine',
         component: () => import('@/views/replenishment/RepayMine.vue'),
         meta: { title: '我的归仓记录', tab: 'home', hideTab: true },
+      },
+      {
+        path: 'replenishment/repay/:id/resubmit',
+        name: 'RepayResubmit',
+        component: () => import('@/views/replenishment/RepayResubmit.vue'),
+        meta: { title: '归仓·重新提交', tab: 'home', hideTab: true },
+      },
+      {
+        path: 'replenishment/repay/:id/flow',
+        name: 'RepayFlow',
+        component: () => import('@/views/flow/BusinessFlowDetail.vue'),
+        meta: { title: '归仓·状态流', tab: 'home', hideTab: true, flowKind: 'repay' },
       },
       {
         path: 'replenishment/repay/:id',

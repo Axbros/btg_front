@@ -42,12 +42,16 @@ const STATUS_MAP = {
   ENABLED: '启用',
 }
 
-/** btg_profit_report.status：1 待直属上级审核；2 已进入结算链；3 拒绝；4 全链路完成 */
+/**
+ * btg_profit_report.status：
+ * 1 待审核 2 已进入结算链 3 历史终局拒绝 4 全链路完成 5 已退回待修改
+ */
 const PROFIT_REPORT_STATUS_NUM = {
-  1: '待直属上级审核',
-  2: '通过',
-  3: '拒绝',
+  1: '待审核',
+  2: '已进入结算链',
+  3: '已拒绝（历史终局）',
   4: '全链路完成',
+  5: '已退回待修改',
 }
 
 /** 兼容旧利润单状态码 */
@@ -89,10 +93,12 @@ export function formatStatus(val) {
 }
 
 const PROFIT_REPORT_STATUS_STR = {
-  PENDING_DIRECT_REVIEW: '待上级审核',
-  IN_SETTLEMENT_CHAIN: '已通过',
+  PENDING_DIRECT_REVIEW: '待审核',
+  PENDING_REVIEW: '待审核',
+  IN_SETTLEMENT_CHAIN: '已进入结算链',
   REJECTED: '已拒绝',
   ALL_COMPLETED: '全链路完成',
+  RETURNED_TO_APPLICANT: '已退回待修改',
 }
 
 export function formatProfitRecordStatus(val) {
@@ -104,18 +110,31 @@ export function formatProfitRecordStatus(val) {
   return formatStatus(val)
 }
 
+/**
+ * 利润上报是否处于「退回申报人可重提」
+ * 后端可能返回数字 5 或字符串枚举 RETURNED_TO_APPLICANT
+ */
+export function isProfitReportReturnedToApplicant(status) {
+  if (status === null || status === undefined || status === '') return false
+  const sk = String(status).trim().toUpperCase()
+  if (sk === 'RETURNED_TO_APPLICANT') return true
+  const n = Number(sk)
+  return Number.isFinite(n) && n === 5
+}
+
 /** 利润上报记录 status → van-tag type */
 export function profitRecordStatusTagType(val) {
   if (val === null || val === undefined || val === '') return 'default'
   const sk = String(val).toUpperCase()
   if (sk === 'REJECTED') return 'danger'
+  if (sk === 'RETURNED_TO_APPLICANT') return 'warning'
   if (sk === 'ALL_COMPLETED' || sk === 'IN_SETTLEMENT_CHAIN') return 'success'
-  if (sk === 'PENDING_DIRECT_REVIEW') return 'warning'
+  if (sk === 'PENDING_DIRECT_REVIEW' || sk === 'PENDING_REVIEW') return 'warning'
   const n = Number(val)
   if (!Number.isNaN(n)) {
     if (n === 3) return 'danger'
     if (n === 4 || n === 2) return 'success'
-    if (n === 1) return 'warning'
+    if (n === 1 || n === 5) return 'warning'
   }
   return 'default'
 }
@@ -221,16 +240,21 @@ export function kycStatusTagType(val) {
   return 'default'
 }
 
-/** 补仓：1 待受理 7 待资方补充资料 8 待资方终审确认 2 通过 3 拒绝 4 部分归还 5 已结清 6 关闭 */
+/**
+ * 补仓申请 status：
+ * 1 待审核 2 审核通过 3 审核拒绝（历史）4 部分归还 5 已结清 6 已关闭
+ * 7/8 资方流程（兼容）9 已退回待修改
+ */
 const REPLENISHMENT_STATUS_NUM = {
-  1: '待受理',
-  7: '待资方补充资料',
-  8: '待资方终审确认',
+  1: '待审核',
   2: '审核通过',
-  3: '审核拒绝',
+  3: '审核拒绝（历史）',
   4: '部分归还',
   5: '已结清',
   6: '已关闭',
+  7: '待资方补充资料',
+  8: '待资方终审确认',
+  9: '已退回待修改',
 }
 
 export function formatReplenishmentStatus(val) {
@@ -240,11 +264,12 @@ export function formatReplenishmentStatus(val) {
   return String(val)
 }
 
-/** 归仓：1 待审核 2 通过 3 拒绝 */
+/** 归仓：1 待审核 2 审核通过 3 审核拒绝（历史）4 已退回待修改 */
 const REPAY_STATUS_NUM = {
   1: '待审核',
   2: '审核通过',
-  3: '审核拒绝',
+  3: '审核拒绝（历史）',
+  4: '已退回待修改',
 }
 
 export function formatRepayStatus(val) {
@@ -258,7 +283,7 @@ export function replenishmentStatusTagType(val) {
   const n = Number(val)
   if (n === 2 || n === 5) return 'success'
   if (n === 3 || n === 6) return 'danger'
-  if (n === 1 || n === 4 || n === 7 || n === 8) return 'warning'
+  if (n === 1 || n === 4 || n === 7 || n === 8 || n === 9) return 'warning'
   return 'default'
 }
 
@@ -266,6 +291,6 @@ export function repayStatusTagType(val) {
   const n = Number(val)
   if (n === 2) return 'success'
   if (n === 3) return 'danger'
-  if (n === 1) return 'warning'
+  if (n === 1 || n === 4) return 'warning'
   return 'default'
 }

@@ -8,7 +8,7 @@
         </van-tag>
       </template>
     </van-cell>
-    <van-cell title="用户昵称" :value="txt(pick('nickname', 'nick_name'))" />
+    <van-cell title="用户真实姓名" :value="txt(pick('nickname', 'nick_name'))" />
     <van-cell title="用户手机" :value="txt(pick('mobile', 'mobile'))" />
     <!-- <van-cell title="关联补仓 ID" :value="txt(pick('replenishApplyId', 'replenish_apply_id'))" /> -->
     <van-cell

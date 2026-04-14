@@ -9,7 +9,7 @@
             <div class="mt5-snap__glow" aria-hidden="true" />
             <header class="mt5-snap__head">
               <span class="mt5-snap__badge">MT5</span>
-              <h2 class="mt5-snap__title">账户资金快照</h2>
+              <h2 class="mt5-snap__title">吞金授·账户资金快照</h2>
               <p class="mt5-snap__meta">{{ mt5AccountMeta }}</p>
             </header>
 

@@ -15,9 +15,9 @@
         </van-cell>
 
         <!-- <van-cell v-if="rootReportIdText" title="关联根单 ID" :value="rootReportIdText" /> -->
-        <van-cell title="付款人昵称" :value="txt(fromProfile.nickname)" />
+        <van-cell title="付款人真实姓名" :value="txt(fromProfile.nickname)" />
         <van-cell title="付款人手机" :value="txt(fromProfile.mobile)" />
-        <van-cell title="收款人昵称" :value="txt(toProfile.nickname)" />
+        <van-cell title="收款人真实姓名" :value="txt(toProfile.nickname)" />
         <van-cell title="收款人交易所">
           <template #value>
             <span class="pay-amt">{{ txt(toExchangeUidText) }}</span>
@@ -77,6 +77,34 @@
         <van-cell v-if="detail.auditRemark" title="审核备注" :label="detail.auditRemark" />
       </van-cell-group>
 
+      <van-cell-group
+        v-if="rootReportIdForFlow != null"
+        inset
+        title="关联利润·审核链路"
+        class="settlement-profit-flow"
+      >
+        <van-cell v-if="reportNoText || profitFlowSummaryReportNo" title="利润单号" :value="txt(profitFlowSummaryReportNo || reportNoText)" />
+        <van-cell
+          v-if="profitFlowDirectStateDisplay"
+          title="利润直审"
+          :value="profitFlowDirectStateDisplay"
+        />
+        <div class="settlement-profit-flow__steps">
+          <van-loading v-if="profitFlowLoading" size="20px" vertical>加载链路…</van-loading>
+          <BusinessFlowNodesStepper
+            v-else-if="profitFlowStepperNodes.length"
+            :nodes="profitFlowStepperNodes"
+            :active-index="profitFlowStepActive"
+          />
+          <van-empty v-else description="暂无链路信息" />
+        </div>
+        <!-- <div v-if="!profitFlowLoading && profitFlowLayers.length" class="settlement-profit-flow__link">
+          <van-button size="small" plain type="primary" round block @click="goProfitReportFlow">
+            查看利润单状态流页
+          </van-button>
+        </div> -->
+      </van-cell-group>
+
       <div v-if="showProfitDistributionLink" class="link-row">
         <van-button block round plain type="primary" @click="goDistribution">查看关联利润的分润明细</van-button>
       </div>
@@ -127,11 +155,13 @@ import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
+import BusinessFlowNodesStepper from '@/components/BusinessFlowNodesStepper.vue'
 import { useAuthStore } from '@/stores/auth'
 import { uploadFile, FILE_UPLOAD_TYPES } from '@/api/files'
 import {
   fetchSettlementByRootReportId,
   fetchSettlementRowById,
+  getSettlementProfitFlow,
   approveSettlement,
   rejectSettlement,
   submitSettlementTransfer,
@@ -142,6 +172,14 @@ import {
   formatSettlementStatus,
   settlementStatusTagType,
 } from '@/utils/format'
+import {
+  pickProfitFlowLayers,
+  mapProfitFlowLayersToStepperNodes,
+  computeProfitFlowActiveLayerIndex,
+  formatProfitFlowLayerStateLabel,
+  isDirectProfitReviewLayer,
+  pickProfitFlowLayerState,
+} from '@/utils/profitFlowLayer'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,6 +191,8 @@ const rejectShow = ref(false)
 const rejectRemark = ref('')
 const transferFileRef = ref(null)
 const submittingTransfer = ref(false)
+const profitFlowPayload = ref(null)
+const profitFlowLoading = ref(false)
 
 /** 结算单主键：来自接口详情，用于提交/审核/上传（勿用路由 id，付款人详情路由里 id 为 root_report_id） */
 const detailSettlementPk = computed(() => {
@@ -361,6 +401,54 @@ const profitReportIdForLink = computed(() => {
   return Number.isFinite(n) && n > 0 ? n : null
 })
 
+/** 与 GET /settlements/{rootReportId}/profit-flow 路径一致 */
+const rootReportIdForFlow = computed(() => profitReportIdForLink.value)
+
+const profitFlowLayers = computed(() => pickProfitFlowLayers(profitFlowPayload.value))
+
+const profitFlowStepActive = computed(() => computeProfitFlowActiveLayerIndex(profitFlowLayers.value))
+
+const profitFlowStepperNodes = computed(() => mapProfitFlowLayersToStepperNodes(profitFlowLayers.value))
+
+const profitFlowSummaryReportNo = computed(() => {
+  const p = profitFlowPayload.value
+  if (!p || typeof p !== 'object') return ''
+  const v = p.reportNo ?? p.report_no
+  return v != null && String(v).trim() !== '' ? String(v).trim() : ''
+})
+
+/** 新接口仅 layers 时，从 DIRECT_PROFIT_REVIEW 层取状态摘要 */
+const profitFlowDirectStateDisplay = computed(() => {
+  for (const layer of profitFlowLayers.value) {
+    if (isDirectProfitReviewLayer(layer)) {
+      const st = pickProfitFlowLayerState(layer)
+      if (st != null && String(st).trim() !== '') return formatProfitFlowLayerStateLabel(layer)
+    }
+  }
+  return ''
+})
+
+function goProfitReportFlow() {
+  const id = rootReportIdForFlow.value
+  if (id == null) return
+  router.push({ name: 'ProfitReportFlow', params: { profitReportId: String(id) } })
+}
+
+async function loadProfitFlow() {
+  profitFlowPayload.value = null
+  const rootId = rootReportIdForFlow.value
+  if (rootId == null) return
+  profitFlowLoading.value = true
+  try {
+    const data = await getSettlementProfitFlow(rootId)
+    profitFlowPayload.value = data && typeof data === 'object' ? data : null
+  } catch {
+    profitFlowPayload.value = null
+  } finally {
+    profitFlowLoading.value = false
+  }
+}
+
 function goDistribution() {
   const id = profitReportIdForLink.value
   if (id == null) return
@@ -417,12 +505,15 @@ async function load() {
     return
   }
   loading.value = true
+  profitFlowPayload.value = null
   try {
     detail.value = useRow
       ? await fetchSettlementRowById(fetchId)
       : await fetchSettlementByRootReportId(fetchId)
+    await loadProfitFlow()
   } catch {
     detail.value = null
+    profitFlowPayload.value = null
   } finally {
     loading.value = false
   }
@@ -480,6 +571,16 @@ async function onRejectDialogBeforeClose(action) {
 <style scoped>
 .pad {
   padding: 48px 0;
+}
+.settlement-profit-flow {
+  margin-top: 12px;
+}
+.settlement-profit-flow__steps {
+  padding: 0 8px 8px;
+  min-height: 40px;
+}
+.settlement-profit-flow__link {
+  padding: 0 16px 12px;
 }
 .link-row {
   padding: 12px 16px 0;

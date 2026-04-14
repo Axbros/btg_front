@@ -22,7 +22,7 @@
         text="资料正在等待直属上级审核，请耐心等待。审核完成之前您只能在本页面查看或修改资料，无法使用系统其它功能。"
       />
       <p v-if="!auth.isProfilePendingReview" class="tip">
-        保存后将更新昵称与扩展资料。登录手机号以注册账号为准，不可在此修改。
+        保存后将更新真实姓名与扩展资料。登录手机号以注册账号为准，不可在此修改。
       </p>
       <p v-else class="tip tip--pending">
         审核期间仍可修改并保存资料；如需更换账号请使用底部「退出登录」。
@@ -36,7 +36,7 @@
           <van-field
             v-model="form.nickname"
             name="nickname"
-            label="用户名"
+            label="真实姓名"
             placeholder="必填"
             
             required
@@ -210,10 +210,10 @@ const loading = ref(false)
 const submitDialogShow = ref(false)
 const pageReady = ref(false)
 const nicknameRules = [
-  { required: true, message: '请填写用户名' },
+  { required: true, message: '请填写真实姓名' },
   {
     validator: (v) => {
-      if ((v || '').length > 100) return '用户名最长 100 字'
+      if ((v || '').length > 100) return '真实姓名最长 100 字'
       return true
     },
   },

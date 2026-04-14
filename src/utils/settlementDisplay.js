@@ -7,7 +7,7 @@ export function trimStr(v) {
 }
 
 /**
- * 结算列表标题：优先付款人昵称#手机，否则单号/结算#id。
+ * 结算列表标题：优先付款人真实姓名#手机，否则单号/结算#id。
  * @param {Record<string, unknown>} item
  */
 export function settlementListTitle(item) {
@@ -29,7 +29,7 @@ export function settlementListTitle(item) {
 }
 
 /**
- * 副行：无完整付款人信息时展示下级昵称等；时间。
+ * 副行：无完整付款人信息时展示下级真实姓名等；时间。
  * @param {Record<string, unknown>} item
  */
 export function settlementListMetaRest(item) {

@@ -20,8 +20,8 @@
         <p class="invite-qr__hint">扫码打开注册页</p>
       </div>
       <van-cell-group inset>
-        <van-cell title="登陆手机" :value="String(userInfo.mobile ?? '—')" />
-        <van-cell title="登陆昵称" :value="String(userInfo.nickname ?? '—')" />
+        <van-cell title="手机号" :value="String(userInfo.mobile ?? '—')" />
+        <van-cell title="真实姓名" :value="String(userInfo.nickname ?? '—')" />
         <van-cell title="账号状态">
           <template #value>
             <van-tag :type="userStatusTagType(userInfo.status)" plain round>
@@ -39,6 +39,7 @@
           is-link
           @click="copyInviteRegisterUrl"
         />
+        <van-cell title="账户资金快照（MT5）" is-link :to="{ name: 'Mt5Snapshot' }" />
       </van-cell-group>
 
       <van-cell-group v-if="profileDetailRows.length" inset title="资料信息" class="profile__block">
@@ -117,7 +118,7 @@ const profileDetailRows = computed(() => {
     if (s === '') return
     rows.push({ title, value: s })
   }
-  // push('资料昵称', p.nickname)
+  // push('资料真实姓名', p.nickname)
   // push('真实姓名', p.realName)
   // push('身份证号', p.idCardNo)
   push('服务器名称', p.serverName)

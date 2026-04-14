@@ -28,6 +28,10 @@
       is-link
       @click.stop="goDistribution"
     />
+    <template v-if="showReturnedResubmitActions">
+      <van-cell title="去修改并重提" is-link @click.stop="goProfitResubmit" />
+      <van-cell title="查看状态流" is-link @click.stop="goProfitFlow" />
+    </template>
   </van-cell-group>
 </template>
 
@@ -42,6 +46,7 @@ import {
   formatRate,
   formatProfitRecordStatus,
   profitRecordStatusTagType,
+  isProfitReportReturnedToApplicant,
 } from '@/utils/format'
 
 const props = defineProps({
@@ -70,6 +75,10 @@ const canShowDistributionLink = computed(() => {
   const v = profitReportIdForDistribution()
   return v != null && String(v).trim() !== ''
 })
+
+const showReturnedResubmitActions = computed(() =>
+  isProfitReportReturnedToApplicant(props.item.status),
+)
 
 const orderNo = computed(
   () =>
@@ -143,6 +152,18 @@ function goDistribution() {
     name: 'ProfitDistributionDetail',
     params: { profitReportId: String(id) },
   })
+}
+
+function goProfitResubmit() {
+  const id = profitReportIdForDistribution()
+  if (id == null || String(id).trim() === '') return
+  router.push({ name: 'ProfitReportResubmit', params: { profitReportId: String(id) } })
+}
+
+function goProfitFlow() {
+  const id = profitReportIdForDistribution()
+  if (id == null || String(id).trim() === '') return
+  router.push({ name: 'ProfitReportFlow', params: { profitReportId: String(id) } })
 }
 </script>
 

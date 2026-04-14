@@ -2,7 +2,7 @@
   <div class="auth-page">
     <div class="auth-brand">
       <div class="auth-brand__title">吞金授·分润结算</div>
-      <div class="auth-brand__sub">打造一流现货交易系统</div>
+      <div class="auth-brand__sub">打造一流期货交易系统</div>
     </div>
     <van-form scroll-to-error :show-error-message="true" @submit="onSubmit">
       <van-cell-group inset>

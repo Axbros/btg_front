@@ -54,6 +54,11 @@ export function fetchSettlementRowById(settlementId) {
   return get(`/settlements/row/${settlementNumericSegment(settlementId)}`)
 }
 
+/** GET /api/v1/settlements/{rootReportId}/profit-flow — 返回 layers（ProfitFlowLayerSummaryVO[]） */
+export function getSettlementProfitFlow(rootReportId) {
+  return get(`/settlements/${settlementNumericSegment(rootReportId)}/profit-flow`)
+}
+
 /** POST /api/v1/settlements/{id}/submit */
 export function submitSettlementTransfer(id, data) {
   return post(`/settlements/${settlementNumericSegment(id)}/submit`, data)

@@ -97,3 +97,23 @@ export function fetchTeamRepays(params = {}) {
     size: params.size ?? params.pageSize ?? 10,
   })
 }
+
+/** POST /replenishments/{id}/resubmit */
+export function resubmitReplenishment(id, data) {
+  return post(`/replenishments/${id}/resubmit`, data)
+}
+
+/** GET /replenishments/{id}/flow */
+export function getReplenishmentFlow(id) {
+  return get(`/replenishments/${id}/flow`)
+}
+
+/** POST /replenishments/repays/{id}/resubmit */
+export function resubmitRepayApply(id, data) {
+  return post(`/replenishments/repays/${id}/resubmit`, data)
+}
+
+/** GET /replenishments/repays/{id}/flow */
+export function getRepayFlow(id) {
+  return get(`/replenishments/repays/${id}/flow`)
+}

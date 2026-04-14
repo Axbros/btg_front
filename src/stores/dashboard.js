@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { showToast } from 'vant'
-import { getPendingSummary } from '@/api/dashboard'
+import { getPendingSummary, getTodoItems } from '@/api/dashboard'
+import { normalizeTodoItemsResponse } from '@/utils/dashboardTodo'
 
 function num(v) {
   const x = Number(v)
@@ -17,13 +18,19 @@ export function normalizePendingSummary(raw) {
   const pendingProfitReportReviewCount = num(d.pendingProfitReportReviewCount)
   const pendingReplenishmentReviewCount = num(d.pendingReplenishmentReviewCount)
   const pendingReplenishmentRepayReviewCount = num(d.pendingReplenishmentRepayReviewCount)
+  const returnedProfitReportCount = num(d.returnedProfitReportCount)
+  const returnedReplenishmentApplyCount = num(d.returnedReplenishmentApplyCount)
+  const returnedReplenishmentRepayCount = num(d.returnedReplenishmentRepayCount)
   let totalPendingCount = num(d.totalPendingCount)
   const sum =
     pendingSettlementReviewCount +
     pendingSettlementPayableCount +
     pendingProfitReportReviewCount +
     pendingReplenishmentReviewCount +
-    pendingReplenishmentRepayReviewCount
+    pendingReplenishmentRepayReviewCount +
+    returnedProfitReportCount +
+    returnedReplenishmentApplyCount +
+    returnedReplenishmentRepayCount
   if (totalPendingCount === 0 && sum > 0) {
     totalPendingCount = sum
   }
@@ -35,6 +42,9 @@ export function normalizePendingSummary(raw) {
     pendingProfitReportReviewCount,
     pendingReplenishmentReviewCount,
     pendingReplenishmentRepayReviewCount,
+    returnedProfitReportCount,
+    returnedReplenishmentApplyCount,
+    returnedReplenishmentRepayCount,
     totalPendingCount,
   }
 }
@@ -46,20 +56,29 @@ const emptySummary = () => ({
   pendingProfitReportReviewCount: 0,
   pendingReplenishmentReviewCount: 0,
   pendingReplenishmentRepayReviewCount: 0,
+  returnedProfitReportCount: 0,
+  returnedReplenishmentApplyCount: 0,
+  returnedReplenishmentRepayCount: 0,
   totalPendingCount: 0,
 })
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const pendingSummary = ref(emptySummary())
+  const todoItems = ref([])
   const loading = ref(false)
+  const todoLoading = ref(false)
   let fetchFailedToastShown = false
+  let todoFetchFailedToastShown = false
 
   const totalPendingCount = computed(() => num(pendingSummary.value.totalPendingCount))
 
   function clearPendingSummary() {
     pendingSummary.value = emptySummary()
+    todoItems.value = []
     loading.value = false
+    todoLoading.value = false
     fetchFailedToastShown = false
+    todoFetchFailedToastShown = false
   }
 
   async function fetchPendingSummary() {
@@ -80,11 +99,32 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
+  async function fetchTodoItems(params = {}) {
+    todoLoading.value = true
+    try {
+      const raw = await getTodoItems(params)
+      todoItems.value = normalizeTodoItemsResponse(raw)
+      todoFetchFailedToastShown = false
+    } catch (e) {
+      console.warn('[dashboard] todo-items failed', e)
+      todoItems.value = []
+      if (!todoFetchFailedToastShown) {
+        todoFetchFailedToastShown = true
+        showToast({ type: 'text', message: '待办列表加载失败', duration: 2000 })
+      }
+    } finally {
+      todoLoading.value = false
+    }
+  }
+
   return {
     pendingSummary,
+    todoItems,
     loading,
+    todoLoading,
     totalPendingCount,
     fetchPendingSummary,
+    fetchTodoItems,
     clearPendingSummary,
     normalizePendingSummary,
   }

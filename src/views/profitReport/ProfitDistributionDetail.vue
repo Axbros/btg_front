@@ -4,13 +4,13 @@
     <van-loading v-if="loading" class="pad" vertical>加载分润明细…</van-loading>
     <template v-else-if="rows.length">
       <van-cell-group inset title="按链路分配（逐级汇总）">
-        <van-cell
-          v-for="(row, idx) in rows"
-          :key="idx"
-          :title="titleCell(row)"
-          :value="amountCell(row)"
-          :label="labelCell(row)"
-        />
+        <template v-for="(row, idx) in rows" :key="idx">
+          <van-cell :title="titleCell(row)" :value="amountCell(row)" :label="labelCell(row)" />
+          <div v-if="idx < rows.length - 1" class="dist-chain__arrow" role="presentation">
+            <van-icon name="arrow-up" class="dist-chain__arrow-icon" />
+            <span class="dist-chain__arrow-text">向上一级汇总</span>
+          </div>
+        </template>
       </van-cell-group>
       <p v-if="note" class="note">{{ note }}</p>
     </template>
@@ -134,5 +134,27 @@ watch(
   font-size: 13px;
   color: #646566;
   line-height: 1.5;
+}
+.dist-chain__arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 0 12px;
+  margin: 0 12px;
+  border-left: 1px dashed #dcdee0;
+  border-right: 1px dashed #dcdee0;
+  background: linear-gradient(180deg, rgba(7, 193, 96, 0.04) 0%, rgba(7, 193, 96, 0.08) 50%, rgba(7, 193, 96, 0.04) 100%);
+}
+.dist-chain__arrow-icon {
+  font-size: 22px;
+  color: #07c160;
+  line-height: 1;
+}
+.dist-chain__arrow-text {
+  font-size: 12px;
+  color: #969799;
+  letter-spacing: 0.02em;
 }
 </style>

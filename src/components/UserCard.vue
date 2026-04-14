@@ -18,7 +18,7 @@ const props = defineProps({
   sub: { type: String, default: '' },
 })
 
-/** 首页等场景：用户-{nickname}，无昵称则用手机号或 ID */
+/** 首页等场景：用户-{nickname}，无真实姓名则用手机号或 ID */
 const displayName = computed(() => {
   const u = props.user
   if (!u) return '—'

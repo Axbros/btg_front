@@ -8,7 +8,7 @@
       <van-cell-group inset title="账号信息">
         <!-- <van-cell title="用户ID" :value="txt(user.id)" /> -->
         <van-cell title="手机号" :value="txt(user.mobile)" />
-        <van-cell title="昵称" :value="txt(user.nickname)" />
+        <van-cell title="真实姓名" :value="txt(user.nickname)" />
         <van-cell title="上级用户" :value="referrerNicknameText" />
         <van-cell title="账号状态">
           <template #value>

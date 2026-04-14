@@ -16,3 +16,13 @@ export function fetchMyProfitReports(params = {}) {
 export function fetchProfitReportById(id) {
   return get(`/profit-reports/${id}`)
 }
+
+/** POST /profit-reports/{id}/resubmit */
+export function resubmitProfitReport(id, data) {
+  return post(`/profit-reports/${id}/resubmit`, data)
+}
+
+/** GET /profit-reports/{id}/flow */
+export function getProfitReportFlow(id) {
+  return get(`/profit-reports/${id}/flow`)
+}
