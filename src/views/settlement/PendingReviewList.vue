@@ -30,6 +30,17 @@
               </van-tag>
               <span class="meta-row__rest">{{ settlementListMetaRest(item) }}</span>
             </div>
+            <!-- <van-button
+              v-if="rootReportIdOf(item) != null"
+              class="meta-row__flow"
+              size="small"
+              type="primary"
+              plain
+              round
+              @click.stop="goProfitFlow(item)"
+            >
+              查看链路
+            </van-button> -->
           </template>
           <template #value>
             <span class="amt">{{ formatMoney(amountField(item)) }}</span>
@@ -48,6 +59,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -71,6 +83,7 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
+const router = useRouter()
 
 function amountField(item) {
   return item.profitAmount ?? item.payAmount ?? 0
@@ -80,6 +93,19 @@ function detailTo(item) {
   return item.id != null
     ? { name: 'SettlementDetailByRow', params: { rowId: String(item.id) } }
     : undefined
+}
+
+function rootReportIdOf(item) {
+  const v = item.reportId ?? item.report_id ?? item.rootReportId ?? item.root_report_id
+  if (v == null || v === '') return null
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function goProfitFlow(item) {
+  const rid = rootReportIdOf(item)
+  if (rid == null) return
+  router.push({ name: 'ProfitFlowDetail', params: { rootReportId: String(rid) } })
 }
 
 async function fetchPage(p) {
@@ -164,6 +190,9 @@ function next() {
   font-size: 12px;
   color: #969799;
   line-height: 1.4;
+}
+.meta-row__flow {
+  margin-top: 8px;
 }
 .amt {
   font-weight: 600;

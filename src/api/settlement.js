@@ -54,9 +54,14 @@ export function fetchSettlementRowById(settlementId) {
   return get(`/settlements/row/${settlementNumericSegment(settlementId)}`)
 }
 
-/** GET /api/v1/settlements/{rootReportId}/profit-flow — 返回 layers（ProfitFlowLayerSummaryVO[]） */
+/** GET /api/v1/settlements/{rootReportId}/profit-flow — ProfitFlowDetailVO（含 layers 等） */
 export function getSettlementProfitFlow(rootReportId) {
   return get(`/settlements/${settlementNumericSegment(rootReportId)}/profit-flow`)
+}
+
+/** 与 {@link getSettlementProfitFlow} 同一路径，语义为「利润分润链路详情」 */
+export function getProfitFlowDetail(rootReportId) {
+  return getSettlementProfitFlow(rootReportId)
 }
 
 /** POST /api/v1/settlements/{id}/submit */

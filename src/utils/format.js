@@ -44,14 +44,14 @@ const STATUS_MAP = {
 
 /**
  * btg_profit_report.status：
- * 1 待审核 2 已进入结算链 3 历史终局拒绝 4 全链路完成 5 已退回待修改
+ * 1 待直属上级审核 2 已进入结算链 3 历史终局拒绝 4 全链路完成 5 已退回申报人修改
  */
 const PROFIT_REPORT_STATUS_NUM = {
-  1: '待审核',
+  1: '待直属上级审核',
   2: '已进入结算链',
-  3: '已拒绝（历史终局）',
+  3: '历史终局拒绝',
   4: '全链路完成',
-  5: '已退回待修改',
+  5: '已退回申报人修改',
 }
 
 /** 兼容旧利润单状态码 */
@@ -93,19 +93,55 @@ export function formatStatus(val) {
 }
 
 const PROFIT_REPORT_STATUS_STR = {
-  PENDING_DIRECT_REVIEW: '待审核',
+  PENDING_DIRECT_REVIEW: '待直属上级审核',
   PENDING_REVIEW: '待审核',
   IN_SETTLEMENT_CHAIN: '已进入结算链',
   REJECTED: '已拒绝',
   ALL_COMPLETED: '全链路完成',
-  RETURNED_TO_APPLICANT: '已退回待修改',
+  RETURNED_TO_APPLICANT: '已退回申报人修改',
+  PROFIT_REJECTED: '历史终局拒绝',
+  DIRECT_REVIEW_PASSED: '已进入结算链（直属已通过）',
+}
+
+/** profit-flow layers / 与后端 ProfitFlowLayerState 等对齐（先于 formatProfitRecordStatus 定义） */
+const PROFIT_FLOW_COMBINED_STATE_STR = {
+  PENDING_DIRECT_REVIEW: '待直属上级审核',
+  RETURNED_TO_APPLICANT: '已退回申报人修改',
+  PROFIT_REJECTED: '历史终局拒绝',
+  DIRECT_REVIEW_PASSED: '已进入结算链（直属已通过）',
+  SETTLEMENT_NOT_STARTED: '尚未轮到该层',
+  SETTLEMENT_PENDING_SUBMIT: '付款人待提交转账凭证',
+  SETTLEMENT_PENDING_REVIEW: '待收款上级审核',
+  SETTLEMENT_APPROVED: '已通过',
+  SETTLEMENT_REJECTED: '已拒绝',
+  RETURNED_FOR_EDIT: '已退回待修改',
+  NONE: '无结算',
+  FLOW_FINISHED: '全链路完成',
+}
+
+/**
+ * @param {unknown} val
+ * @returns {string} 有映射则返回中文，否则返回空串（便于调用方再 fallback）
+ */
+export function formatProfitFlowCombinedState(val) {
+  if (val === null || val === undefined || val === '') return ''
+  const k = String(val)
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, '_')
+  return PROFIT_FLOW_COMBINED_STATE_STR[k] || ''
 }
 
 export function formatProfitRecordStatus(val) {
   if (val === null || val === undefined || val === '') return '-'
   if (typeof val === 'number' && PROFIT_REPORT_STATUS_NUM[val] != null) return PROFIT_REPORT_STATUS_NUM[val]
   if (typeof val === 'number' && PROFIT_STATUS_NUM[val] != null) return PROFIT_STATUS_NUM[val]
-  const sk = String(val).toUpperCase()
+  const sk = String(val)
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, '_')
+  const unified = formatProfitFlowCombinedState(val)
+  if (unified) return unified
   if (PROFIT_REPORT_STATUS_STR[sk]) return PROFIT_REPORT_STATUS_STR[sk]
   return formatStatus(val)
 }
@@ -125,10 +161,13 @@ export function isProfitReportReturnedToApplicant(status) {
 /** 利润上报记录 status → van-tag type */
 export function profitRecordStatusTagType(val) {
   if (val === null || val === undefined || val === '') return 'default'
-  const sk = String(val).toUpperCase()
-  if (sk === 'REJECTED') return 'danger'
+  const sk = String(val)
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, '_')
+  if (sk === 'REJECTED' || sk === 'PROFIT_REJECTED') return 'danger'
   if (sk === 'RETURNED_TO_APPLICANT') return 'warning'
-  if (sk === 'ALL_COMPLETED' || sk === 'IN_SETTLEMENT_CHAIN') return 'success'
+  if (sk === 'ALL_COMPLETED' || sk === 'IN_SETTLEMENT_CHAIN' || sk === 'DIRECT_REVIEW_PASSED') return 'success'
   if (sk === 'PENDING_DIRECT_REVIEW' || sk === 'PENDING_REVIEW') return 'warning'
   const n = Number(val)
   if (!Number.isNaN(n)) {
@@ -165,12 +204,26 @@ const SETTLEMENT_STATUS_STR = {
   APPROVED: '已通过',
   REJECTED: '已拒绝',
   CONFIRMED: '已确认',
+  /** profit-flow 结算层枚举 */
+  SETTLEMENT_NOT_STARTED: '尚未轮到该层',
+  SETTLEMENT_PENDING_SUBMIT: '付款人待提交转账凭证',
+  SETTLEMENT_PENDING_REVIEW: '待收款上级审核',
+  SETTLEMENT_APPROVED: '已通过',
+  SETTLEMENT_REJECTED: '已拒绝',
+  /** 分润链路层 / 顶层状态 */
+  NONE: '无结算',
+  FLOW_FINISHED: '全链路完成',
 }
 
 export function formatSettlementStatus(val) {
   if (val === null || val === undefined || val === '') return '-'
   if (typeof val === 'number' && SETTLEMENT_STATUS_NUM[val] != null) return SETTLEMENT_STATUS_NUM[val]
-  const key = String(val).toUpperCase()
+  const unified = formatProfitFlowCombinedState(val)
+  if (unified) return unified
+  const key = String(val)
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, '_')
   if (SETTLEMENT_STATUS_STR[key]) return SETTLEMENT_STATUS_STR[key]
   if (typeof val === 'number' && PROFIT_STATUS_NUM[val] != null) return PROFIT_STATUS_NUM[val]
   return formatStatus(val)
@@ -179,10 +232,19 @@ export function formatSettlementStatus(val) {
 /** 结算单 status → van-tag type */
 export function settlementStatusTagType(val) {
   const s = val
-  if (s === 'APPROVED' || s === 4) return 'success'
-  if (s === 'REJECTED' || s === 5) return 'danger'
-  if (s === 'PENDING_REVIEW' || s === 'PENDING' || s === 3) return 'primary'
-  if (s === 'PENDING_SUBMIT' || s === 2) return 'warning'
+  const sk =
+    typeof s === 'string'
+      ? s
+          .trim()
+          .toUpperCase()
+          .replace(/-/g, '_')
+      : ''
+  if (sk === 'SETTLEMENT_APPROVED' || s === 'APPROVED' || s === 4) return 'success'
+  if (sk === 'SETTLEMENT_REJECTED' || s === 'REJECTED' || s === 5) return 'danger'
+  if (sk === 'SETTLEMENT_PENDING_REVIEW' || s === 'PENDING_REVIEW' || s === 'PENDING' || s === 3) return 'primary'
+  if (sk === 'SETTLEMENT_PENDING_SUBMIT' || s === 'PENDING_SUBMIT' || s === 2) return 'warning'
+  if (sk === 'SETTLEMENT_NOT_STARTED' || sk === 'NONE') return 'default'
+  if (sk === 'FLOW_FINISHED') return 'success'
   if (s === 'INIT' || s === 1) return 'default'
   const n = Number(s)
   if (Number.isNaN(n)) return 'default'

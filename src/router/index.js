@@ -109,6 +109,12 @@ const routes = [
         meta: { title: '分润明细', tab: 'report', hideTab: true },
       },
       {
+        path: 'flow/profit/:rootReportId',
+        name: 'ProfitFlowDetail',
+        component: () => import('@/views/flow/ProfitFlowDetail.vue'),
+        meta: { title: '利润分润链路', hideTab: true },
+      },
+      {
         path: 'settlement/pending-pay',
         name: 'PendingPaySettlements',
         component: () => import('@/views/settlement/PendingPayList.vue'),

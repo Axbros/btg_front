@@ -84,31 +84,54 @@
       </van-cell>
     </van-cell-group>
 
-    <van-cell-group inset title="待办事项" class="todo-hub__block">
+    <div class="todo-hub__block">
       <van-loading v-if="todoLoading" class="todo-hub__loading" vertical>加载待办…</van-loading>
       <template v-else-if="todoItems.length">
-        <van-cell
-          v-for="(row, idx) in todoItems"
-          :key="`${row.todoType || 'x'}-${row.businessId ?? idx}`"
-          is-link
-          @click="onTodoRowClick(row)"
-        >
-          <template #title>
-            <div class="todo-hub__todo-title">{{ row.title || '待办' }}</div>
-            <div class="todo-hub__todo-meta">
-              <van-tag plain type="primary" class="todo-hub__todo-tag">{{ formatDashboardTodoType(row.todoType) }}</van-tag>
-              <span class="todo-hub__todo-status">{{ formatTodoItemCurrentStatus(row) }}</span>
-            </div>
-          </template>
-          <template #label>
-            <div v-if="row.latestOperateTime" class="todo-hub__todo-time">{{ formatDateTime(row.latestOperateTime) }}</div>
-            <div v-if="rejectReasonText(row)" class="todo-hub__todo-reason">{{ rejectReasonText(row) }}</div>
-            <div v-if="actionHintText(row)" class="todo-hub__todo-hint">{{ actionHintText(row) }}</div>
-          </template>
-        </van-cell>
+        <van-cell-group v-if="actionableTodoItems.length" inset title="待办事项（需处理）" class="todo-hub__block">
+          <van-cell
+            v-for="(row, idx) in actionableTodoItems"
+            :key="`a-${row.todoType || 'x'}-${row.businessId ?? idx}`"
+            is-link
+            @click="onTodoRowClick(row)"
+          >
+            <template #title>
+              <div class="todo-hub__todo-title">{{ row.title || '待办' }}</div>
+              <div class="todo-hub__todo-meta">
+                <van-tag plain type="primary" class="todo-hub__todo-tag">{{ formatDashboardTodoType(row.todoType) }}</van-tag>
+                <span class="todo-hub__todo-status">{{ formatTodoItemCurrentStatus(row) }}</span>
+              </div>
+            </template>
+            <template #label>
+              <div v-if="row.latestOperateTime" class="todo-hub__todo-time">{{ formatDateTime(row.latestOperateTime) }}</div>
+              <div v-if="rejectReasonText(row)" class="todo-hub__todo-reason">{{ rejectReasonText(row) }}</div>
+              <div v-if="actionHintText(row)" class="todo-hub__todo-hint">{{ actionHintText(row) }}</div>
+            </template>
+          </van-cell>
+        </van-cell-group>
+        <van-cell-group v-if="readonlyTodoItems.length" inset title="下级利润进行中（仅查看）" class="todo-hub__block">
+          <van-cell
+            v-for="(row, idx) in readonlyTodoItems"
+            :key="`r-${row.todoType || 'x'}-${row.businessId ?? idx}`"
+            :is-link="false"
+          >
+            <template #title>
+              <div class="todo-hub__todo-title">{{ row.title || '下级利润进行中' }}</div>
+              <div class="todo-hub__todo-meta">
+                <van-tag plain type="success" class="todo-hub__todo-tag">{{ formatDashboardTodoType(row.todoType) }}</van-tag>
+                <span class="todo-hub__todo-status">{{ formatTodoItemCurrentStatus(row) }}</span>
+              </div>
+            </template>
+            <template #label>
+              <div v-if="row.latestOperateTime" class="todo-hub__todo-time">{{ formatDateTime(row.latestOperateTime) }}</div>
+              <div class="todo-hub__todo-actions">
+                <van-button size="small" plain type="primary" @click.stop="onViewProfitChain(row)">查看链路</van-button>
+              </div>
+            </template>
+          </van-cell>
+        </van-cell-group>
       </template>
       <van-empty v-else image="search" description="暂无待办事项" />
-    </van-cell-group>
+    </div>
   </div>
 </template>
 
@@ -125,6 +148,7 @@ import {
   formatDashboardTodoType,
   formatTodoItemCurrentStatus,
   resolveTodoNavigation,
+  isDashboardTodoReadOnly,
 } from '@/utils/dashboardTodo'
 import AppHeader from '@/components/AppHeader.vue'
 
@@ -133,6 +157,9 @@ const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const { userInfo } = storeToRefs(auth)
 const { pendingSummary, todoItems, todoLoading } = storeToRefs(dashboard)
+
+const actionableTodoItems = computed(() => todoItems.value.filter((r) => !isDashboardTodoReadOnly(r)))
+const readonlyTodoItems = computed(() => todoItems.value.filter((r) => isDashboardTodoReadOnly(r)))
 
 const isRootUser = computed(() => isUserRoot(userInfo.value))
 
@@ -187,6 +214,15 @@ function onTodoRowClick(row) {
     return
   }
   if (nav.path) goNav(nav.path)
+}
+
+function onViewProfitChain(row) {
+  const nav = resolveTodoNavigation(row)
+  if (!nav?.path) {
+    showToast('暂无法跳转')
+    return
+  }
+  goNav(nav.path)
 }
 
 onMounted(() => {
@@ -253,5 +289,8 @@ onMounted(() => {
   font-size: 12px;
   color: #576b95;
   line-height: 1.45;
+}
+.todo-hub__todo-actions {
+  margin-top: 10px;
 }
 </style>

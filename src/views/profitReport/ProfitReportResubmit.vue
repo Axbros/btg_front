@@ -49,19 +49,19 @@
           </template>
         </van-field>
       </van-cell-group>
-      <van-cell-group inset title="审核链路" class="pr-resubmit__flow">
+      <!-- <van-cell-group inset title="审核链路" class="pr-resubmit__flow">
         <van-cell v-if="flowReportNo" title="单号" :value="flowReportNo" />
         <van-cell v-if="flowCurrentStatus != null" title="当前状态" :value="formatProfitRecordStatus(flowCurrentStatus)" />
         <van-cell v-if="flowSubmitVersion != null" title="提交版本" :value="String(flowSubmitVersion)" />
         <van-cell v-if="flowRejectReason" title="最近退回原因" :label="flowRejectReason" />
         <div class="pr-resubmit__flow-steps">
           <van-loading v-if="flowLoading" size="20px" vertical>加载链路…</van-loading>
-          <BusinessFlowNodesStepper v-else :nodes="flowNodes" />
+          <BusinessFlowTimeline v-else :nodes="flowNodes" />
         </div>
         <div v-if="!flowLoading && flowNodes.length" class="pr-resubmit__flow-link">
           <van-button size="small" plain type="primary" round block @click="goFullFlow">查看完整流转页</van-button>
         </div>
-      </van-cell-group>
+      </van-cell-group> -->
       <div class="actions">
         <van-button round block type="primary" native-type="submit" :loading="submitting">重新提交</van-button>
       </div>
@@ -78,7 +78,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { fetchProfitReportById, getProfitReportFlow, resubmitProfitReport } from '@/api/profitReport'
 import { isProfitReportReturnedToApplicant, formatProfitRecordStatus } from '@/utils/format'
-import BusinessFlowNodesStepper from '@/components/BusinessFlowNodesStepper.vue'
+import BusinessFlowTimeline from '@/components/BusinessFlowTimeline.vue'
 
 const route = useRoute()
 const router = useRouter()

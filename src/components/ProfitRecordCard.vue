@@ -28,6 +28,12 @@
       is-link
       @click.stop="goDistribution"
     />
+    <van-cell
+      v-if="profitFlowRootId != null"
+      title="查看利润分润链路"
+      is-link
+      @click.stop="goProfitFlowDetail"
+    />
     <template v-if="showReturnedResubmitActions">
       <van-cell title="去修改并重提" is-link @click.stop="goProfitResubmit" />
       <van-cell title="查看状态流" is-link @click.stop="goProfitFlow" />
@@ -80,6 +86,15 @@ const showReturnedResubmitActions = computed(() =>
   isProfitReportReturnedToApplicant(props.item.status),
 )
 
+/** 与结算详情 GET /settlements/{rootReportId} 一致：根单 id */
+const profitFlowRootId = computed(() => {
+  const it = props.item
+  const root = it.reportId ?? it.report_id ?? it.rootReportId ?? it.root_report_id ?? it.id
+  if (root == null || String(root).trim() === '') return null
+  const n = Number(root)
+  return Number.isFinite(n) && n > 0 ? n : null
+})
+
 const orderNo = computed(
   () =>
     props.item.reportNo ??
@@ -110,7 +125,7 @@ const shareUpField = computed(
 /** 付款人打开详情：GET /settlements/{rootReportId}；root_report_id 与本次上报利润单 id 一致 */
 function goSettlement() {
   const it = props.item
-  const root = it.rootReportId ?? it.root_report_id ?? it.id
+  const root = it.reportId ?? it.report_id ?? it.rootReportId ?? it.root_report_id ?? it.id
   if (root != null && String(root).trim() !== '') {
     const n = Number(root)
     if (Number.isFinite(n) && n > 0) {
@@ -164,6 +179,12 @@ function goProfitFlow() {
   const id = profitReportIdForDistribution()
   if (id == null || String(id).trim() === '') return
   router.push({ name: 'ProfitReportFlow', params: { profitReportId: String(id) } })
+}
+
+function goProfitFlowDetail() {
+  const n = profitFlowRootId.value
+  if (n == null) return
+  router.push({ name: 'ProfitFlowDetail', params: { rootReportId: String(n) } })
 }
 </script>
 

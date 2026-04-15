@@ -14,7 +14,7 @@
       </van-cell-group>
 
       <van-cell-group inset title="流转节点" class="flow-detail__block">
-        <BusinessFlowNodesStepper :nodes="nodes" />
+        <BusinessFlowTimeline :nodes="nodes" />
       </van-cell-group>
     </template>
   </div>
@@ -24,7 +24,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
-import BusinessFlowNodesStepper from '@/components/BusinessFlowNodesStepper.vue'
+import BusinessFlowTimeline from '@/components/BusinessFlowTimeline.vue'
 import { getProfitReportFlow } from '@/api/profitReport'
 import { getReplenishmentFlow, getRepayFlow } from '@/api/replenishment'
 import {

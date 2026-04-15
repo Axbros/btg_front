@@ -1,7 +1,8 @@
 <template>
-  <div class="flow-stepper">
-    <van-steps direction="vertical" :active="activeStepIndexComputed">
-      <van-step v-for="(node, idx) in normalizedNodes" :key="idx">
+  <div class="flow-timeline">
+    <van-empty v-if="!sortedNodes.length" :description="emptyDescription" />
+    <van-steps v-else direction="vertical" :active="timelineActiveIndex" class="flow-timeline__steps">
+      <van-step v-for="(node, index) in sortedNodes" :key="stableTimelineNodeKey(node, index)">
         <div class="flow-node">
           <div class="flow-node__title">{{ nodeTitle(node) }}</div>
           <div v-if="nodeRole(node)" class="flow-node__line">角色：{{ formatNodeRole(nodeRole(node)) }}</div>
@@ -9,14 +10,13 @@
           <div v-if="nodeDisplayStatus(node)" class="flow-node__line">
             状态：{{ formatFlowNodeDisplayStatus(nodeDisplayStatus(node)) }}
           </div>
-          <!-- <div v-if="operatorLine(node)" class="flow-node__line">{{ operatorLine(node) }}</div> -->
+          <div v-if="operatorLine(node)" class="flow-node__line">{{ operatorLine(node) }}</div>
           <div v-if="versionLine(node)" class="flow-node__line">{{ versionLine(node) }}</div>
           <div v-if="nodeRemark(node)" class="flow-node__remark">{{ nodeRemark(node) }}</div>
           <div v-if="nodeTime(node)" class="flow-node__time">{{ formatDateTime(nodeTime(node)) }}</div>
         </div>
       </van-step>
     </van-steps>
-    <van-empty v-if="!normalizedNodes.length" description="无节点记录" />
   </div>
 </template>
 
@@ -24,55 +24,40 @@
 import { computed } from 'vue'
 import { formatDateTime } from '@/utils/format'
 import { formatFlowNodeDisplayStatus } from '@/utils/dashboardTodo'
+import { formatNodeAction, formatNodeRole } from '@/utils/flowTimelineFormat'
+import { sortTimelineNodesAscending, stableTimelineNodeKey } from '@/utils/flowTimeline'
 
 const props = defineProps({
-  /** 流转节点列表（与 GET …/flow 的 nodes 一致） */
+  /** 流转日志节点（与 GET …/flow 的 nodes 或兼容 flowLogs 等一致） */
   nodes: { type: Array, default: () => [] },
-  /** 指定当前步（0-based）；不传则高亮最后一步 */
-  activeIndex: { type: Number, default: null },
+  emptyDescription: { type: String, default: '暂无流转记录' },
 })
-
-const NODE_ROLE_LABELS = {
-  APPLICANT: '申报人',
-  UPLINE: '上级',
-  ROOT: '根用户',
-  ADMIN: '管理员',
-}
-
-const NODE_ACTION_LABELS = {
-  SUBMIT: '提交',
-  RESUBMIT: '重新提交',
-  RETURN_TO_APPLICANT: '退回修改',
-  APPROVE: '通过',
-  REJECT: '拒绝',
-}
 
 const normalizedNodes = computed(() => (Array.isArray(props.nodes) ? props.nodes : []))
 
-const activeStepIndexComputed = computed(() => {
-  const arr = normalizedNodes.value
-  if (!arr.length) return 0
-  const custom = props.activeIndex
-  if (custom != null && Number.isFinite(Number(custom))) {
-    const n = Number(custom)
-    return Math.min(Math.max(0, n), arr.length - 1)
-  }
-  return Math.max(0, arr.length - 1)
+/** 时间正序：上早下晚；active 指向最后一项，表示时间线已读到最新一条 */
+const sortedNodes = computed(() => sortTimelineNodesAscending(normalizedNodes.value))
+
+const timelineActiveIndex = computed(() => {
+  const n = sortedNodes.value.length
+  if (n <= 0) return 0
+  return Math.max(0, n - 1)
 })
-
-function formatNodeRole(raw) {
-  const k = String(raw || '').toUpperCase()
-  return NODE_ROLE_LABELS[k] || String(raw)
-}
-
-function formatNodeAction(raw) {
-  const k = String(raw || '').toUpperCase()
-  return NODE_ACTION_LABELS[k] || String(raw)
-}
 
 function nodeTitle(n) {
   if (!n || typeof n !== 'object') return '—'
-  return String(n.operatorName ?? '节点').trim() || '—'
+  return (
+    String(
+      n.nodeName ??
+        n.node_name ??
+        n.title ??
+        n.fromDisplayName ??
+        n.from_display_name ??
+        n.operatorName ??
+        n.operator_name ??
+        '节点',
+    ).trim() || '—'
+  )
 }
 
 function nodeRole(n) {
@@ -101,15 +86,16 @@ function nodeRemark(n) {
 
 function nodeTime(n) {
   if (!n || typeof n !== 'object') return null
-  return n.operateTime ?? n.operate_time ?? n.createTime ?? n.create_time ?? null
+  return n.operateTime ?? n.operate_time ?? n.createTime ?? n.create_time ?? n.auditTime ?? n.audit_time ?? null
 }
 
 function operatorLine(n) {
   if (!n || typeof n !== 'object') return ''
   const name = n.operatorName ?? n.operator_name
-  const uid = n.operatorUserId ?? n.operator_user_id
   if (name != null && String(name).trim() !== '') {
-    return `操作人：${String(name).trim()}`
+    const uid = n.operatorUserId ?? n.operator_user_id
+    const uidPart = uid != null && String(uid).trim() !== '' ? `（ID ${String(uid).trim()}）` : ''
+    return `操作人：${String(name).trim()}${uidPart}`
   }
   return ''
 }
@@ -123,11 +109,12 @@ function versionLine(n) {
 </script>
 
 <style scoped>
-.flow-stepper {
+.flow-timeline {
   padding: 8px 0 4px;
 }
 .flow-node {
   padding-bottom: 8px;
+  text-align: left;
 }
 .flow-node__title {
   font-weight: 600;

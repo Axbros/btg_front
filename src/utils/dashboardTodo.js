@@ -2,6 +2,7 @@
  * 首页待办 / 流转展示：todoType、节点状态文案与跳转路径（与后端约定一致）。
  */
 import {
+  formatProfitFlowCombinedState,
   formatProfitRecordStatus,
   formatReplenishmentStatus,
   formatRepayStatus,
@@ -14,6 +15,7 @@ export const DASHBOARD_TODO_TYPES = {
   SETTLEMENT_PENDING_PAY: 'SETTLEMENT_PENDING_PAY',
   SETTLEMENT_PENDING_REVIEW: 'SETTLEMENT_PENDING_REVIEW',
   PROFIT_REPORT_PENDING_REVIEW: 'PROFIT_REPORT_PENDING_REVIEW',
+  PROFIT_REPORT_CHAIN_WATCH: 'PROFIT_REPORT_CHAIN_WATCH',
   PROFIT_REPORT_RETURNED: 'PROFIT_REPORT_RETURNED',
   REPLENISHMENT_PENDING_REVIEW: 'REPLENISHMENT_PENDING_REVIEW',
   REPLENISHMENT_RETURNED: 'REPLENISHMENT_RETURNED',
@@ -25,6 +27,7 @@ const TODO_TYPE_LABELS = {
   SETTLEMENT_PENDING_PAY: '待支付结算',
   SETTLEMENT_PENDING_REVIEW: '待审核下级结算',
   PROFIT_REPORT_PENDING_REVIEW: '待审核利润上报',
+  PROFIT_REPORT_CHAIN_WATCH: '下级利润进行中',
   PROFIT_REPORT_RETURNED: '退回待修改·利润上报',
   REPLENISHMENT_PENDING_REVIEW: '待审核补仓',
   REPLENISHMENT_RETURNED: '退回待修改·补仓',
@@ -38,6 +41,16 @@ export function formatDashboardTodoType(todoType) {
   return TODO_TYPE_LABELS[k] || String(todoType)
 }
 
+/** 仅查看链路、无审核/提交等操作 */
+export function isDashboardTodoReadOnly(item) {
+  if (!item || typeof item !== 'object') return false
+  if (item.readOnly === true || item.read_only === true) return true
+  const t = String(item.todoType || '')
+    .toUpperCase()
+    .replace(/-/g, '_')
+  return t === 'PROFIT_REPORT_CHAIN_WATCH'
+}
+
 /** 流转节点 / 业务侧状态展示（字符串枚举） */
 const FLOW_NODE_DISPLAY_STATUS = {
   PENDING_SUBMIT: '待提交',
@@ -49,6 +62,8 @@ const FLOW_NODE_DISPLAY_STATUS = {
 
 export function formatFlowNodeDisplayStatus(val) {
   if (val == null || val === '') return '未知状态'
+  const unified = formatProfitFlowCombinedState(val)
+  if (unified) return unified
   const k = String(val).toUpperCase().replace(/-/g, '_')
   if (FLOW_NODE_DISPLAY_STATUS[k] != null) return FLOW_NODE_DISPLAY_STATUS[k]
   return String(val)
@@ -87,7 +102,31 @@ export function resolveTodoNavigation(item) {
   }
 
   const type = String(item.todoType || '').toUpperCase()
-  const id = numId(item.businessId)
+  const rootFromFields = numId(
+    item.rootReportId ?? item.root_report_id ?? item.reportId ?? item.report_id,
+  )
+  const businessId = numId(item.businessId)
+
+  /** 利润分润链路详情：须为数字根单 id；结算类仅使用显式 root 字段，避免误把结算行 id 当根单 */
+  const profitFlowTypes = new Set([
+    DASHBOARD_TODO_TYPES.PROFIT_REPORT_PENDING_REVIEW,
+    DASHBOARD_TODO_TYPES.PROFIT_REPORT_CHAIN_WATCH,
+    DASHBOARD_TODO_TYPES.PROFIT_REPORT_RETURNED,
+    DASHBOARD_TODO_TYPES.SETTLEMENT_PENDING_PAY,
+    DASHBOARD_TODO_TYPES.SETTLEMENT_PENDING_REVIEW,
+  ])
+  if (profitFlowTypes.has(type)) {
+    const rootId =
+      rootFromFields ||
+      (type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_PENDING_REVIEW ||
+      type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_CHAIN_WATCH ||
+      type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_RETURNED
+        ? businessId
+        : '')
+    if (rootId) return { path: `/flow/profit/${rootId}` }
+  }
+
+  const id = businessId
   if (!id) return null
 
   switch (type) {
