@@ -1,6 +1,6 @@
 <template>
   <div class="mt5-full">
-    <AppHeader title="账户" :show-back="false" />
+    <AppHeader title="账户快照" :show-back="false" />
     <van-loading v-if="loading" class="mt5-full__loading" vertical>加载中…</van-loading>
     <template v-else-if="mt5Rows.length">
       <div class="mt5-full__stack">
@@ -11,6 +11,10 @@
               <span class="mt5-snap__badge">MT5</span>
               <h2 class="mt5-snap__title">吞金授·账户资金快照</h2>
               <p class="mt5-snap__meta">{{ mt5AccountMeta }}</p>
+              <div v-if="lastFetchedAtText" class="mt5-snap__live" role="status" aria-live="polite">
+                <span class="mt5-snap__live-dot" aria-hidden="true" />
+                <span class="mt5-snap__live-text">数据更新于 {{ lastFetchedAtText }}</span>
+              </div>
             </header>
 
             <div v-if="mt5HeroRow" class="mt5-snap__hero">
@@ -60,7 +64,10 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { fetchLatestMt5Snapshot } from '@/api/mt5'
+import { fetchMe } from '@/api/user'
+import { useAuthStore } from '@/stores/auth'
 import { mt5SnapshotDisplayRows } from '@/utils/mt5SnapshotDisplay'
+import { formatDateTime } from '@/utils/format'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 
@@ -81,8 +88,16 @@ const MT5_TILE_KEYS = new Set([
 const MT5_FOOTER_KEYS = new Set(['snapshotTime', 'snapshot_time'])
 const MT5_META_KEYS = new Set(['accountId', 'account_id', 'serverName', 'server_name'])
 
+const auth = useAuthStore()
+
 const mt5Snapshot = ref(null)
+/** GET /me 的 profile.principalAmount，用于 浮动盈亏 = MT5余额 − 底仓本金 */
+const principalAmount = ref(0)
+/** pending：未拉完；ok：可计算；error：/me 失败，不覆盖接口 profit */
+const principalState = ref('pending')
 const loading = ref(true)
+/** 最近一次拉取 MT5 快照完成时间（含轮询），用于提示页面非静态 */
+const lastFetchedAt = ref(null)
 /** 净值（equity）数值变化时的主数字强调动画 */
 const equityFlashActive = ref(false)
 let pollTimer = null
@@ -136,11 +151,51 @@ async function loadMt5Snapshot({ initial = false } = {}) {
     }
     mt5Snapshot.value = next
   } finally {
+    lastFetchedAt.value = Date.now()
     if (initial) loading.value = false
   }
 }
 
-const mt5Rows = computed(() => mt5SnapshotDisplayRows(mt5Snapshot.value))
+async function loadPrincipalFromMe() {
+  principalState.value = 'pending'
+  try {
+    const me = await fetchMe()
+    if (me) auth.setUserInfo(me)
+    const v = me?.profile?.principalAmount ?? me?.profile?.principal_amount ?? 0
+    const n = Number(v)
+    principalAmount.value = Number.isFinite(n) ? n : 0
+    principalState.value = 'ok'
+  } catch {
+    principalState.value = 'error'
+  }
+}
+
+/**
+ * 展示用快照：在拿到 /me 本金后，用 MT5 余额 − 底仓本金 写入 profit，供「浮动盈亏」行展示。
+ */
+const snapshotForDisplay = computed(() => {
+  const s = mt5Snapshot.value
+  if (!s || typeof s !== 'object') return null
+  if (principalState.value !== 'ok') return s
+  const p = principalAmount.value
+  const out = { ...s }
+  if ('lastEquity' in s) out.lastEquity = p
+  if ('last_equity' in s) out.last_equity = p
+  if (!('lastEquity' in s) && !('last_equity' in s)) out.lastEquity = p
+  const balRaw = s.balance ?? s.last_balance ?? s.lastBalance
+  const bal = Number(balRaw)
+  if (Number.isFinite(bal)) out.profit = bal - p
+  return out
+})
+
+const mt5Rows = computed(() => mt5SnapshotDisplayRows(snapshotForDisplay.value))
+
+const lastFetchedAtText = computed(() => {
+  const t = lastFetchedAt.value
+  if (t == null) return ''
+  const s = formatDateTime(t)
+  return s === '-' ? '' : s
+})
 
 const mt5AccountMeta = computed(() => {
   const s = mt5Snapshot.value
@@ -183,7 +238,7 @@ const mt5DetailRows = computed(() => {
 })
 
 onMounted(() => {
-  void loadMt5Snapshot({ initial: true })
+  void Promise.all([loadPrincipalFromMe(), loadMt5Snapshot({ initial: true })])
   pollTimer = window.setInterval(() => {
     void loadMt5Snapshot({ initial: false })
   }, 3000)
@@ -200,7 +255,7 @@ onUnmounted(() => {
 <style scoped>
 /**
  * 全屏铺满（无页边距）：与 Tab 栏之间的区域纵向 flex，
- * 主内容不滚动；快照时间固定在视口最底部（Tab 之上）。
+ * 主内容不滚动；最后更新时间固定在视口最底部（Tab 之上）。
  */
 .mt5-full {
   display: flex;
@@ -300,6 +355,41 @@ onUnmounted(() => {
   line-height: 1.45;
   color: rgba(226, 232, 240, 0.65);
   word-break: break-all;
+}
+.mt5-snap__live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(226, 232, 240, 0.72);
+}
+.mt5-snap__live-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+  animation: mt5-live-breathe 2.2s ease-in-out infinite;
+}
+.mt5-snap__live-text {
+  flex: 1;
+  min-width: 0;
+}
+@keyframes mt5-live-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.45);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
+  }
 }
 .mt5-snap__hero {
   position: relative;

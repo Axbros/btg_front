@@ -14,7 +14,7 @@ const LABEL_ZH = {
   marginAmount: '已用保证金',
   freeMargin: '可用保证金',
   marginLevel: '保证金比例',
-  snapshotTime: '快照时间',
+  snapshotTime: '最后更新时间',
   account_id: '交易账户',
   server_name: '服务器名称',
   last_balance: '上次余额',
@@ -22,7 +22,7 @@ const LABEL_ZH = {
   margin_amount: '已用保证金',
   free_margin: '可用保证金',
   margin_level: '保证金比例',
-  snapshot_time: '快照时间',
+  snapshot_time: '最后更新时间',
 }
 
 const KEY_ORDER = [
