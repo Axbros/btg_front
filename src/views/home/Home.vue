@@ -70,14 +70,14 @@
       <van-grid-item icon="friends-o" text="下级补仓记录" @click="goHomeNav('/team/sub-replenishments')" />
       <van-grid-item icon="orders-o" text="下级归仓记录" @click="goHomeNav('/team/sub-repays')" />
       <van-grid-item
-        v-if="isRootUser && auth.isAdmin"
+        v-if="isRootUser"
         icon="gold-coin-o"
         text="待审核补仓"
         @click="goHomeNav('/admin/replenishments/pending')"
         :badge="replenishmentAdminMenuBadge"
       />
       <van-grid-item
-        v-if="isRootUser && auth.isAdmin"
+        v-if="isRootUser"
         icon="balance-list-o"
         text="待审核归仓"
         @click="goHomeNav('/admin/replenishments/repays/pending')"

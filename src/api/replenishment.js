@@ -1,4 +1,4 @@
-import { get, post } from './request'
+import { get, post, getAdmin, postAdmin } from './request'
 
 /** POST /api/v1/replenishments */
 export function submitReplenishment(data) {
@@ -158,37 +158,39 @@ export function getReplenishmentFlow(id) {
 }
 // ——— 管理员补仓（/admin/replenishments/...）———
 
-/** GET /admin/replenishments/pending */
+/** GET /api/admin/replenishments/pending（与业务 /api/v1 分离） */
 export function getPendingReplenishments(params = {}) {
-  return get('/admin/replenishments/pending', {
-    page: params.page ?? 1,
-    size: params.size ?? params.pageSize ?? 10,
-    ...params,
+  const { page, size, pageSize, ...rest } = params
+  return getAdmin('/admin/replenishments/pending', {
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
   })
 }
 
-/** GET /admin/replenishments/all */
+/** GET /api/admin/replenishments/all */
 export function getAllAdminReplenishments(params = {}) {
-  return get('/admin/replenishments/all', {
-    page: params.page ?? 1,
-    size: params.size ?? params.pageSize ?? 10,
-    ...params,
+  const { page, size, pageSize, ...rest } = params
+  return getAdmin('/admin/replenishments/all', {
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
   })
 }
 
-/** POST /admin/replenishments/{id}/approve — body 可选 { remark } */
+/** POST /api/admin/replenishments/{id}/approve — body 可选 { remark } */
 export function approveReplenishment(id, data) {
-  return post(`/admin/replenishments/${id}/approve`, data ?? {})
+  return postAdmin(`/admin/replenishments/${id}/approve`, data ?? {})
 }
 
-/** POST /admin/replenishments/{id}/reject — body 建议 { remark } */
+/** POST /api/admin/replenishments/{id}/reject */
 export function rejectReplenishment(id, data) {
-  return post(`/admin/replenishments/${id}/reject`, data ?? {})
+  return postAdmin(`/admin/replenishments/${id}/reject`, data ?? {})
 }
 
-/** POST /admin/replenishments/{id}/assign — body { capitalUserId, remark? } */
+/** POST /api/admin/replenishments/{id}/assign */
 export function assignReplenishment(id, data) {
-  return post(`/admin/replenishments/${id}/assign`, data ?? {})
+  return postAdmin(`/admin/replenishments/${id}/assign`, data ?? {})
 }
 
 // ——— 资方执行人 / 申请人补仓动作 ———

@@ -225,6 +225,23 @@ export function postAdmin(url, data, config = {}) {
   return instance.post(url, data, { ...config, baseURL: resolveAdminBaseUrl() }).then((res) => res.data)
 }
 
+/** POST 且无 body（与 {@link postWithoutBody} 相同语义，走 /api/admin base） */
+export function postAdminWithoutBody(url, config = {}) {
+  const { data: _omitData, headers: incomingHeaders, ...rest } = config
+  return instance
+    .request({
+      method: 'POST',
+      url,
+      baseURL: resolveAdminBaseUrl(),
+      ...rest,
+      headers: {
+        'Content-Type': false,
+        ...(incomingHeaders && typeof incomingHeaders === 'object' ? incomingHeaders : {}),
+      },
+    })
+    .then((res) => res.data)
+}
+
 instance.interceptors.response.use(
   (res) => {
     const status = res.status

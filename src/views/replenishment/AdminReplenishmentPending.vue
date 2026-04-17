@@ -4,40 +4,55 @@
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
         <template v-if="list.length">
-          <van-card
-            v-for="(row, idx) in list"
-            :key="row.id ?? idx"
-            class="repl-card"
-            :title="cardTitle(row)"
-            :desc="cardDesc(row)"
-          >
-            <template #tags>
-              <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
-                {{ formatReplenishmentStatus(row.status) }}
-              </van-tag>
-            </template>
-            <van-cell-group :border="false" class="repl-card__cells">
-              <van-cell title="补仓单号" :value="txt(row.applyNo, `申请 #${row.id ?? '—'}`)" />
-              <van-cell title="当前余额" :value="displayBalance(row)" />
-              <van-cell title="补仓额度" :value="formatMoney(row.replenishAmount ?? 0)" />
-              <van-cell title="提交时间" :value="formatDateTime(row.submitTime)" />
-              <van-cell
-                v-if="hasAuditRemark(row)"
-                title="审核备注"
-                :label="txt(row.auditRemark)"
-              />
-            </van-cell-group>
-            <div class="repl-card__actions">
-              <van-button size="small" type="primary" plain :loading="rowActionId === row.id && actionKind === 'approve'" @click="openApprove(row)">
-                通过
-              </van-button>
-              <van-button size="small" type="danger" plain :loading="rowActionId === row.id && actionKind === 'reject'" @click="openReject(row)">
-                拒绝
-              </van-button>
-              <van-button size="small" type="warning" plain @click="openAssign(row)">转派</van-button>
-              <van-button size="small" plain @click="goDetail(row)">查看详情</van-button>
-            </div>
-          </van-card>
+          <van-cell-group v-for="(row, idx) in list" :key="row.id ?? idx" inset class="repl-block">
+            <van-cell
+              :title="summaryTitle(row)"
+              :label="summaryLabel(row)"
+              is-link
+              center
+              @click="goDetail(row)"
+            >
+              <template #value>
+                <div class="repl-block__right">
+                  <div class="repl-block__amt">{{ formatMoney(row.replenishAmount ?? row.replenish_amount ?? 0) }}</div>
+                  <van-tag :type="replenishmentStatusTagType(listStatus(row))" plain round class="repl-block__tag">
+                    {{ formatReplenishmentStatus(listStatus(row)) }}
+                  </van-tag>
+                </div>
+              </template>
+            </van-cell>
+            <van-cell title="补仓单号" :value="applyNoText(row)" />
+            <van-cell title="当前余额" :value="displayBalance(row)" />
+            <van-cell title="补仓额度" :value="formatMoney(row.replenishAmount ?? row.replenish_amount ?? 0)" />
+            <van-cell title="提交时间" :value="formatDateTime(row.submitTime ?? row.submit_time)" />
+            <van-cell v-if="hasAuditRemark(row)" title="审核备注" :label="txt(row.auditRemark ?? row.audit_remark)" />
+            <van-cell title="操作">
+              <template #value>
+                <div class="repl-block__actions">
+                  <van-button
+                    size="small"
+                    type="primary"
+                    plain
+                    :loading="rowActionId === row.id && actionKind === 'approve'"
+                    @click.stop="openApprove(row)"
+                  >
+                    通过
+                  </van-button>
+                  <van-button
+                    size="small"
+                    type="danger"
+                    plain
+                    :loading="rowActionId === row.id && actionKind === 'reject'"
+                    @click.stop="openReject(row)"
+                  >
+                    拒绝
+                  </van-button>
+                  <van-button size="small" type="warning" plain @click.stop="openAssign(row)">转派</van-button>
+                  <van-button size="small" plain type="primary" @click.stop="goDetail(row)">查看详情</van-button>
+                </div>
+              </template>
+            </van-cell>
+          </van-cell-group>
         </template>
         <van-empty v-if="!loading && !list.length && loaded" description="暂无待审核补仓" />
       </van-list>
@@ -137,24 +152,20 @@ const assignSubmitting = ref(false)
 const approveSubmitting = ref(false)
 const rejectSubmitting = ref(false)
 
-function displayBalance(row) {
-  const b = row?.balanceAmount
-  if (b === null || b === undefined || b === '') return '—'
-  return formatMoney(b)
-}
-
 function txt(v, fallback = '—') {
   if (v == null) return fallback
   const s = String(v).trim()
   return s !== '' ? s : fallback
 }
 
-function hasAuditRemark(row) {
-  const r = row?.auditRemark
-  return r != null && String(r).trim() !== ''
+/** 列表项无 status 时按待管理员审核展示 */
+function listStatus(row) {
+  const s = row?.status ?? row?.statusCode
+  if (s == null || s === '') return 1
+  return s
 }
 
-function cardTitle(row) {
+function summaryTitle(row) {
   const nick = txt(row?.nickname ?? row?.userNickname, '')
   const mob = txt(row?.mobile ?? row?.userMobile, '')
   if (nick && nick !== '—' && mob && mob !== '—') return `${nick} · ${mob}`
@@ -163,10 +174,25 @@ function cardTitle(row) {
   return row?.id != null ? `申请 #${row.id}` : '申请人'
 }
 
-function cardDesc(row) {
-  const no = row?.applyNo
-  if (no) return `单号 ${no}`
-  return ''
+function summaryLabel(row) {
+  return `点击整行进入详情 · 申请 ID ${row?.id ?? '—'}`
+}
+
+function applyNoText(row) {
+  const no = row?.applyNo ?? row?.apply_no
+  if (no != null && String(no).trim() !== '') return String(no).trim()
+  return row?.id != null ? `（暂无单号）#${row.id}` : '—'
+}
+
+function displayBalance(row) {
+  const b = row?.balanceAmount ?? row?.balance_amount
+  if (b === null || b === undefined || b === '') return '—'
+  return formatMoney(b)
+}
+
+function hasAuditRemark(row) {
+  const r = row?.auditRemark ?? row?.audit_remark
+  return r != null && String(r).trim() !== ''
 }
 
 function goDetail(row) {
@@ -305,20 +331,29 @@ async function submitAssign() {
 .admin-pending {
   padding-bottom: 8px;
 }
-.repl-card {
-  margin: 10px 12px;
-  background: #fff;
-  border-radius: 10px;
-  overflow: hidden;
+.repl-block {
+  margin-top: 12px;
 }
-.repl-card__cells {
-  margin-top: 4px;
+.repl-block__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 88px;
 }
-.repl-card__actions {
+.repl-block__amt {
+  font-size: 16px;
+  font-weight: 700;
+  color: #323233;
+}
+.repl-block__tag {
+  flex-shrink: 0;
+}
+.repl-block__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px 12px 12px;
+  justify-content: flex-end;
 }
 .pager {
   display: flex;
@@ -330,9 +365,6 @@ async function submitAssign() {
 .pager__text {
   font-size: 13px;
   color: #646566;
-}
-.dialog-pad {
-  padding: 12px 16px 16px;
 }
 .assign-popup {
   padding: 12px 0 20px;

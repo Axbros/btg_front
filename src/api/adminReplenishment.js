@@ -1,34 +1,34 @@
-import { get, post, postWithoutBody } from './request'
+import { getAdmin, postAdmin, postAdminWithoutBody } from './request'
 
-/** GET /api/v1/admin/replenishments/pending — 列表项仅 id、nickname、mobile、replenishAmount（及分页字段） */
+/** GET /api/admin/replenishments/pending */
 export function fetchAdminPendingReplenishments(params = {}) {
-  return get('/admin/replenishments/pending', {
+  return getAdmin('/admin/replenishments/pending', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
 }
 
-/** GET /api/v1/admin/replenishments/{id} — 补仓申请完整信息（资方审核用） */
+/** GET /api/admin/replenishments/{id} */
 export function fetchAdminReplenishmentDetail(id) {
-  return get(`/admin/replenishments/${id}`)
+  return getAdmin(`/admin/replenishments/${id}`)
 }
 
 /**
- * POST /api/v1/admin/replenishments/{id}/approve
+ * POST /api/admin/replenishments/{id}/approve
  * 资方终审确认（通常 8→2）；无请求体。
  */
 export function approveReplenishmentAdmin(id) {
-  return postWithoutBody(`/admin/replenishments/${id}/approve`)
+  return postAdminWithoutBody(`/admin/replenishments/${id}/approve`)
 }
 
-/** POST /api/v1/admin/replenishments/{id}/reject */
+/** POST /api/admin/replenishments/{id}/reject */
 export function rejectReplenishmentAdmin(id, remark) {
-  return post(`/admin/replenishments/${id}/reject`, remark ? { remark } : {})
+  return postAdmin(`/admin/replenishments/${id}/reject`, remark ? { remark } : {})
 }
 
-/** POST /api/v1/admin/replenishments/{id}/accept — 受理（1→7） */
+/** POST /api/admin/replenishments/{id}/accept — 受理（1→7） */
 export function acceptReplenishmentAdmin(id) {
-  return post(`/admin/replenishments/${id}/accept`, {})
+  return postAdmin(`/admin/replenishments/${id}/accept`, {})
 }
 
 /**
@@ -42,7 +42,7 @@ export function acceptReplenishmentAdmin(id) {
  * @param {{ transferScreenshotUrl?: string, transferRemark?: string }} data
  */
 export function submitCapitalVoucherForAdmin(id, data) {
-  return post(`/admin/replenishments/${id}/capital-voucher`, data)
+  return postAdmin(`/admin/replenishments/${id}/capital-voucher`, data)
 }
 
 /** @deprecated 请使用 {@link submitCapitalVoucherForAdmin} */
@@ -56,7 +56,7 @@ export const submitReplenishmentCapitalVoucherAdmin = submitCapitalVoucherForAdm
  * @param {{ page?: number, size?: number, pageSize?: number }} [params]
  */
 export function fetchAdminRepaysPending(params = {}) {
-  return get('/admin/replenishments/repays/pending', {
+  return getAdmin('/admin/replenishments/repays/pending', {
     page: params.page ?? 1,
     size: params.size ?? params.pageSize ?? 10,
   })
@@ -72,15 +72,15 @@ export const fetchAdminPendingRepays = fetchAdminRepaysPending
  * @param {string|number} id
  */
 export function fetchAdminRepayDetail(id) {
-  return get(`/admin/replenishments/repays/${id}`)
+  return getAdmin(`/admin/replenishments/repays/${id}`)
 }
 
-/** POST /api/v1/admin/replenishments/repays/{id}/approve */
+/** POST /api/admin/replenishments/repays/{id}/approve */
 export function approveRepayAdmin(id, remark) {
-  return post(`/admin/replenishments/repays/${id}/approve`, remark ? { remark } : {})
+  return postAdmin(`/admin/replenishments/repays/${id}/approve`, remark ? { remark } : {})
 }
 
-/** POST /api/v1/admin/replenishments/repays/{id}/reject */
+/** POST /api/admin/replenishments/repays/{id}/reject */
 export function rejectRepayAdmin(id, remark) {
-  return post(`/admin/replenishments/repays/${id}/reject`, remark ? { remark } : {})
+  return postAdmin(`/admin/replenishments/repays/${id}/reject`, remark ? { remark } : {})
 }

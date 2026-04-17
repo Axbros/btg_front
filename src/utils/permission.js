@@ -11,11 +11,12 @@ export function isUserRoot(user) {
 }
 
 /**
- * 兼容多种后端管理员字段
+ * 兼容多种后端管理员字段。
+ * 根用户（isRoot 为 1/true 等）须与 isUserRoot 一致视为可进 requiresAdmin 路由，避免仅数字 1 时无法审核补仓。
  */
 export function isUserAdmin(user) {
   if (!user || typeof user !== 'object') return false
-  if (user.isRoot === true) return true
+  if (isUserRoot(user)) return true
   if (user.isAdmin === true) return true
   if (user.role === 'ADMIN' || user.role === 'admin') return true
   const roles = user.roles
