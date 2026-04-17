@@ -303,56 +303,170 @@ export function kycStatusTagType(val) {
 }
 
 /**
- * 补仓申请 status：
- * 1 待审核 2 审核通过 3 审核拒绝（历史）4 部分归还 5 已结清 6 已关闭
- * 7/8 资方流程（兼容）9 已退回待修改
+ * 补仓申请 status（与后端 ReplenishmentStatusEnum 一致）：
+ * 1 待管理员审核 2 已通过待转派（已分配资方）3 待资方提交 4 待申请人确认到账 5 退回资方 6 补仓成功 7 已拒绝 8 关闭
  */
 const REPLENISHMENT_STATUS_NUM = {
-  1: '待审核',
-  2: '审核通过',
-  3: '审核拒绝（历史）',
-  4: '部分归还',
-  5: '已结清',
-  6: '已关闭',
-  7: '待资方补充资料',
-  8: '待资方终审确认',
-  9: '已退回待修改',
+  1: '待管理员审核',
+  2: '已通过待转派（已分配资方）',
+  3: '待资方提交',
+  4: '待确认到账',
+  5: '已退回资方',
+  6: '补仓成功',
+  7: '已拒绝',
+  8: '已关闭',
+}
+
+const REPLENISHMENT_STATUS_STR = {
+  PENDING_ADMIN_REVIEW: '待管理员审核',
+  ASSIGNED_TO_CAPITAL: '已通过待转派（已分配资方）',
+  PENDING_CAPITAL_SUBMIT: '待资方提交',
+  PENDING_APPLICANT_CONFIRM: '待确认到账',
+  RETURNED_TO_CAPITAL: '已退回资方',
+  SUCCESS: '补仓成功',
+  REJECTED: '已拒绝',
+  CLOSED: '已关闭',
+}
+
+/** 申请人到账确认：1 待确认 2 已确认到账 3 已拒绝到账 */
+const ARRIVAL_CONFIRM_NUM = {
+  1: '待确认',
+  2: '已确认到账',
+  3: '已拒绝到账',
+}
+
+const ARRIVAL_CONFIRM_STR = {
+  PENDING: '待确认',
+  CONFIRMED: '已确认到账',
+  REJECTED: '已拒绝到账',
+}
+
+export function formatArrivalConfirmStatus(val) {
+  if (val === null || val === undefined || val === '') return '—'
+  if (typeof val === 'string') {
+    const sk = val.trim().toUpperCase().replace(/-/g, '_')
+    if (ARRIVAL_CONFIRM_STR[sk]) return ARRIVAL_CONFIRM_STR[sk]
+  }
+  const n = Number(val)
+  if (!Number.isNaN(n) && ARRIVAL_CONFIRM_NUM[n] != null) return ARRIVAL_CONFIRM_NUM[n]
+  return String(val)
+}
+
+export function arrivalConfirmStatusTagType(val) {
+  const sk = typeof val === 'string' ? val.trim().toUpperCase().replace(/-/g, '_') : ''
+  if (sk === 'CONFIRMED' || val === 2) return 'success'
+  if (sk === 'REJECTED' || val === 3) return 'danger'
+  if (sk === 'PENDING' || val === 1) return 'warning'
+  const n = Number(val)
+  if (!Number.isNaN(n)) {
+    if (n === 2) return 'success'
+    if (n === 3) return 'danger'
+    if (n === 1) return 'warning'
+  }
+  return 'default'
 }
 
 export function formatReplenishmentStatus(val) {
   if (val === null || val === undefined || val === '') return '—'
+  if (typeof val === 'string') {
+    const sk = val.trim().toUpperCase().replace(/-/g, '_')
+    if (REPLENISHMENT_STATUS_STR[sk]) return REPLENISHMENT_STATUS_STR[sk]
+  }
   const n = Number(val)
   if (!Number.isNaN(n) && REPLENISHMENT_STATUS_NUM[n] != null) return REPLENISHMENT_STATUS_NUM[n]
   return String(val)
 }
 
-/** 归仓：1 待审核 2 审核通过 3 审核拒绝（历史）4 已退回待修改 */
+/** 归仓：1 待资方审核 2 已通过 3 已拒绝（历史）4 已退回待修改 */
 const REPAY_STATUS_NUM = {
-  1: '待审核',
-  2: '审核通过',
-  3: '审核拒绝（历史）',
+  1: '待资方审核',
+  2: '已通过',
+  3: '已拒绝（历史）',
   4: '已退回待修改',
+}
+
+const REPAY_STATUS_STR = {
+  PENDING_CAPITAL_REVIEW: '待资方审核',
+  APPROVED: '已通过',
+  REJECTED: '已拒绝（历史）',
+  RETURNED_TO_APPLICANT: '已退回待修改',
 }
 
 export function formatRepayStatus(val) {
   if (val === null || val === undefined || val === '') return '—'
   const n = Number(val)
   if (!Number.isNaN(n) && REPAY_STATUS_NUM[n] != null) return REPAY_STATUS_NUM[n]
+  const key = String(val).toUpperCase()
+  if (REPAY_STATUS_STR[key]) return REPAY_STATUS_STR[key]
   return String(val)
 }
 
 export function replenishmentStatusTagType(val) {
+  const sk = typeof val === 'string' ? val.trim().toUpperCase().replace(/-/g, '_') : ''
+  if (sk === 'SUCCESS' || sk === 'CLOSED') return sk === 'CLOSED' ? 'default' : 'success'
+  if (sk === 'REJECTED') return 'danger'
+  if (
+    sk === 'PENDING_ADMIN_REVIEW' ||
+    sk === 'ASSIGNED_TO_CAPITAL' ||
+    sk === 'PENDING_CAPITAL_SUBMIT' ||
+    sk === 'PENDING_APPLICANT_CONFIRM' ||
+    sk === 'RETURNED_TO_CAPITAL'
+  ) {
+    return 'warning'
+  }
   const n = Number(val)
-  if (n === 2 || n === 5) return 'success'
-  if (n === 3 || n === 6) return 'danger'
-  if (n === 1 || n === 4 || n === 7 || n === 8 || n === 9) return 'warning'
+  if (!Number.isNaN(n)) {
+    if (n === 6) return 'success'
+    if (n === 7) return 'danger'
+    if (n === 8) return 'default'
+    if (n === 1 || n === 2 || n === 3 || n === 4 || n === 5) return 'warning'
+  }
   return 'default'
 }
 
 export function repayStatusTagType(val) {
+  const key = typeof val === 'string' ? val.toUpperCase() : ''
+  if (key === 'APPROVED' || val === 2) return 'success'
+  if (key === 'REJECTED' || val === 3) return 'danger'
+  if (key === 'PENDING_CAPITAL_REVIEW' || val === 1) return 'warning'
+  if (key === 'RETURNED_TO_APPLICANT' || val === 4) return 'warning'
+  return 'default'
+}
+
+/** 新成员资格审核：1 待审核 2 已通过 3 已拒绝 */
+const QUALIFICATION_STATUS_NUM = {
+  1: '待审核',
+  2: '已通过',
+  3: '已拒绝',
+}
+
+const QUALIFICATION_STATUS_STR = {
+  PENDING: '待审核',
+  APPROVED: '已通过',
+  REJECTED: '已拒绝',
+}
+
+export function formatQualificationStatus(val) {
+  if (val === null || val === undefined || val === '') return '—'
+  if (typeof val === 'string') {
+    const sk = val.trim().toUpperCase()
+    if (QUALIFICATION_STATUS_STR[sk]) return QUALIFICATION_STATUS_STR[sk]
+  }
   const n = Number(val)
-  if (n === 2) return 'success'
-  if (n === 3) return 'danger'
-  if (n === 1 || n === 4) return 'warning'
+  if (!Number.isNaN(n) && QUALIFICATION_STATUS_NUM[n] != null) return QUALIFICATION_STATUS_NUM[n]
+  return String(val)
+}
+
+export function qualificationStatusTagType(val) {
+  const key = typeof val === 'string' ? val.trim().toUpperCase() : ''
+  if (key === 'APPROVED' || val === 2) return 'success'
+  if (key === 'REJECTED' || val === 3) return 'danger'
+  if (key === 'PENDING' || val === 1) return 'warning'
+  const n = Number(val)
+  if (!Number.isNaN(n)) {
+    if (n === 2) return 'success'
+    if (n === 3) return 'danger'
+    if (n === 1) return 'warning'
+  }
   return 'default'
 }

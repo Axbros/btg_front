@@ -82,19 +82,19 @@ const routes = [
         path: 'profit-report/submit',
         name: 'ProfitReportSubmit',
         component: () => import('@/views/profitReport/ProfitReportSubmit.vue'),
-        meta: { title: '利润上报', tab: 'report' },
+        meta: { title: '利润上报', tab: 'report', lockViewport: true },
       },
       {
         path: 'profit-report/mine',
         name: 'ProfitReportList',
         component: () => import('@/views/profitReport/ProfitReportList.vue'),
-        meta: { title: '我的利润上报记录', tab: 'report', hideTab: true },
+        meta: { title: '我的利润上报记录', tab: 'report', hideTab: true, lockViewport: true },
       },
       {
         path: 'profit-report/:profitReportId/resubmit',
         name: 'ProfitReportResubmit',
         component: () => import('@/views/profitReport/ProfitReportResubmit.vue'),
-        meta: { title: '利润·重新提交', tab: 'report', hideTab: true },
+        meta: { title: '利润·重新提交', tab: 'report', hideTab: true, lockViewport: true },
       },
       {
         path: 'profit-report/:profitReportId/flow',
@@ -106,7 +106,7 @@ const routes = [
         path: 'profit-report/:profitReportId/distribution',
         name: 'ProfitDistributionDetail',
         component: () => import('@/views/profitReport/ProfitDistributionDetail.vue'),
-        meta: { title: '分润明细', tab: 'report', hideTab: true },
+        meta: { title: '分润明细', tab: 'report', hideTab: true, lockViewport: true },
       },
       {
         path: 'flow/profit/:rootReportId',
@@ -207,15 +207,15 @@ const routes = [
       {
         path: 'replenishment/repay',
         name: 'RepayApply',
-        component: () => import('@/views/replenishment/RepaySubmit.vue'),
+        component: () => import('@/views/replenishment/RepayApply.vue'),
         meta: { title: '提交归仓申请', tab: 'home', hideTab: true },
         alias: 'replenishment/repay-submit',
       },
       {
         path: 'replenishment/repay-mine',
         name: 'RepayMine',
-        component: () => import('@/views/replenishment/RepayMine.vue'),
-        meta: { title: '我的归仓记录', tab: 'home', hideTab: true },
+        component: () => import('@/views/replenishment/MyRepayList.vue'),
+        meta: { title: '我的归仓申请', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/repay/:id/resubmit',
@@ -225,9 +225,19 @@ const routes = [
       },
       {
         path: 'replenishment/repay/:id/flow',
-        name: 'RepayFlow',
-        component: () => import('@/views/flow/BusinessFlowDetail.vue'),
-        meta: { title: '归仓·状态流', tab: 'home', hideTab: true, flowKind: 'repay' },
+        redirect: (to) => ({ name: 'RepayFlowDetail', params: { id: String(to.params.id) } }),
+      },
+      {
+        path: 'replenishment/repays/pending-review',
+        name: 'RepayPendingReview',
+        component: () => import('@/views/replenishment/RepayPendingReview.vue'),
+        meta: { title: '待我审核的归仓申请', tab: 'home', hideTab: true },
+      },
+      {
+        path: 'replenishment/repays/:id/flow',
+        name: 'RepayFlowDetail',
+        component: () => import('@/views/replenishment/RepayFlowDetail.vue'),
+        meta: { title: '归仓状态流', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/repay/:id',
@@ -242,10 +252,26 @@ const routes = [
         meta: { title: '待审核收益', requiresAdmin: true, hideTab: true },
       },
       {
+        path: 'admin/users/pending-qualification',
+        name: 'AdminUserQualificationPending',
+        component: () => import('@/views/admin/UserQualificationPending.vue'),
+        meta: { title: '待审核资格', requiresAdmin: true, hideTab: true },
+      },
+      {
         path: 'admin/replenishments/pending',
         name: 'AdminPendingReplenishments',
-        component: () => import('@/views/admin/AdminPendingReplenishments.vue'),
+        component: () => import('@/views/replenishment/AdminReplenishmentPending.vue'),
         meta: { title: '待审核补仓', requiresAdmin: true, hideTab: true },
+      },
+      {
+        path: 'replenishment/admin/pending',
+        redirect: { name: 'AdminPendingReplenishments' },
+      },
+      {
+        path: 'replenishment/assigned',
+        name: 'AssignedReplenishmentList',
+        component: () => import('@/views/replenishment/AssignedReplenishmentList.vue'),
+        meta: { title: '待处理补仓（资方）', hideTab: true },
       },
       {
         path: 'admin/replenishments/repays/pending',

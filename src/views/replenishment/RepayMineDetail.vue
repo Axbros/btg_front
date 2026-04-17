@@ -39,10 +39,16 @@ const repayId = computed(() => {
   return Number.isFinite(n) && n > 0 ? n : null
 })
 
+function isReturnedRepayStatus(s) {
+  if (s == null || s === '') return false
+  if (Number(s) === 4) return true
+  return String(s).toUpperCase() === 'RETURNED_TO_APPLICANT'
+}
+
 const showReturnedActions = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return false
-  return Number(d.status) === 4
+  return isReturnedRepayStatus(d.status)
 })
 
 function goResubmit() {
@@ -54,7 +60,7 @@ function goResubmit() {
 function goFlow() {
   const id = repayId.value
   if (id == null) return
-  router.push({ name: 'RepayFlow', params: { id: String(id) } })
+  router.push({ name: 'RepayFlowDetail', params: { id: String(id) } })
 }
 
 async function loadDetail() {

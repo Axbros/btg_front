@@ -30,9 +30,20 @@
       <van-cell-group v-if="profile" inset title="交易信息">
         <van-cell title="服务器名称" :value="txt(profile.serverName)" />
         <van-cell title="交易账号" :value="txt(profile.tradingAccountId)" />
-        <van-cell title="交易密码" :value="txt(profile.tradingAccountPassword)" />
         <van-cell title="交易所 UID" :value="txt(profile.exchangeUid)" />
         <van-cell title="本金金额" :value="moneyTxt(profile.principalAmount)" />
+      </van-cell-group>
+
+      <van-cell-group v-if="qualificationSectionVisible" inset title="资格审核">
+        <van-cell title="当前状态">
+          <template #value>
+            <van-tag :type="qualificationStatusTagType(qualStatusRaw)" plain round>
+              {{ formatQualificationStatus(qualStatusRaw) }}
+            </van-tag>
+          </template>
+        </van-cell>
+        <van-cell title="审核时间" :value="formatDateTime(qualificationAuditTime)" />
+        <van-cell title="审核备注" :value="txtCell(qualificationAuditRemark)" />
       </van-cell-group>
 
       <van-cell-group  v-if="Number(user.status) === 1"  inset title="分润比例配置">
@@ -87,7 +98,15 @@ import {
   rejectTeamMemberProfile,
 } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
-import { formatMoney, formatRate, formatUserStatus, userStatusTagType } from '@/utils/format'
+import {
+  formatDateTime,
+  formatMoney,
+  formatQualificationStatus,
+  formatRate,
+  formatUserStatus,
+  qualificationStatusTagType,
+  userStatusTagType,
+} from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -101,28 +120,52 @@ const reviewLoading = ref(false)
 const user = computed(() => detail.value?.user ?? {})
 const profile = computed(() => detail.value?.profile ?? null)
 
+const qualificationSectionVisible = computed(() => {
+  const p = profile.value
+  if (!p || typeof p !== 'object') return false
+  const keys = [
+    'qualificationStatus',
+    'qualificationAuditTime',
+    'qualificationAuditRemark',
+    'qualificationSubmitCount',
+    'qualificationLastSubmitTime',
+  ]
+  return keys.some((k) => p[k] != null && p[k] !== '')
+})
+
+const qualStatusRaw = computed(() => profile.value?.qualificationStatus)
+
+const qualificationAuditTime = computed(() => profile.value?.qualificationAuditTime)
+
+const qualificationAuditRemark = computed(() => profile.value?.qualificationAuditRemark)
+
+function txtCell(v) {
+  if (v === null || v === undefined || v === '') return '—'
+  return String(v)
+}
+
 const referrerNicknameText = computed(() => {
   const u = user.value
-  const n = u?.referrerNickname ?? u?.referrer_nickname
+  const n = u?.referrerNickname
   if (n == null || String(n).trim() === '') return '—'
   return String(n)
 })
 
 const childProfitRatioField = computed(
-  () => detail.value?.childLineProfitRatio ?? detail.value?.child_line_profit_ratio ?? null,
+  () => detail.value?.childLineProfitRatio ?? null,
 )
 
 function pickSelfUserId() {
   const u = userInfo.value
   if (!u) return null
-  const v = u.id ?? u.userId ?? u.user_id
+  const v = u.id ?? u.userId
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
 function pickMemberReferrerId(u) {
   if (!u || typeof u !== 'object') return null
-  const v = u.referrerUserId ?? u.referrer_user_id ?? u.referrerId ?? u.referrer_id
+  const v = u.referrerUserId ?? u.referrerId
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : null
 }

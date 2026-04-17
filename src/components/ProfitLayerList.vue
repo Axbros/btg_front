@@ -67,14 +67,10 @@ const ROOT_LABEL = '平台/根节点'
 /** 与后端切片 VO 对齐，用于展示「profitAmount × (1 − upperRatio)」中的利润基数 */
 const PROFIT_AMOUNT_FORMULA_KEYS = [
   'profitAmount',
-  'profit_amount',
   'ProfitAmount',
   'sliceProfitAmount',
-  'slice_profit_amount',
   'layerProfitAmount',
-  'layer_profit_amount',
   'reportProfitAmount',
-  'report_profit_amount',
 ]
 
 function pickFirstFiniteNumber(obj, keys) {
@@ -122,7 +118,7 @@ function payAmountComputationHint(layer) {
   }
   const payRaw = pickLayerPayAmountToParent(layer)
   const pay = Number(payRaw)
-  const upperRaw = layer.upperRatio ?? layer.upper_ratio
+  const upperRaw = layer.upperRatio
   const upper = normalizeRatio0To1(upperRaw)
   const upperStr = upper == null ? '' : trimDecimalString(upper)
 
@@ -191,7 +187,7 @@ const chainHeadVisible = computed(
 const displayLayers = computed(() =>
   sortProfitFlowLayersBottomFirst(
     (props.layers || []).filter((layer) => {
-      const amt = layer?.payAmountToParent ?? layer?.pay_amount_to_parent
+      const amt = layer?.payAmountToParent
       return amt !== null && amt !== undefined && String(amt) !== ''
     }),
   ),
@@ -199,28 +195,27 @@ const displayLayers = computed(() =>
 
 function isCurrentLayer(layer) {
   if (!layer || typeof layer !== 'object') return false
-  return layer.currentNode === true || layer.current_node === true
+  return layer.currentNode === true
 }
 
 function masked(layer) {
-  return layer?.financialsMasked === true || layer?.financials_masked === true
+  return layer?.financialsMasked === true
 }
 
 function layerUserName(layer) {
-  const v = layer?.userName ?? layer?.user_name
+  const v = layer?.userName
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
 }
 
 function layerParentName(layer) {
-  const v = layer?.parentUserName ?? layer?.parent_user_name
+  const v = layer?.parentUserName
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
 }
 
 /** 有上级用户主键则非终局审核层 */
 function hasParentUserId(layer) {
   if (!layer || typeof layer !== 'object') return false
-  const raw = layer.parentUserId ?? layer.parent_user_id
-  debugger
+  const raw = layer.parentUserId
   if (raw === null || raw === undefined || raw === '') return false
   return String(raw).trim() !== ''
 }
@@ -228,7 +223,7 @@ function hasParentUserId(layer) {
 /** 展示用层级序号（与列表自上而下顺序一致：靠上为上一层） */
 // function layerLevelLabel(layer) {
 //   if (!layer || typeof layer !== 'object') return ''
-//   const raw = layer.levelNo ?? layer.level_no
+//   const raw = layer.levelNo
 //   if (raw === null || raw === undefined || raw === '') return ''
 //   const n = Number(raw)
 //   if (!Number.isFinite(n)) return ''
@@ -249,7 +244,7 @@ function payAmountLine(layer) {
   return formatMoneyMasked(pickLayerPayAmountToParent(layer), masked(layer))
 }
 
-const INCOME_AMOUNT_KEYS = ['incomeAmount', 'income_amount', 'IncomeAmount']
+const INCOME_AMOUNT_KEYS = ['incomeAmount', 'IncomeAmount']
 
 function pickLayerIncomeAmount(layer) {
   if (!layer || typeof layer !== 'object') return undefined
@@ -267,7 +262,7 @@ function incomeAmountLine(layer) {
 
 function settlementStatus(layer) {
   if (!layer || typeof layer !== 'object') return ''
-  const s = layer.settlementStatus ?? layer.settlement_status
+  const s = layer.settlementStatus
   return s != null && String(s).trim() !== '' ? String(s).trim() : ''
 }
 

@@ -78,15 +78,10 @@ const MT5_TILE_KEYS = new Set([
   'marginAmount',
   'freeMargin',
   'marginLevel',
-  'last_balance',
-  'last_equity',
-  'margin_amount',
-  'free_margin',
-  'margin_level',
 ])
 
-const MT5_FOOTER_KEYS = new Set(['snapshotTime', 'snapshot_time'])
-const MT5_META_KEYS = new Set(['accountId', 'account_id', 'serverName', 'server_name'])
+const MT5_FOOTER_KEYS = new Set(['snapshotTime'])
+const MT5_META_KEYS = new Set(['accountId', 'serverName'])
 
 const auth = useAuthStore()
 
@@ -161,7 +156,7 @@ async function loadPrincipalFromMe() {
   try {
     const me = await fetchMe()
     if (me) auth.setUserInfo(me)
-    const v = me?.profile?.principalAmount ?? me?.profile?.principal_amount ?? 0
+    const v = me?.profile?.principalAmount ?? 0
     const n = Number(v)
     principalAmount.value = Number.isFinite(n) ? n : 0
     principalState.value = 'ok'
@@ -178,11 +173,8 @@ const snapshotForDisplay = computed(() => {
   if (!s || typeof s !== 'object') return null
   if (principalState.value !== 'ok') return s
   const p = principalAmount.value
-  const out = { ...s }
-  if ('lastEquity' in s) out.lastEquity = p
-  if ('last_equity' in s) out.last_equity = p
-  if (!('lastEquity' in s) && !('last_equity' in s)) out.lastEquity = p
-  const balRaw = s.balance ?? s.last_balance ?? s.lastBalance
+  const out = { ...s, lastEquity: p }
+  const balRaw = s.balance ?? s.lastBalance
   const bal = Number(balRaw)
   if (Number.isFinite(bal)) out.profit = bal - p
   return out
@@ -200,8 +192,8 @@ const lastFetchedAtText = computed(() => {
 const mt5AccountMeta = computed(() => {
   const s = mt5Snapshot.value
   if (!s || typeof s !== 'object') return '—'
-  const id = s.accountId ?? s.account_id
-  const srv = s.serverName ?? s.server_name
+  const id = s.accountId
+  const srv = s.serverName
   const parts = [id, srv]
     .map((x) => (x != null && String(x).trim() !== '' ? String(x).trim() : ''))
     .filter(Boolean)
@@ -214,7 +206,7 @@ const mt5HeroRow = computed(() => {
 })
 
 const mt5ProfitRow = computed(() =>
-  mt5Rows.value.find((r) => r.key === 'profit' || r.key === 'floating_profit'),
+  mt5Rows.value.find((r) => r.key === 'profit' || r.key === 'floatingProfit'),
 )
 
 const mt5FooterRow = computed(() => mt5Rows.value.find((r) => MT5_FOOTER_KEYS.has(r.key)))

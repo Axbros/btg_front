@@ -18,9 +18,23 @@
         </div>
       </template>
       <template #value>
-        <van-tag :type="userStatusTagType(node.status)" plain round @click.stop="ctx.openMember(node)">
-          {{ formatUserStatus(node.status) }}
-        </van-tag>
+        <div class="team-tree-tags" @click.stop="ctx.openMember(node)">
+          <van-tag :type="userStatusTagType(node.status)" plain round>
+            {{ formatUserStatus(node.status) }}
+          </van-tag>
+          <van-tag
+            v-if="hasQualificationStatus(node)"
+            :type="qualificationStatusTagType(node.qualificationStatus)"
+            plain
+            round
+            class="team-tree-tags__qual"
+          >
+            资格 {{ formatQualificationStatus(node.qualificationStatus) }}
+          </van-tag>
+        </div>
+      </template>
+      <template v-if="qualificationRejectRemarkLine(node)" #label>
+        <span class="team-tree-qual-remark">{{ qualificationRejectRemarkLine(node) }}</span>
       </template>
     </van-cell>
     <TeamTreeList
@@ -33,7 +47,12 @@
 
 <script setup>
 import { inject } from 'vue'
-import { formatUserStatus, userStatusTagType } from '@/utils/format'
+import {
+  formatQualificationStatus,
+  formatUserStatus,
+  qualificationStatusTagType,
+  userStatusTagType,
+} from '@/utils/format'
 
 defineOptions({ name: 'TeamTreeList' })
 
@@ -58,6 +77,24 @@ function nodeTitle(node) {
 function onCellClick(node, e) {
   if (e?.target?.closest?.('.team-tree-toggle')) return
   ctx.openMember(node)
+}
+
+function hasQualificationStatus(node) {
+  const v = node?.qualificationStatus
+  return v != null && String(v).trim() !== ''
+}
+
+function isQualificationRejected(st) {
+  if (st === 3) return true
+  if (typeof st === 'string' && st.trim().toUpperCase() === 'REJECTED') return true
+  return false
+}
+
+function qualificationRejectRemarkLine(node) {
+  if (!isQualificationRejected(node?.qualificationStatus)) return ''
+  const r = node?.qualificationAuditRemark
+  if (r == null || String(r).trim() === '') return ''
+  return `审核备注：${String(r).trim()}`
 }
 </script>
 
@@ -102,5 +139,25 @@ function onCellClick(node, e) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.team-tree-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 100%;
+}
+.team-tree-tags__qual {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-tree-qual-remark {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #646566;
+  line-height: 1.45;
 }
 </style>

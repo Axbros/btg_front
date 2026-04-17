@@ -65,7 +65,7 @@ const applyId = computed(() => {
 const principalNum = computed(() => {
   const r = replenishment.value
   if (!r) return 0
-  const v = Number(r.principalAmount ?? r.principal_amount ?? 0)
+  const v = Number(r.principalAmount ?? 0)
   return Number.isFinite(v) ? v : 0
 })
 
@@ -104,9 +104,9 @@ async function load() {
       showToast('当前状态不可重提')
       return
     }
-    const bal = r.balanceAmount ?? r.balance_amount
+    const bal = r.balanceAmount
     balanceAmount.value = bal != null && String(bal) !== '' ? String(bal) : ''
-    balanceScreenshotUrl.value = String(r.balanceScreenshotUrl ?? r.balance_screenshot_url ?? '').trim()
+    balanceScreenshotUrl.value = String(r.balanceScreenshotUrl ?? '').trim()
   } catch {
     replenishment.value = null
   } finally {

@@ -8,7 +8,7 @@
       <p class="hub-banner__text">{{ hubBannerRest }}</p>
     </div>
     <van-cell-group v-if="current" inset title="当前未结清补仓" class="hub-current">
-      <van-cell title="剩余待归还" :value="formatMoney(current.remainingAmount ?? current.remaining_amount ?? 0)" />
+      <van-cell title="剩余待归还" :value="formatMoney(current.remainingAmount ?? 0)" />
       <van-cell title="资方转账凭证">
         <template #value>
           <PreviewableRemoteImage v-if="transferProofUrl" :url="transferProofUrl" alt="资方转账凭证" />
@@ -53,21 +53,21 @@ function goNav(to) {
 const transferProofUrl = computed(() => {
   const c = current.value
   if (!c) return ''
-  const u = c.transferScreenshotUrl ?? c.transfer_screenshot_url
+  const u = c.transferScreenshotUrl
   return u && String(u).trim() ? String(u).trim() : ''
 })
 
 const transferRemarkText = computed(() => {
   const c = current.value
   if (!c) return ''
-  const t = c.transferRemark ?? c.transfer_remark
+  const t = c.transferRemark
   return t != null && String(t).trim() !== '' ? String(t).trim() : ''
 })
 
 const hubBannerRest = computed(() => {
   const c = current.value
   if (!c) return ''
-  const rem = formatMoney(c.remainingAmount ?? c.remaining_amount ?? 0)
+  const rem = formatMoney(c.remainingAmount ?? 0)
   return `当前补仓单；剩余待归还 ${rem} 元（含待审核归仓请留意额度）。`
 })
 

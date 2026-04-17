@@ -11,40 +11,26 @@ const LABEL_ZH = {
   lastBalance: '上次余额',
   lastEquity: '上次净值',
   profit: '浮动盈亏',
+  floatingProfit: '浮动盈亏',
   marginAmount: '已用保证金',
   freeMargin: '可用保证金',
   marginLevel: '保证金比例',
   snapshotTime: '最后更新时间',
-  account_id: '交易账户',
-  server_name: '服务器名称',
-  last_balance: '上次余额',
-  last_equity: '上次净值',
-  margin_amount: '已用保证金',
-  free_margin: '可用保证金',
-  margin_level: '保证金比例',
-  snapshot_time: '最后更新时间',
 }
 
 const KEY_ORDER = [
   'accountId',
-  'account_id',
   'serverName',
-  'server_name',
   'balance',
   'equity',
   'lastBalance',
-  'last_balance',
   'lastEquity',
-  'last_equity',
   'profit',
+  'floatingProfit',
   'marginAmount',
-  'margin_amount',
   'freeMargin',
-  'free_margin',
   'marginLevel',
-  'margin_level',
   'snapshotTime',
-  'snapshot_time',
 ]
 
 function humanizeKey(key) {
@@ -53,7 +39,7 @@ function humanizeKey(key) {
   return s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase())
 }
 
-const MARGIN_LEVEL_KEYS = new Set(['marginLevel', 'margin_level'])
+const MARGIN_LEVEL_KEYS = new Set(['marginLevel'])
 
 /** 保证金比例：展示为带百分号的数值 */
 function formatMarginLevelDisplay(raw) {
@@ -81,7 +67,7 @@ function formatCellValue(key, value) {
     return formatMoney(value)
   }
   if (typeof value === 'string') {
-    if (key === 'snapshotTime' || key === 'snapshot_time' || /\d{4}-\d{2}-\d{2}T/.test(value)) {
+    if (key === 'snapshotTime' || /\d{4}-\d{2}-\d{2}T/.test(value)) {
       const dt = formatDateTime(value)
       return dt === '-' ? value : dt
     }
@@ -127,7 +113,7 @@ export function mt5SnapshotDisplayRows(snapshot) {
 
   return ordered.map((key) => {
     const raw = snapshot[key]
-    const isProfit = key === 'profit' || key === 'floating_profit'
+    const isProfit = key === 'profit' || key === 'floatingProfit'
     return {
       key,
       label: LABEL_ZH[key] || humanizeKey(key),

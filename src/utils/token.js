@@ -5,7 +5,6 @@ export function pickTokenFromLoginData(data) {
   return (
     data.token ||
     data.accessToken ||
-    data.access_token ||
     data.jwt ||
     data.data?.token ||
     ''

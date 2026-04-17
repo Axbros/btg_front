@@ -18,6 +18,24 @@
           <van-badge v-if="settlementBadge" :content="settlementBadge" max="99" />
         </template>
       </van-cell>
+      <van-cell
+        v-if="auth.isAdmin"
+        title="待审核资格"
+        is-link
+        @click="goNav({ name: 'AdminUserQualificationPending' })"
+      />
+      <van-cell
+        v-if="!isRootUser"
+        title="我的归仓申请"
+        is-link
+        @click="goNav({ name: 'RepayMine' })"
+      />
+      <van-cell
+        v-if="!isRootUser"
+        title="待我审核的归仓"
+        is-link
+        @click="goNav({ name: 'RepayPendingReview' })"
+      />
     </van-cell-group>
 
     <van-cell-group inset title="待办汇总" class="todo-hub__block">
@@ -108,14 +126,14 @@
             </template>
           </van-cell>
         </van-cell-group>
-        <van-cell-group v-if="readonlyTodoItems.length" inset title="下级利润进行中（仅查看）" class="todo-hub__block">
+        <van-cell-group v-if="readonlyTodoItems.length" inset title="仅查看（链路 / 归仓关注）" class="todo-hub__block">
           <van-cell
             v-for="(row, idx) in readonlyTodoItems"
             :key="`r-${row.todoType || 'x'}-${row.businessId ?? idx}`"
             :is-link="false"
           >
             <template #title>
-              <div class="todo-hub__todo-title">{{ row.title || '下级利润进行中' }}</div>
+              <div class="todo-hub__todo-title">{{ row.title || '仅查看待办' }}</div>
               <div class="todo-hub__todo-meta">
                 <van-tag plain type="success" class="todo-hub__todo-tag">{{ formatDashboardTodoType(row.todoType) }}</van-tag>
                 <span class="todo-hub__todo-status">{{ formatTodoItemCurrentStatus(row) }}</span>
@@ -124,7 +142,9 @@
             <template #label>
               <div v-if="row.latestOperateTime" class="todo-hub__todo-time">{{ formatDateTime(row.latestOperateTime) }}</div>
               <div class="todo-hub__todo-actions">
-                <van-button size="small" plain type="primary" @click.stop="onViewProfitChain(row)">查看链路</van-button>
+                <van-button size="small" plain type="primary" @click.stop="onViewReadonlyTodo(row)">
+                  {{ readonlyTodoActionLabel(row) }}
+                </van-button>
               </div>
             </template>
           </van-cell>
@@ -213,10 +233,26 @@ function onTodoRowClick(row) {
     window.location.href = nav.url
     return
   }
-  if (nav.path) goNav(nav.path)
+  if (nav.path) {
+    goNav(nav.path)
+    return
+  }
+  if (nav.name) {
+    goNav({ name: nav.name, params: nav.params, query: nav.query })
+  }
 }
 
-function onViewProfitChain(row) {
+function readonlyTodoActionLabel(row) {
+  const t = String(row?.todoType || '')
+    .toUpperCase()
+    .replace(/-/g, '_')
+  if (t === 'REPLENISHMENT_CHAIN_WATCH') return '查看补仓状态流'
+  if (t === 'REPLENISHMENT_REPAY_CHAIN_WATCH') return '查看归仓状态流'
+  if (t.includes('REPLENISHMENT') && t.includes('REPAY')) return '查看归仓状态流'
+  return '查看链路'
+}
+
+function onViewReadonlyTodo(row) {
   const nav = resolveTodoNavigation(row)
   if (!nav?.path) {
     showToast('暂无法跳转')

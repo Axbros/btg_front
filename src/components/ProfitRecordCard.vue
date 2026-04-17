@@ -69,7 +69,7 @@ const { userInfo } = storeToRefs(useAuthStore())
 const isRootUser = computed(() => {
   const u = userInfo.value
   if (!u) return false
-  const v = u.isRoot ?? u.is_root
+  const v = u.isRoot
   if (v === true || v === 1 || v === '1') return true
   if (v === false || v === 0 || v === '0') return false
   if (typeof v === 'string' && v.toLowerCase() === 'true') return true
@@ -89,7 +89,7 @@ const showReturnedResubmitActions = computed(() =>
 /** 与结算详情 GET /settlements/{rootReportId} 一致：根单 id */
 const profitFlowRootId = computed(() => {
   const it = props.item
-  const root = it.reportId ?? it.report_id ?? it.rootReportId ?? it.root_report_id ?? it.id
+  const root = it.reportId ?? it.rootReportId ?? it.id
   if (root == null || String(root).trim() === '') return null
   const n = Number(root)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -98,16 +98,14 @@ const profitFlowRootId = computed(() => {
 const orderNo = computed(
   () =>
     props.item.reportNo ??
-    props.item.report_no ??
     props.item.recordNo ??
-    props.item.record_no ??
     (props.item.id != null ? `#${props.item.id}` : '—'),
 )
 
 const statusText = computed(() => formatProfitRecordStatus(props.item.status))
 
 const ratioField = computed(
-  () => props.item.childProfitRatio ?? props.item.child_profit_ratio ?? props.item.commissionRate ?? props.item.rate,
+  () => props.item.childProfitRatio ?? props.item.commissionRate ?? props.item.rate,
 )
 
 const netField = computed(
@@ -125,7 +123,7 @@ const shareUpField = computed(
 /** 付款人打开详情：GET /settlements/{rootReportId}；root_report_id 与本次上报利润单 id 一致 */
 function goSettlement() {
   const it = props.item
-  const root = it.reportId ?? it.report_id ?? it.rootReportId ?? it.root_report_id ?? it.id
+  const root = it.reportId ?? it.rootReportId ?? it.id
   if (root != null && String(root).trim() !== '') {
     const n = Number(root)
     if (Number.isFinite(n) && n > 0) {
@@ -133,7 +131,7 @@ function goSettlement() {
       return
     }
   }
-  const row = it.settlementId ?? it.settlement_id
+  const row = it.settlementId
   if (row != null && String(row).trim() !== '') {
     const rn = Number(String(row).trim())
     if (Number.isFinite(rn) && rn > 0) {
@@ -152,9 +150,7 @@ function profitReportIdForDistribution() {
   const it = props.item
   return (
     it.profitReportId ??
-    it.profit_report_id ??
     it.rootReportId ??
-    it.root_report_id ??
     it.reportId ??
     it.id
   )

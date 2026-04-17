@@ -172,7 +172,7 @@ const applyId = computed(() => {
 function normalizeDetailPayload(raw) {
   if (!raw || typeof raw !== 'object') return null
   if (raw.replenishment && typeof raw.replenishment === 'object') return raw.replenishment
-  if (raw.applyNo != null || raw.apply_no != null || raw.id != null) return raw
+  if (raw.applyNo != null || raw.principalAmount != null || raw.id != null) return raw
   return null
 }
 
@@ -255,7 +255,7 @@ function openCapitalVoucher() {
   const st = statusN.value
   const d = detail.value
   if (st === 8 && d) {
-    const ex = String(d.transferRemark ?? d.transfer_remark ?? '').trim()
+    const ex = String(d.transferRemark ?? '').trim()
     capitalVoucherForm.transferRemark = ex
     initialRemarkOnOpen.value = ex
   }

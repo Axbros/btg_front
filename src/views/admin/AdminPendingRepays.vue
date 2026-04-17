@@ -12,7 +12,7 @@
           >
             <template #title>
               <div class="repay-pending__title">
-                <span class="repay-pending__no">{{ txt(row.repayNo ?? row.repay_no) }}</span>
+                <span class="repay-pending__no">{{ txt(row.repayNo) }}</span>
                 <span v-if="showDebugId" class="repay-pending__id">#{{ row.id }}</span>
               </div>
             </template>

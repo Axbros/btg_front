@@ -7,11 +7,11 @@
       <van-cell-group inset>
         <van-notice-bar left-icon="info-o" :scrollable="false" text="已退回待修改：请核对归仓金额与截图后重新提交。" />
         <template v-if="replBlock">
-          <van-cell title="补仓单号" :value="txt(replBlock.applyNo ?? replBlock.apply_no)" />
-          <van-cell title="审核通过金额" :value="formatMoney(num(replBlock.approvedAmount ?? replBlock.approved_amount))" />
-          <van-cell title="已归还金额" :value="formatMoney(num(replBlock.repaidAmount ?? replBlock.repaid_amount))" />
-          <van-cell title="待审归仓金额" :value="formatMoney(num(replBlock.pendingRepayAmount ?? replBlock.pending_repay_amount))" />
-          <van-cell title="剩余金额" :value="formatMoney(num(replBlock.remainingAmount ?? replBlock.remaining_amount))" />
+          <van-cell title="补仓单号" :value="txt(replBlock.applyNo)" />
+          <van-cell title="审核通过金额" :value="formatMoney(num(replBlock.approvedAmount))" />
+          <van-cell title="已归还金额" :value="formatMoney(num(replBlock.repaidAmount))" />
+          <van-cell title="待审归仓金额" :value="formatMoney(num(replBlock.pendingRepayAmount))" />
+          <van-cell title="剩余金额" :value="formatMoney(num(replBlock.remainingAmount))" />
         </template>
         <van-field
           v-model="repayAmount"
@@ -70,7 +70,7 @@ const repayId = computed(() => {
 const replBlock = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return null
-  return d.replenishmentApply ?? d.replenishment_apply ?? null
+  return d.replenishmentApply ?? null
 })
 
 const canResubmit = computed(() => {
@@ -103,9 +103,9 @@ async function load() {
       showToast('当前状态不可重提')
       return
     }
-    const ra = d.repayAmount ?? d.repay_amount
+    const ra = d.repayAmount
     repayAmount.value = ra != null && String(ra) !== '' ? String(ra) : ''
-    repayScreenshotUrl.value = String(d.repayScreenshotUrl ?? d.repay_screenshot_url ?? '').trim()
+    repayScreenshotUrl.value = String(d.repayScreenshotUrl ?? '').trim()
   } catch {
     detail.value = null
   } finally {

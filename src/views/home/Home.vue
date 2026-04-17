@@ -55,6 +55,18 @@
         text="归仓"
         @click="goHomeNav('/repay')"
       />
+      <van-grid-item
+        v-if="!isRootUser"
+        icon="records"
+        text="我的归仓申请"
+        @click="goHomeNav({ name: 'RepayMine' })"
+      />
+      <van-grid-item
+        v-if="!isRootUser"
+        icon="passed"
+        text="待我审核的归仓"
+        @click="goHomeNav({ name: 'RepayPendingReview' })"
+      />
       <van-grid-item icon="friends-o" text="下级补仓记录" @click="goHomeNav('/team/sub-replenishments')" />
       <van-grid-item icon="orders-o" text="下级归仓记录" @click="goHomeNav('/team/sub-repays')" />
       <van-grid-item
@@ -70,6 +82,12 @@
         text="待审核归仓"
         @click="goHomeNav('/admin/replenishments/repays/pending')"
         :badge="repayAdminMenuBadge"
+      />
+      <van-grid-item
+        v-if="isRootUser && auth.isAdmin"
+        icon="passed"
+        text="待审核资格"
+        @click="goHomeNav({ name: 'AdminUserQualificationPending' })"
       />
     </van-grid>
 
@@ -95,6 +113,13 @@
           <span class="home__menu-title">
             <span>待审核归仓</span>
             <van-badge v-if="repayReviewBadge > 0" :content="repayReviewBadge" max="99" />
+          </span>
+        </template>
+      </van-cell>
+      <van-cell is-link @click="goHomeNav({ name: 'AdminUserQualificationPending' })">
+        <template #title>
+          <span class="home__menu-title">
+            <span>待审核资格</span>
           </span>
         </template>
       </van-cell>

@@ -4,6 +4,7 @@
 import {
   formatProfitFlowCombinedState,
   formatProfitRecordStatus,
+  formatQualificationStatus,
   formatReplenishmentStatus,
   formatRepayStatus,
   formatSettlementStatus,
@@ -18,9 +19,24 @@ export const DASHBOARD_TODO_TYPES = {
   PROFIT_REPORT_CHAIN_WATCH: 'PROFIT_REPORT_CHAIN_WATCH',
   PROFIT_REPORT_RETURNED: 'PROFIT_REPORT_RETURNED',
   REPLENISHMENT_PENDING_REVIEW: 'REPLENISHMENT_PENDING_REVIEW',
+  /** 补仓待办（与 dashboard / 后端枚举扩展） */
+  REPLENISHMENT_ADMIN_REVIEW: 'REPLENISHMENT_ADMIN_REVIEW',
+  REPLENISHMENT_CAPITAL_SUBMIT: 'REPLENISHMENT_CAPITAL_SUBMIT',
+  REPLENISHMENT_APPLICANT_CONFIRM: 'REPLENISHMENT_APPLICANT_CONFIRM',
+  REPLENISHMENT_CHAIN_WATCH: 'REPLENISHMENT_CHAIN_WATCH',
   REPLENISHMENT_RETURNED: 'REPLENISHMENT_RETURNED',
+  /** 兼容旧待办枚举 */
   REPLENISHMENT_REPAY_PENDING_REVIEW: 'REPLENISHMENT_REPAY_PENDING_REVIEW',
   REPLENISHMENT_REPAY_RETURNED: 'REPLENISHMENT_REPAY_RETURNED',
+  /** 资方执行人待审归仓 */
+  REPLENISHMENT_REPAY_CAPITAL_REVIEW: 'REPLENISHMENT_REPAY_CAPITAL_REVIEW',
+  REPLENISHMENT_REPAY_RETURNED_TO_APPLICANT: 'REPLENISHMENT_REPAY_RETURNED_TO_APPLICANT',
+  /** 下级归仓链路只读 */
+  REPLENISHMENT_REPAY_CHAIN_WATCH: 'REPLENISHMENT_REPAY_CHAIN_WATCH',
+  /** 新成员资格审核（管理员）；后端 todo 枚举可先下发再接入 */
+  USER_QUALIFICATION_REVIEW: 'USER_QUALIFICATION_REVIEW',
+  QUALIFICATION_PENDING_REVIEW: 'QUALIFICATION_PENDING_REVIEW',
+  USER_PENDING_QUALIFICATION: 'USER_PENDING_QUALIFICATION',
 }
 
 const TODO_TYPE_LABELS = {
@@ -30,25 +46,38 @@ const TODO_TYPE_LABELS = {
   PROFIT_REPORT_CHAIN_WATCH: '下级利润进行中',
   PROFIT_REPORT_RETURNED: '退回待修改·利润上报',
   REPLENISHMENT_PENDING_REVIEW: '待审核补仓',
+  REPLENISHMENT_ADMIN_REVIEW: '待审核补仓',
+  REPLENISHMENT_CAPITAL_SUBMIT: '待提交补仓凭证',
+  REPLENISHMENT_APPLICANT_CONFIRM: '待确认补仓到账',
+  REPLENISHMENT_CHAIN_WATCH: '下级补仓进行中',
   REPLENISHMENT_RETURNED: '退回待修改·补仓',
-  REPLENISHMENT_REPAY_PENDING_REVIEW: '待审核归仓',
-  REPLENISHMENT_REPAY_RETURNED: '退回待修改·归仓',
+  REPLENISHMENT_REPAY_PENDING_REVIEW: '待我审核归仓',
+  REPLENISHMENT_REPAY_RETURNED: '归仓退回待修改',
+  REPLENISHMENT_REPAY_CAPITAL_REVIEW: '待我审核归仓',
+  REPLENISHMENT_REPAY_RETURNED_TO_APPLICANT: '归仓退回待修改',
+  REPLENISHMENT_REPAY_CHAIN_WATCH: '下级归仓进行中',
+  USER_QUALIFICATION_REVIEW: '待审核资格',
+  QUALIFICATION_PENDING_REVIEW: '待审核资格',
+  USER_PENDING_QUALIFICATION: '待审核资格',
 }
 
 export function formatDashboardTodoType(todoType) {
   if (todoType == null || todoType === '') return '待办'
-  const k = String(todoType).toUpperCase()
+  const k = String(todoType).toUpperCase().replace(/-/g, '_')
   return TODO_TYPE_LABELS[k] || String(todoType)
 }
 
 /** 仅查看链路、无审核/提交等操作 */
 export function isDashboardTodoReadOnly(item) {
   if (!item || typeof item !== 'object') return false
-  if (item.readOnly === true || item.read_only === true) return true
+  if (item.readOnly === true) return true
   const t = String(item.todoType || '')
     .toUpperCase()
     .replace(/-/g, '_')
-  return t === 'PROFIT_REPORT_CHAIN_WATCH'
+  if (t === 'PROFIT_REPORT_CHAIN_WATCH') return true
+  if (t === 'REPLENISHMENT_REPAY_CHAIN_WATCH') return true
+  if (t === DASHBOARD_TODO_TYPES.REPLENISHMENT_CHAIN_WATCH) return true
+  return false
 }
 
 /** 流转节点 / 业务侧状态展示（字符串枚举） */
@@ -101,9 +130,11 @@ export function resolveTodoNavigation(item) {
     if (t.startsWith('/')) return { path: t }
   }
 
-  const type = String(item.todoType || '').toUpperCase()
+  const type = String(item.todoType || '')
+    .toUpperCase()
+    .replace(/-/g, '_')
   const rootFromFields = numId(
-    item.rootReportId ?? item.root_report_id ?? item.reportId ?? item.report_id,
+    item.rootReportId ?? item.reportId,
   )
   const businessId = numId(item.businessId)
 
@@ -126,6 +157,50 @@ export function resolveTodoNavigation(item) {
     if (rootId) return { path: `/flow/profit/${rootId}` }
   }
 
+  /** 管理员资格审核列表；不依赖 businessId */
+  const qualificationTodoTypes = new Set([
+    DASHBOARD_TODO_TYPES.USER_QUALIFICATION_REVIEW,
+    DASHBOARD_TODO_TYPES.QUALIFICATION_PENDING_REVIEW,
+    DASHBOARD_TODO_TYPES.USER_PENDING_QUALIFICATION,
+  ])
+  if (qualificationTodoTypes.has(type)) {
+    return { path: '/admin/users/pending-qualification' }
+  }
+
+  /** 补仓扩展待办：部分类型无需 businessId */
+  if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_ADMIN_REVIEW) {
+    return { path: '/admin/replenishments/pending' }
+  }
+  if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_CAPITAL_SUBMIT) {
+    return { path: '/replenishment/assigned' }
+  }
+  if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_APPLICANT_CONFIRM) {
+    return { path: '/replenishment/mine' }
+  }
+  if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_CHAIN_WATCH) {
+    if (businessId) return { path: `/replenishment/mine/${businessId}/flow` }
+    return { path: '/replenishment/mine' }
+  }
+
+  /** 归仓待办：待审列表可不依赖 businessId；退回/链路无 id 时回列表 */
+  if (
+    type === DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_CAPITAL_REVIEW ||
+    type === DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_PENDING_REVIEW
+  ) {
+    return { path: '/replenishment/repays/pending-review' }
+  }
+  if (
+    type === DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_RETURNED_TO_APPLICANT ||
+    type === DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_RETURNED
+  ) {
+    if (businessId) return { path: `/replenishment/repay/${businessId}/resubmit` }
+    return { path: '/replenishment/repay-mine' }
+  }
+  if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_CHAIN_WATCH) {
+    if (businessId) return { path: `/replenishment/repays/${businessId}/flow` }
+    return { path: '/replenishment/repay-mine' }
+  }
+
   const id = businessId
   if (!id) return null
 
@@ -142,10 +217,6 @@ export function resolveTodoNavigation(item) {
       return { path: `/replenishment/mine/${id}` }
     case DASHBOARD_TODO_TYPES.REPLENISHMENT_RETURNED:
       return { path: `/replenishment/mine/${id}/resubmit` }
-    case DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_PENDING_REVIEW:
-      return { path: `/replenishment/repay/${id}` }
-    case DASHBOARD_TODO_TYPES.REPLENISHMENT_REPAY_RETURNED:
-      return { path: `/replenishment/repay/${id}/resubmit` }
     default:
       return null
   }
@@ -156,10 +227,20 @@ export function formatTodoItemCurrentStatus(item) {
   if (!item || typeof item !== 'object') return '—'
   const s = item.currentStatus
   if (s === null || s === undefined || s === '') return '—'
-  const t = String(item.todoType || '').toUpperCase()
+  const t = String(item.todoType || '')
+    .toUpperCase()
+    .replace(/-/g, '_')
   if (t.includes('PROFIT')) return formatProfitRecordStatus(s)
   if (t.includes('REPLENISHMENT') && t.includes('REPAY')) return formatRepayStatus(s)
   if (t.includes('REPLENISHMENT')) return formatReplenishmentStatus(s)
   if (t.includes('SETTLEMENT')) return formatSettlementStatus(s)
+  if (
+    t === DASHBOARD_TODO_TYPES.USER_QUALIFICATION_REVIEW ||
+    t === DASHBOARD_TODO_TYPES.QUALIFICATION_PENDING_REVIEW ||
+    t === DASHBOARD_TODO_TYPES.USER_PENDING_QUALIFICATION ||
+    t.includes('QUALIFICATION')
+  ) {
+    return formatQualificationStatus(s)
+  }
   return String(s)
 }

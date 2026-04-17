@@ -8,7 +8,7 @@
       <p class="hub-banner__text">{{ hubBannerRest }}</p>
     </div>
     <van-cell-group v-if="current" inset title="当前未结清补仓" class="hub-current">
-      <van-cell title="剩余待归还" :value="formatMoney(current.remainingAmount ?? current.remaining_amount ?? 0)" />
+      <van-cell title="剩余待归还" :value="formatMoney(current.remainingAmount ?? 0)" />
       <van-cell title="资方转账凭证">
         <template #value>
           <PreviewableRemoteImage v-if="transferProofUrl" :url="transferProofUrl" alt="资方转账凭证" />
@@ -33,9 +33,14 @@
     <div class="hub-actions">
       <p class="hub-actions__title">归仓</p>
       <van-grid :column-num="2" :gutter="10" clickable class="hub-actions__grid">
-        <van-grid-item icon="balance-list-o" text="提交归仓申请" @click="goNav('/replenishment/repay')" />
-        <van-grid-item icon="records" text="我的归仓记录" @click="goNav('/replenishment/repay-mine')" />
+        <van-grid-item icon="balance-list-o" text="提交归仓申请" @click="goNav({ name: 'RepayApply' })" />
+        <van-grid-item icon="records" text="我的归仓申请" @click="goNav({ name: 'RepayMine' })" />
+        <van-grid-item icon="passed" text="待我审核的归仓" @click="goNav({ name: 'RepayPendingReview' })" />
       </van-grid>
+      <van-cell-group inset title="快捷入口" class="hub-links">
+        <van-cell title="我的归仓申请" is-link @click="goNav({ name: 'RepayMine' })" />
+        <van-cell title="待我审核的归仓" is-link @click="goNav({ name: 'RepayPendingReview' })" />
+      </van-cell-group>
     </div>
   </div>
 </template>
@@ -62,21 +67,21 @@ function goNav(to) {
 const transferProofUrl = computed(() => {
   const c = current.value
   if (!c) return ''
-  const u = c.transferScreenshotUrl ?? c.transfer_screenshot_url
+  const u = c.transferScreenshotUrl
   return u && String(u).trim() ? String(u).trim() : ''
 })
 
 const transferRemarkText = computed(() => {
   const c = current.value
   if (!c) return ''
-  const t = c.transferRemark ?? c.transfer_remark
+  const t = c.transferRemark
   return t != null && String(t).trim() !== '' ? String(t).trim() : ''
 })
 
 const hubBannerRest = computed(() => {
   const c = current.value
   if (!c) return ''
-  const rem = formatMoney(c.remainingAmount ?? c.remaining_amount ?? 0)
+  const rem = formatMoney(c.remainingAmount ?? 0)
   return `当前补仓单；剩余待归还 ${rem} 元（含待审核归仓请留意额度）。`
 })
 
@@ -101,6 +106,9 @@ onMounted(async () => {
 }
 .hub-actions__grid {
   margin-top: 4px;
+}
+.hub-links {
+  margin-top: 12px;
 }
 .hub-current {
   margin-bottom: 12px;

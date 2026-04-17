@@ -232,8 +232,8 @@ const meId = computed(() => {
 
 function pickFromUserId(d) {
   if (!d) return null
-  const fromObj = d.fromUser ?? d.from_user
-  const raw = d.fromUserId ?? d.from_user_id ?? fromObj?.id ?? fromObj?.userId ?? fromObj?.user_id
+  const fromObj = d.fromUser
+  const raw = d.fromUserId ?? fromObj?.id ?? fromObj?.userId
   if (raw == null || raw === '') return null
   const n = Number(raw)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -241,8 +241,8 @@ function pickFromUserId(d) {
 
 function pickToUserId(d) {
   if (!d) return null
-  const toObj = d.toUser ?? d.to_user ?? d.toUserInfo ?? d.to_user_info
-  const raw = d.toUserId ?? d.to_user_id ?? toObj?.id ?? toObj?.userId ?? toObj?.user_id
+  const toObj = d.toUser ?? d.toUserInfo
+  const raw = d.toUserId ?? toObj?.id ?? toObj?.userId
   if (raw == null || raw === '') return null
   const n = Number(raw)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -255,9 +255,7 @@ const isMeAsReviewingSuperior = computed(() => {
   if (!d || mid == null) return false
   const reviewerRaw =
     d.reviewerUserId ??
-    d.reviewer_user_id ??
     d.auditByUserId ??
-    d.audit_by_user_id ??
     pickToUserId(d)
   if (reviewerRaw == null) return false
   const rid = Number(reviewerRaw)
@@ -276,7 +274,7 @@ const isMeAsSubordinatePayer = computed(() => {
 const isRootUser = computed(() => {
   const u = userInfo.value
   if (!u) return false
-  const v = u.isRoot ?? u.is_root
+  const v = u.isRoot
   if (v === true || v === 1 || v === '1') return true
   if (v === false || v === 0 || v === '0') return false
   if (typeof v === 'string' && v.toLowerCase() === 'true') return true
@@ -302,7 +300,7 @@ const showReviewActions = computed(() => {
 const reportNoText = computed(() => {
   const d = detail.value
   if (!d) return ''
-  const v = d.reportNo ?? d.report_no ?? d.profitRecordNo ?? d.profit_record_no
+  const v = d.reportNo ?? d.profitRecordNo
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
 })
 
@@ -312,23 +310,15 @@ const settlementReportUserNicknameDisplay = computed(() => {
   const d = detail.value
   return pickStr(
     d?.reportUserNickname,
-    d?.report_user_nickname,
     p?.reportUserName,
-    p?.report_user_name,
     d?.reportUserName,
-    d?.report_user_name,
   )
 })
 
 const settlementReportUserMobileDisplay = computed(() => {
   const p = profitFlowPayload.value
   const d = detail.value
-  return pickStr(
-    d?.reportUserMobile,
-    d?.report_user_mobile,
-    p?.reportUserMobile,
-    p?.report_user_mobile,
-  )
+  return pickStr(d?.reportUserMobile, p?.reportUserMobile)
 })
 
 const settlementReportProfitAmountDisplay = computed(() => {
@@ -336,11 +326,8 @@ const settlementReportProfitAmountDisplay = computed(() => {
   const d = detail.value
   const raw =
     p?.profitAmount ??
-    p?.profit_amount ??
     d?.profitAmount ??
-    d?.profit_amount ??
-    d?.profitReportAmount ??
-    d?.profit_report_amount
+    d?.profitReportAmount
   if (raw === null || raw === undefined || raw === '') return '—'
   return formatMoney(raw)
 })
@@ -348,7 +335,7 @@ const settlementReportProfitAmountDisplay = computed(() => {
 const settlementParentToChildRatioDisplay = computed(() => {
   const d = detail.value
   if (!d) return '—'
-  const r = d.parentToChildProfitRatio ?? d.parent_to_child_profit_ratio
+  const r = d.parentToChildProfitRatio
   if (r === null || r === undefined || r === '') return '—'
   return formatRate(r)
 })
@@ -358,31 +345,31 @@ const settlementTagType = computed(() => settlementStatusTagType(detail.value?.s
 const rootReportIdText = computed(() => {
   const d = detail.value
   if (!d) return ''
-  const v = d.rootReportId ?? d.root_report_id
+  const v = d.rootReportId
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
 })
 
 /** 支持嵌套 fromUser / 扁平 fromUserNickname 等 */
 function pickUserSide(d, side) {
   if (!d) return { nickname: '', mobile: '' }
-  const fromObj = d.fromUser ?? d.from_user
-  const toObj = d.toUser ?? d.to_user ?? d.toUserInfo ?? d.to_user_info
+  const fromObj = d.fromUser
+  const toObj = d.toUser ?? d.toUserInfo
   const obj = side === 'from' ? fromObj : toObj
   if (obj != null && typeof obj === 'object' && !Array.isArray(obj)) {
     return {
-      nickname: pickStr(obj.nickname, obj.userNickname, obj.user_nickname, obj.name),
-      mobile: pickStr(obj.mobile, obj.phone, obj.userMobile, obj.user_mobile),
+      nickname: pickStr(obj.nickname, obj.userNickname, obj.name),
+      mobile: pickStr(obj.mobile, obj.phone, obj.userMobile),
     }
   }
   if (side === 'from') {
     return {
-      nickname: pickStr(d.fromUserNickname, d.from_user_nickname),
-      mobile: pickStr(d.fromUserMobile, d.from_user_mobile),
+      nickname: pickStr(d.fromUserNickname),
+      mobile: pickStr(d.fromUserMobile),
     }
   }
   return {
-    nickname: pickStr(d.toUserNickname, d.to_user_nickname),
-    mobile: pickStr(d.toUserMobile, d.to_user_mobile),
+    nickname: pickStr(d.toUserNickname),
+    mobile: pickStr(d.toUserMobile),
   }
 }
 
@@ -392,23 +379,13 @@ const toProfile = computed(() => pickUserSide(detail.value, 'to'))
 const toExchangeUidText = computed(() => {
   const d = detail.value
   if (!d) return ''
-  return pickStr(
-    d.toUserExchangeUid,
-    d.to_user_exchange_uid,
-    d.toExchangeUid,
-    d.to_exchange_uid,
-  )
+  return pickStr(d.toUserExchangeUid, d.toExchangeUid)
 })
 
 const transferShotUrl = computed(() => {
   const d = detail.value
   if (!d) return ''
-  return pickStr(
-    d.transferScreenshotUrl,
-    d.transfer_screenshot_url,
-    d.transferToParentScreenshotUrl,
-    d.transfer_to_parent_screenshot_url,
-  )
+  return pickStr(d.transferScreenshotUrl, d.transferToParentScreenshotUrl)
 })
 
 /** 待提交凭证、尚无划转图、且当前用户为付款人 → 需向上级打款并上传凭证 */
@@ -422,12 +399,7 @@ const needSubmitTransferProof = computed(() => {
 const profitShotUrl = computed(() => {
   const d = detail.value
   if (!d) return ''
-  return pickStr(
-    d.profitScreenshotUrl,
-    d.profit_screenshot_url,
-    d.profitImgUrl,
-    d.profit_img_url,
-  )
+  return pickStr(d.profitScreenshotUrl, d.profitImgUrl)
 })
 
 function pickStr(...candidates) {
@@ -470,9 +442,7 @@ const profitFlowReportUserName = computed(() => {
   if (!p || typeof p !== 'object') return ''
   const v =
     p.reportUserName ??
-    p.report_user_name ??
-    p.reportUserNickname ??
-    p.report_user_nickname
+    p.reportUserNickname
   if (v == null || String(v).trim() === '') return ''
   return String(v).trim()
 })
@@ -480,7 +450,7 @@ const profitFlowReportUserName = computed(() => {
 const profitFlowRootProfitAmount = computed(() => {
   const p = profitFlowPayload.value
   if (!p || typeof p !== 'object') return null
-  const raw = p.profitAmount ?? p.profit_amount
+  const raw = p.profitAmount
   if (raw === null || raw === undefined || raw === '') return null
   return raw
 })
@@ -488,7 +458,7 @@ const profitFlowRootProfitAmount = computed(() => {
 const profitFlowRootFinancialsMasked = computed(() => {
   const p = profitFlowPayload.value
   if (!p || typeof p !== 'object') return false
-  return p.financialsMasked === true || p.financials_masked === true
+  return p.financialsMasked === true
 })
 
 async function loadProfitFlow() {

@@ -5,7 +5,6 @@
     <van-notice-bar v-if="loadingList" left-icon="info-o" :scrollable="false" text="加载可归仓补仓单…" />
 
     <template v-else>
-      <!-- 区域 A：可归仓补仓单 -->
       <van-cell-group inset title="可归仓补仓单" class="block">
         <van-empty
           v-if="!list.length"
@@ -23,13 +22,17 @@
               <div class="pick-card" @click="selectedId = item.id">
                 <div class="pick-card__head">
                   <span class="pick-card__no">{{ txt(item.applyNo) }}</span>
+                  <van-tag v-if="item.status != null" plain round type="primary" class="pick-card__st">
+                    {{ formatReplenishmentStatus(item.status) }}
+                  </van-tag>
                 </div>
                 <div class="pick-card__grid">
                   <span>审核通过金额</span><span>{{ formatMoney(num(item.approvedAmount)) }}</span>
                   <span>已归还金额</span><span>{{ formatMoney(num(item.repaidAmount)) }}</span>
                   <span>待审归仓金额</span><span>{{ formatMoney(num(item.pendingRepayAmount)) }}</span>
                   <span>剩余金额</span><span class="emph">{{ formatMoney(num(item.remainingAmount)) }}</span>
-                  <span>审核时间</span><span>{{ formatDateTime(item.auditTime) }}</span>
+                  <span>资方执行人</span><span>{{ txt(item.assignedCapitalUserName) }}</span>
+                  <span>资方收款 UID</span><span>{{ txt(item.capitalReceiverUid) }}</span>
                 </div>
               </div>
             </template>
@@ -43,7 +46,6 @@
       <template v-if="list.length">
         <p v-if="!selectedItem" class="select-hint">请先选择一笔补仓单，再填写归仓信息</p>
 
-        <!-- 区域 B + C -->
         <van-form
           v-if="selectedItem"
           ref="formRef"
@@ -54,35 +56,19 @@
         >
           <van-cell-group inset title="当前选中补仓单" class="block">
             <van-cell title="补仓单号" :value="txt(selectedItem.applyNo)" />
-            <van-cell title="补仓金额" :value="formatMoney(num(selectedItem.approvedAmount))" />
-            <van-cell title="已归金额" :value="formatMoney(num(selectedItem.repaidAmount))" />
-            <van-cell title="待审归仓金额" :value="formatMoney(num(selectedItem.pendingRepayAmount))" />
-            <van-cell title="剩余金额" :value="formatMoney(num(selectedItem.remainingAmount))" />
-            <van-cell title="资方转账凭证">
-              <template #value>
-                <PreviewableRemoteImage
-                  v-if="transferProofUrl"
-                  :url="transferProofUrl"
-                  alt="资方转账凭证"
-                />
-                <span v-else>—</span>
-              </template>
-            </van-cell>
-            <van-cell
-              v-if="transferRemarkText"
-              title="资方转账备注"
-              :value="transferRemarkText"
-            />
+            <van-cell title="资方执行人" :value="txt(selectedItem.assignedCapitalUserName)" />
+            <van-cell title="资方收款 UID" :value="txt(selectedItem.capitalReceiverUid)" />
+            <van-cell title="剩余待归还金额" :value="formatMoney(maxRepay)" />
           </van-cell-group>
 
           <van-cell-group inset title="归仓申请" class="block">
-            <van-cell title="本次最多可填" :value="formatMoney(maxRepay)" />
+            <van-cell title="可申请上限说明" :label="maxHint" />
             <van-field
               v-model="repayAmount"
               name="repayAmount"
               label="归仓金额"
               type="number"
-              placeholder="大于 0，不超过可归还上限"
+              placeholder="大于 0，不超过可申请上限"
               required
               :rules="amountRules"
             />
@@ -125,9 +111,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
-import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { getRepayableReplenishments, submitRepayApply } from '@/api/replenishment'
-import { formatDateTime, formatMoney } from '@/utils/format'
+import { formatMoney, formatReplenishmentStatus } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -177,23 +162,15 @@ const maxRepay = computed(() => {
   return m > 0 ? m : 0
 })
 
-const transferProofUrl = computed(() => {
-  const c = selectedItem.value
-  if (!c) return ''
-  const u = c.transferScreenshotUrl ?? c.transfer_screenshot_url
-  return u && String(u).trim() ? String(u).trim() : ''
-})
-
-const transferRemarkText = computed(() => {
-  const c = selectedItem.value
-  if (!c) return ''
-  const t = c.transferRemark ?? c.transfer_remark
-  return t != null && String(t).trim() !== '' ? String(t).trim() : ''
-})
+const maxHint = computed(
+  () =>
+    `剩余 ${formatMoney(remaining.value)}，待审归仓 ${formatMoney(pending.value)}；本次最多可申请 ${formatMoney(maxRepay.value)}。`,
+)
 
 const amountRules = computed(() => {
   const cap = maxRepay.value
   const rem = remaining.value
+  const pend = pending.value
   return [
     { required: true, message: '请填写归仓金额' },
     {
@@ -202,9 +179,10 @@ const amountRules = computed(() => {
         if (!Number.isFinite(n) || n <= 0) return false
         if (!selectedItem.value) return false
         if (n > rem + 1e-9) return false
+        if (n > rem - pend + 1e-9) return false
         return n <= cap + 1e-9
       },
-      message: `归仓金额须大于 0，且不超过可申请额度 ${formatMoney(cap)}（剩余 ${formatMoney(rem)} 扣减待审归仓）`,
+      message: `归仓金额须大于 0，且不超过 ${formatMoney(cap)}（剩余 ${formatMoney(rem)} 减待审 ${formatMoney(pend)}）`,
     },
   ]
 })
@@ -279,7 +257,7 @@ async function onSubmit() {
     return
   }
   if (amt > cap + 1e-9) {
-    showToast(`归仓金额不能超过可申请额度 ${formatMoney(cap)}（剩余扣减待审归仓）`)
+    showToast(`归仓金额不能超过可申请额度 ${formatMoney(cap)}（剩余减待审归仓）`)
     return
   }
   if (!url) {
@@ -331,6 +309,9 @@ async function onSubmit() {
   font-size: 15px;
   color: #323233;
   word-break: break-all;
+}
+.pick-card__st {
+  flex-shrink: 0;
 }
 .pick-card__grid {
   display: grid;

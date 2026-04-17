@@ -3,7 +3,7 @@
  */
 export function isUserRoot(user) {
   if (!user || typeof user !== 'object') return false
-  const v = user.isRoot ?? user.is_root
+  const v = user.isRoot
   if (v === true || v === 1 || v === '1') return true
   if (v === false || v === 0 || v === '0') return false
   if (typeof v === 'string' && v.toLowerCase() === 'true') return true
@@ -15,7 +15,7 @@ export function isUserRoot(user) {
  */
 export function isUserAdmin(user) {
   if (!user || typeof user !== 'object') return false
-  if (user.isRoot === true || user.is_root === true) return true
+  if (user.isRoot === true) return true
   if (user.isAdmin === true) return true
   if (user.role === 'ADMIN' || user.role === 'admin') return true
   const roles = user.roles

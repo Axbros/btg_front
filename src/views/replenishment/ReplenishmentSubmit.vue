@@ -76,8 +76,8 @@ const previewHint = computed(() => {
   return '实际额度以服务端校验为准'
 })
 
-function pickStr(obj, camel, snake) {
-  const v = obj?.[camel] ?? obj?.[snake]
+function pickStr(obj, key) {
+  const v = obj?.[key]
   if (v == null) return ''
   const s = String(v).trim()
   return s
@@ -92,11 +92,11 @@ onMounted(async () => {
   profileLoading.value = true
   try {
     const prof = await fetchUserProfile()
-    const raw = prof?.principalAmount ?? prof?.principal_amount ?? 0
+    const raw = prof?.principalAmount ?? 0
     principalNum.value = Number(raw)
     if (Number.isNaN(principalNum.value)) principalNum.value = 0
-    walletName.value = pickStr(prof, 'walletName', 'wallet_name')
-    walletAddress.value = pickStr(prof, 'walletAddress', 'wallet_address')
+    walletName.value = pickStr(prof, 'walletName')
+    walletAddress.value = pickStr(prof, 'walletAddress')
   } catch {
     principalNum.value = 0
     walletName.value = ''

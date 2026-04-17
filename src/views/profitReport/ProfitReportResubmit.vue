@@ -1,11 +1,11 @@
 <template>
-  <div>
+  <div class="profit-report-shell">
     <AppHeader title="利润·重新提交" />
-    <van-loading v-if="pageLoading" class="pr-resubmit__loading" vertical>加载中…</van-loading>
-    <van-empty v-else-if="!canResubmit" description="当前记录不可重提或不存在" />
-    <template v-else>
-      
-      <van-form scroll-to-error :show-error-message="true" @submit="onSubmit" style="padding-top: 12px">
+    <div class="profit-report-shell__scroll">
+      <van-loading v-if="pageLoading" class="pr-resubmit__loading pr-resubmit__fill" vertical>加载中…</van-loading>
+      <van-empty v-else-if="!canResubmit" class="pr-resubmit__fill" description="当前记录不可重提或不存在" />
+      <template v-else>
+      <van-form scroll-to-error :show-error-message="true" class="pr-resubmit__form" @submit="onSubmit">
       <van-cell-group inset>
         <van-notice-bar left-icon="info-o" :scrollable="false" text="已退回待修改：请核对后重新提交利润金额与两张截图。" />
         <van-field
@@ -66,7 +66,8 @@
         <van-button round block type="primary" native-type="submit" :loading="submitting">重新提交</van-button>
       </div>
     </van-form>
-    </template>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -127,7 +128,7 @@ const flowReport = computed(() => {
 const flowReportNo = computed(() => {
   const r = flowReport.value
   if (!r) return ''
-  const no = r.reportNo ?? r.report_no
+  const no = r.reportNo
   return no != null && String(no).trim() !== '' ? String(no).trim() : ''
 })
 
@@ -135,14 +136,14 @@ const flowCurrentStatus = computed(() => {
   const f = flowPayload.value
   if (!f || typeof f !== 'object') return null
   const r = flowReport.value
-  return f.currentStatus ?? f.current_status ?? r?.flowStatus ?? r?.status ?? null
+  return f.currentStatus ?? r?.flowStatus ?? r?.status ?? null
 })
 
 const flowSubmitVersion = computed(() => {
   const f = flowPayload.value
   if (!f || typeof f !== 'object') return null
   const r = flowReport.value
-  return f.submitVersion ?? f.submit_version ?? r?.submitVersion ?? r?.submit_version ?? null
+  return f.submitVersion ?? r?.submitVersion ?? null
 })
 
 const flowRejectReason = computed(() => {
@@ -150,7 +151,7 @@ const flowRejectReason = computed(() => {
   if (!f || typeof f !== 'object') return ''
   const r = flowReport.value
   const reason =
-    f.lastRejectReason ?? f.last_reject_reason ?? r?.lastRejectReason ?? r?.last_reject_reason ?? ''
+    f.lastRejectReason ?? r?.lastRejectReason ?? ''
   return String(reason).trim()
 })
 
@@ -185,16 +186,10 @@ async function load() {
       showToast('当前状态不可重提')
       return
     }
-    const amt = d.profitAmount ?? d.profit_amount
+    const amt = d.profitAmount
     profitAmount.value = amt != null && String(amt) !== '' ? String(amt) : ''
-    profitScreenshotUrl.value = pickStr(d, 'profitScreenshotUrl', 'profit_screenshot_url')
-    transferScreenshotUrl.value = pickStr(
-      d,
-      'transferScreenshotUrl',
-      'transfer_screenshot_url',
-      'transferToParentScreenshotUrl',
-      'transfer_to_parent_screenshot_url',
-    )
+    profitScreenshotUrl.value = pickStr(d, 'profitScreenshotUrl')
+    transferScreenshotUrl.value = pickStr(d, 'transferScreenshotUrl', 'transferToParentScreenshotUrl')
     flowLoading.value = true
     try {
       const flow = await getProfitReportFlow(id)
@@ -237,6 +232,18 @@ async function onSubmit() {
 <style scoped>
 .pr-resubmit__loading {
   padding: 48px 0;
+}
+.pr-resubmit__fill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.pr-resubmit__form {
+  padding-top: 12px;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .actions {
   margin: 20px 16px 0;

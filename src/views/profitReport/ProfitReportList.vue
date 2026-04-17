@@ -1,22 +1,24 @@
 <template>
-  <div>
+  <div class="profit-report-shell">
     <AppHeader title="我的利润上报记录" />
-    <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 12px;">
-      <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <ProfitRecordCard
-          v-for="(item, idx) in list"
-          :key="rowKey(item, idx)"
-          :item="item"
-          link-to-settlement
-          show-distribution-link
-        />
-        <EmptyState v-if="!loading && !list.length && loaded" />
-      </van-list>
-    </van-pull-refresh>
-    <div class="pager">
-      <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
-      <span class="pager__text">第 {{ page }} 页</span>
-      <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
+    <div class="profit-report-shell__scroll profit-report-shell__list profit-report-list__body">
+      <van-pull-refresh v-model="refreshing" class="profit-report-shell__pull" @refresh="onRefresh">
+        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+          <ProfitRecordCard
+            v-for="(item, idx) in list"
+            :key="rowKey(item, idx)"
+            :item="item"
+            link-to-settlement
+            show-distribution-link
+          />
+          <EmptyState v-if="!loading && !list.length && loaded" />
+        </van-list>
+      </van-pull-refresh>
+      <div class="pager">
+        <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
+        <span class="pager__text">第 {{ page }} 页</span>
+        <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
+      </div>
     </div>
   </div>
 </template>
@@ -39,7 +41,7 @@ const hasMore = ref(false)
 const loaded = ref(false)
 
 function rowKey(item, idx) {
-  return String(item.settlementId ?? item.settlement_id ?? item.id ?? `row-${idx}`)
+  return String(item.settlementId ?? item.id ?? `row-${idx}`)
 }
 
 async function fetchPage(p) {
@@ -86,6 +88,10 @@ function next() {
 </script>
 
 <style scoped>
+.profit-report-list__body {
+  padding-top: 12px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
 .pager {
   display: flex;
   align-items: center;

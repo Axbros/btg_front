@@ -42,6 +42,27 @@
         <van-cell title="账户资金快照（MT5）" is-link :to="{ name: 'Mt5Snapshot' }" />
       </van-cell-group>
 
+      <van-cell-group v-if="qualificationSectionVisible" inset title="资格审核" class="profile__block">
+        <van-cell title="审核状态">
+          <template #value>
+            <van-tag :type="qualificationStatusTagType(qualStatusRaw)" plain round>
+              {{ formatQualificationStatus(qualStatusRaw) }}
+            </van-tag>
+          </template>
+        </van-cell>
+        <van-cell title="审核时间" :value="formatDateTime(qualificationAuditTime)" />
+        <van-cell title="审核备注" :value="txtCell(qualificationAuditRemark)" />
+        <van-cell title="提交次数" :value="txtCell(qualificationSubmitCount)" />
+        <van-cell title="最近提交时间" :value="formatDateTime(qualificationLastSubmitTime)" />
+      </van-cell-group>
+
+      <div v-if="showQualRejectedActions" class="profile__qual-actions profile__block">
+        <van-button block round plain type="primary" @click="goToProfileComplete">修改资料</van-button>
+        <van-button block round type="primary" class="profile__qual-actions__second" @click="resubmitDialogShow = true">
+          重新提交审核
+        </van-button>
+      </div>
+
       <van-cell-group v-if="profileDetailRows.length" inset title="资料信息" class="profile__block">
         <van-cell
           v-for="(row, idx) in profileDetailRows"
@@ -75,6 +96,26 @@
       show-cancel-button
       @confirm="onLogoutConfirm"
     />
+
+    <van-dialog
+      v-model:show="resubmitDialogShow"
+      title="重新提交资格审核"
+      show-cancel-button
+      confirm-button-text="提交"
+      :before-close="onResubmitBeforeClose"
+    >
+      <div class="profile__dialog-pad">
+        <van-field
+          v-model="resubmitRemark"
+          rows="3"
+          autosize
+          type="textarea"
+          maxlength="200"
+          show-word-limit
+          placeholder="可选：说明已补充的资料等"
+        />
+      </div>
+    </van-dialog>
   </div>
 </template>
 
@@ -89,7 +130,15 @@ import EmptyState from '@/components/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
-import { formatMoney, formatUserStatus, userStatusTagType } from '@/utils/format'
+import { resubmitQualification } from '@/api/userQualification'
+import {
+  formatDateTime,
+  formatMoney,
+  formatQualificationStatus,
+  formatUserStatus,
+  qualificationStatusTagType,
+  userStatusTagType,
+} from '@/utils/format'
 
 function pickProfile(u) {
   const p = u?.profile
@@ -149,6 +198,74 @@ const router = useRouter()
 
 const loading = ref(true)
 const logoutDialogShow = ref(false)
+const resubmitDialogShow = ref(false)
+const resubmitRemark = ref('')
+
+const profileRaw = computed(() => {
+  const p = userInfo.value?.profile
+  if (!p || typeof p !== 'object') return null
+  return p
+})
+
+const qualificationSectionVisible = computed(() => {
+  const p = profileRaw.value
+  if (!p) return false
+  if (p.canResubmitQualification === true) return true
+  const keys = [
+    'qualificationStatus',
+    'qualificationAuditTime',
+    'qualificationSubmitCount',
+    'qualificationLastSubmitTime',
+  ]
+  return keys.some((k) => p[k] != null && p[k] !== '')
+})
+
+const qualStatusRaw = computed(() => profileRaw.value?.qualificationStatus)
+
+const qualificationAuditTime = computed(() => profileRaw.value?.qualificationAuditTime)
+
+const qualificationAuditRemark = computed(() => profileRaw.value?.qualificationAuditRemark)
+
+const qualificationSubmitCount = computed(() => profileRaw.value?.qualificationSubmitCount)
+
+const qualificationLastSubmitTime = computed(() => profileRaw.value?.qualificationLastSubmitTime)
+
+function txtCell(v) {
+  if (v === null || v === undefined || v === '') return '—'
+  return String(v)
+}
+
+/** 仅已拒绝时展示「重新提交审核」与资料修改引导（与已通过/待审核区分） */
+const showQualRejectedActions = computed(() => {
+  const v = qualStatusRaw.value
+  if (v === 3 || v === 'REJECTED') return true
+  const s = v != null ? String(v).trim().toUpperCase() : ''
+  return s === 'REJECTED'
+})
+
+async function reloadProfile() {
+  if (!auth.isLogin) return
+  try {
+    const me = await fetchMe()
+    auth.setUserInfo(me)
+    dashboard.fetchPendingSummary().catch(() => {})
+  } catch {
+    /* 保留本地 */
+  }
+}
+
+async function onResubmitBeforeClose(action) {
+  if (action === 'cancel') return true
+  try {
+    await resubmitQualification({ remark: resubmitRemark.value.trim() || undefined })
+    showToast({ type: 'success', message: '已重新提交审核' })
+    resubmitRemark.value = ''
+    await reloadProfile()
+    return true
+  } catch {
+    return false
+  }
+}
 
 /** 带邀请码的完整注册页 URL，用于二维码与复制（仅审核通过用户展示） */
 const inviteRegisterUrl = computed(() => {
@@ -201,11 +318,7 @@ onMounted(async () => {
   }
   loading.value = true
   try {
-    const me = await fetchMe()
-    auth.setUserInfo(me)
-    dashboard.fetchPendingSummary().catch(() => {})
-  } catch {
-    /* 保留本地已有 userInfo，避免整页空白 */
+    await reloadProfile()
   } finally {
     loading.value = false
   }
@@ -312,6 +425,15 @@ function onLogoutConfirm() {
 }
 .profile__logout {
   margin: 24px 16px 0;
+}
+.profile__qual-actions {
+  padding: 0 16px;
+}
+.profile__qual-actions__second {
+  margin-top: 10px;
+}
+.profile__dialog-pad {
+  padding: 12px 16px 8px;
 }
 .profile-invite-cell :deep(.van-cell__title),
 .profile-invite-cell :deep(.van-cell__value) {

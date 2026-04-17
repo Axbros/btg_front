@@ -65,14 +65,7 @@ export function pickProfitFlowLayers(payload) {
     return []
   }
 
-  const candidates = [
-    base.layers,
-    base.Layers,
-    base.layerList,
-    base.layer_list,
-    base.profitFlowLayers,
-    base.profit_flow_layers,
-  ]
+  const candidates = [base.layers, base.Layers, base.layerList, base.profitFlowLayers]
 
   for (const raw of candidates) {
     if (Array.isArray(raw)) {
@@ -97,7 +90,7 @@ export function pickProfitFlowLayers(payload) {
   return []
 }
 
-const PAY_TO_PARENT_KEYS = ['payAmountToParent', 'pay_amount_to_parent', 'PayAmountToParent']
+const PAY_TO_PARENT_KEYS = ['payAmountToParent', 'PayAmountToParent']
 
 /**
  * 读取「向上级划转金额」；levelNo=0 等顶层常不带该字段 → undefined（与 0 区分）。
@@ -117,7 +110,7 @@ export function pickLayerPayAmountToParent(layer) {
 /** 有「向上级」语义的一层：含上级姓名，或非零 payAmountToParent（排除仅顶层切片、无 parent 的层） */
 export function isPayToParentProfitFlowLayer(layer) {
   if (!layer || typeof layer !== 'object') return false
-  const parent = layer.parentUserName ?? layer.parent_user_name
+  const parent = layer.parentUserName
   if (parent != null && String(parent).trim() !== '') return true
   const pay = pickLayerPayAmountToParent(layer)
   if (pay == null || pay === '') return false
@@ -134,8 +127,8 @@ export function sortProfitFlowLayersBottomFirst(layers) {
   if (!Array.isArray(layers) || !layers.length) return []
   const copy = [...layers]
   copy.sort((a, b) => {
-    const la = Number(a?.levelNo ?? a?.level_no ?? -1)
-    const lb = Number(b?.levelNo ?? b?.level_no ?? -1)
+    const la = Number(a?.levelNo ?? -1)
+    const lb = Number(b?.levelNo ?? -1)
     const na = Number.isFinite(la) ? la : -1
     const nb = Number.isFinite(lb) ? lb : -1
     return nb - na
@@ -145,7 +138,7 @@ export function sortProfitFlowLayersBottomFirst(layers) {
 
 export function getProfitFlowLayerType(layer) {
   if (!layer || typeof layer !== 'object') return ''
-  const t = layer.layerType ?? layer.layer_type ?? layer.type ?? layer.kind
+  const t = layer.layerType ?? layer.type ?? layer.kind
   return t != null ? String(t).trim().toUpperCase().replace(/-/g, '_') : ''
 }
 
@@ -156,11 +149,11 @@ export function isDirectProfitReviewLayer(layer) {
 /** 后端「总利润切片」链路层（含 settlementStatus、levelNo、userName 等） */
 export function isSliceModelProfitFlowLayer(layer) {
   if (!layer || typeof layer !== 'object') return false
-  const st = layer.settlementStatus ?? layer.settlement_status
+  const st = layer.settlementStatus
   if (st == null || String(st).trim() === '') return false
   const hasUserOrLevel =
-    (layer.userName ?? layer.user_name) != null ||
-    (layer.levelNo ?? layer.level_no) != null
+    (layer.userName) != null ||
+    (layer.levelNo) != null
   return hasUserOrLevel
 }
 
@@ -173,12 +166,12 @@ export function sortProfitFlowLayersForDisplay(layers) {
   if (!Array.isArray(layers) || !layers.length) return []
   const copy = [...layers]
   const hasSliceLevel = copy.some(
-    (l) => l && isSliceModelProfitFlowLayer(l) && (l.levelNo != null || l.level_no != null),
+    (l) => l && isSliceModelProfitFlowLayer(l) && l.levelNo != null,
   )
   if (!hasSliceLevel) return copy
   return copy.sort((a, b) => {
-    const la = Number(a?.levelNo ?? a?.level_no ?? 1e9)
-    const lb = Number(b?.levelNo ?? b?.level_no ?? 1e9)
+    const la = Number(a?.levelNo ?? 1e9)
+    const lb = Number(b?.levelNo ?? 1e9)
     const na = Number.isFinite(la) ? la : 1e9
     const nb = Number.isFinite(lb) ? lb : 1e9
     return na - nb
@@ -192,16 +185,16 @@ export function sortProfitFlowLayersForDisplay(layers) {
  */
 export function profitLayerStableKey(layer, index) {
   if (!layer || typeof layer !== 'object') return `layer-fallback-${index}`
-  const lvl = layer.levelNo ?? layer.level_no ?? 'x'
-  const uid = layer.userId ?? layer.user_id ?? 'u'
+  const lvl = layer.levelNo ?? 'x'
+  const uid = layer.userId ?? 'u'
   return `layer-${lvl}-${uid}-${index}`
 }
 
 export function pickProfitFlowLayerState(layer) {
   if (!layer || typeof layer !== 'object') return ''
-  const ss = layer.settlementStatus ?? layer.settlement_status
+  const ss = layer.settlementStatus
   if (ss != null && String(ss).trim() !== '') return String(ss).trim()
-  const s = layer.state ?? layer.status ?? layer.layerState ?? layer.layer_state
+  const s = layer.state ?? layer.status ?? layer.layerState
   return s != null ? String(s).trim() : ''
 }
 
@@ -261,19 +254,9 @@ export function formatProfitFlowLayerStateLabel(layer) {
 function pickNick(layer, side) {
   if (!layer || typeof layer !== 'object') return ''
   if (side === 'from') {
-    return (
-      trim(layer.fromUserNickname) ||
-      trim(layer.from_user_nickname) ||
-      trim(layer.fromNickname) ||
-      trim(layer.from_nickname)
-    )
+    return trim(layer.fromUserNickname) || trim(layer.fromNickname)
   }
-  return (
-    trim(layer.toUserNickname) ||
-    trim(layer.to_user_nickname) ||
-    trim(layer.toNickname) ||
-    trim(layer.to_nickname)
-  )
+  return trim(layer.toUserNickname) || trim(layer.toNickname)
 }
 
 function trim(v) {
@@ -291,15 +274,15 @@ function trunc(s, max) {
 export function profitFlowLayerStepTitle(layer, index) {
   if (!layer || typeof layer !== 'object') return `层${index + 1}`
   if (isSliceModelProfitFlowLayer(layer)) {
-    const levelNo = layer.levelNo ?? layer.level_no ?? index
-    const userName = trim(layer.userName ?? layer.user_name)
-    const parentName = trim(layer.parentUserName ?? layer.parent_user_name)
-    const masked = layer.financialsMasked === true || layer.financials_masked === true
+    const levelNo = layer.levelNo ?? index
+    const userName = trim(layer.userName)
+    const parentName = trim(layer.parentUserName)
+    const masked = layer.financialsMasked === true
     const payStr = formatMoneyMasked(
-      layer.payAmountToParent ?? layer.pay_amount_to_parent,
+      layer.payAmountToParent,
       masked,
     )
-    const upperStr = formatRateMasked(layer.upperRatio ?? layer.upper_ratio, masked)
+    const upperStr = formatRateMasked(layer.upperRatio, masked)
     if (!parentName) {
       const prefix = `L${levelNo}`
       return userName ? `${prefix}·${trunc(userName, 6)}` : prefix
@@ -325,7 +308,7 @@ export function profitFlowLayerStepTitle(layer, index) {
 export function computeProfitFlowActiveLayerIndex(layers) {
   if (!Array.isArray(layers) || !layers.length) return 0
   const byFlag = layers.findIndex(
-    (l) => l && (l.currentNode === true || l.current_node === true),
+    (l) => l && l.currentNode === true,
   )
   if (byFlag >= 0) return byFlag
   const idx = layers.findIndex((l) => !isProfitFlowLayerTerminal(l))
@@ -337,9 +320,7 @@ export function pickProfitFlowLayerPayAmount(layer) {
   if (!layer || typeof layer !== 'object') return null
   const v =
     layer.payAmount ??
-    layer.pay_amount ??
-    layer.payAmountToParent ??
-    layer.pay_amount_to_parent
+    layer.payAmountToParent
   if (v == null || v === '') return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
@@ -360,21 +341,21 @@ export function formatProfitFlowLayerSubtitle(layer) {
 export function formatProfitFlowLayerDetailLabel(layer) {
   if (!layer || typeof layer !== 'object') return ''
   if (isSliceModelProfitFlowLayer(layer)) {
-    const user = trim(layer.userName ?? layer.user_name)
-    const parent = trim(layer.parentUserName ?? layer.parent_user_name)
-    const masked = layer.financialsMasked === true || layer.financials_masked === true
+    const user = trim(layer.userName)
+    const parent = trim(layer.parentUserName)
+    const masked = layer.financialsMasked === true
     const payStr = formatMoneyMasked(
-      layer.payAmountToParent ?? layer.pay_amount_to_parent,
+      layer.payAmountToParent,
       masked,
     )
-    const upperStr = formatRateMasked(layer.upperRatio ?? layer.upper_ratio, masked)
+    const upperStr = formatRateMasked(layer.upperRatio, masked)
     if (!parent) {
-      const child = trim(layer.childUserName ?? layer.child_user_name)
+      const child = trim(layer.childUserName)
       return child ? `根层 ${user || '—'}（下级：${child}）` : `根层 ${user || '—'}`
     }
     if (user && parent) return `${user} → ${parent} (${payStr}, ${upperStr})`
     if (user) return user
-    return `第${layer.levelNo ?? layer.level_no ?? ''}层`
+    return `第${layer.levelNo ?? ''}层`
   }
   if (isDirectProfitReviewLayer(layer)) {
     return '申报人 → 直属上级'
@@ -396,7 +377,7 @@ export function mapProfitFlowLayersToStepperNodes(layers) {
   if (!Array.isArray(layers) || !layers.length) return []
   const sliceLevels = layers
     .filter(isSliceModelProfitFlowLayer)
-    .map((l) => Number(l.levelNo ?? l.level_no))
+    .map((l) => Number(l.levelNo))
     .filter((n) => Number.isFinite(n))
   const minSliceLevel = sliceLevels.length ? Math.min(...sliceLevels) : 0
 
@@ -404,18 +385,18 @@ export function mapProfitFlowLayersToStepperNodes(layers) {
     if (!layer || typeof layer !== 'object') return {}
     const stLabel = formatProfitFlowLayerStateLabel(layer)
     if (isSliceModelProfitFlowLayer(layer)) {
-      const levelNo = layer.levelNo ?? layer.level_no ?? index
+      const levelNo = layer.levelNo ?? index
       const lvl = Number(levelNo)
-      const userName = trim(layer.userName ?? layer.user_name)
-      const parentName = trim(layer.parentUserName ?? layer.parent_user_name)
-      const masked = layer.financialsMasked === true || layer.financials_masked === true
+      const userName = trim(layer.userName)
+      const parentName = trim(layer.parentUserName)
+      const masked = layer.financialsMasked === true
       const payStr = formatMoneyMasked(
-        layer.payAmountToParent ?? layer.pay_amount_to_parent,
+        layer.payAmountToParent,
         masked,
       )
-      const upperStr = formatRateMasked(layer.upperRatio ?? layer.upper_ratio, masked)
+      const upperStr = formatRateMasked(layer.upperRatio, masked)
       const isTop = Number.isFinite(lvl) && lvl === minSliceLevel
-      const child = trim(layer.childUserName ?? layer.child_user_name)
+      const child = trim(layer.childUserName)
       if (isTop) {
         return {
           nodeName: `第${levelNo}层·${userName || '—'}`,
@@ -424,11 +405,8 @@ export function mapProfitFlowLayersToStepperNodes(layers) {
           remark: child ? `下级：${child}` : '',
           operateTime:
             layer.operateTime ??
-            layer.operate_time ??
             layer.updatedAt ??
-            layer.updated_at ??
             layer.submitTime ??
-            layer.submit_time ??
             null,
         }
       }
@@ -442,11 +420,8 @@ export function mapProfitFlowLayersToStepperNodes(layers) {
         remark: '',
         operateTime:
           layer.operateTime ??
-          layer.operate_time ??
           layer.updatedAt ??
-          layer.updated_at ??
           layer.submitTime ??
-          layer.submit_time ??
           null,
       }
     }
@@ -463,7 +438,7 @@ export function mapProfitFlowLayersToStepperNodes(layers) {
       displayStatus: stLabel,
       /** 竖轴备注：state 枚举对应中文（与 formatProfitFlowLayerStateLabel 一致） */
       remark: stLabel && stLabel !== '—' ? stLabel : '',
-      operateTime: layer.updatedAt ?? layer.updated_at ?? layer.submitTime ?? layer.submit_time ?? null,
+      operateTime: layer.updatedAt ?? layer.submitTime ?? null,
     }
   })
 }

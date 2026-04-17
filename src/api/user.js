@@ -49,3 +49,11 @@ export function fetchUserProfile() {
   return get('/user/profile')
 }
 
+/** 新成员资格审核（实现见 {@link ./userQualification.js}） */
+export {
+  approveQualification,
+  getPendingQualificationUsers,
+  rejectQualification,
+  resubmitQualification,
+} from './userQualification'
+

@@ -66,9 +66,7 @@ const flowReportUserName = computed(() => {
   if (!d || typeof d !== 'object') return ''
   const v =
     d.reportUserName ??
-    d.report_user_name ??
-    d.reportUserNickname ??
-    d.report_user_nickname
+    d.reportUserNickname
   if (v == null || String(v).trim() === '') return ''
   return String(v).trim()
 })
@@ -76,7 +74,7 @@ const flowReportUserName = computed(() => {
 const flowRootProfitAmount = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return null
-  const raw = d.profitAmount ?? d.profit_amount
+  const raw = d.profitAmount
   if (raw === null || raw === undefined || raw === '') return null
   return raw
 })
@@ -84,41 +82,39 @@ const flowRootProfitAmount = computed(() => {
 const flowRootFinancialsMasked = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return false
-  return d.financialsMasked === true || d.financials_masked === true
+  return d.financialsMasked === true
 })
 
 const dataScopeShown = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return false
-  const v = d.dataScope ?? d.data_scope
+  const v = d.dataScope
   return v != null && String(v).trim() !== ''
 })
 
-const dataScopeLabel = computed(() => formatDataScope(detail.value?.dataScope ?? detail.value?.data_scope))
+const dataScopeLabel = computed(() => formatDataScope(detail.value?.dataScope))
 
 const normalizedDataScope = computed(() => {
-  const v = detail.value?.dataScope ?? detail.value?.data_scope
+  const v = detail.value?.dataScope
   if (v == null || v === '') return ''
   return String(v).trim().toUpperCase().replace(/-/g, '_')
 })
 
-function pickDetailField(camel, snake) {
+function pickDetailField(key) {
   const d = detail.value
   if (!d || typeof d !== 'object') return ''
-  const x = d[camel] ?? d[snake]
+  const x = d[key]
   if (x == null || String(x).trim() === '') return ''
   return String(x).trim()
 }
 
-const directParentReviewerName = computed(() =>
-  pickDetailField('directParentReviewerName', 'direct_parent_reviewer_name'),
-)
-const directParentRemark = computed(() => pickDetailField('directParentRemark', 'direct_parent_remark'))
+const directParentReviewerName = computed(() => pickDetailField('directParentReviewerName'))
+const directParentRemark = computed(() => pickDetailField('directParentRemark'))
 
 const directParentStatusDisplay = computed(() => {
-  const desc = pickDetailField('directParentStatusDesc', 'direct_parent_status_desc')
+  const desc = pickDetailField('directParentStatusDesc')
   if (desc) return desc
-  const st = detail.value?.directParentStatus ?? detail.value?.direct_parent_status
+  const st = detail.value?.directParentStatus
   if (st == null || st === '') return ''
   const t = formatFlowStatus(st)
   return t === '—' ? '' : t
@@ -127,7 +123,7 @@ const directParentStatusDisplay = computed(() => {
 const directParentOperateTimeDisplay = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return ''
-  const t = d.directParentOperateTime ?? d.direct_parent_operate_time
+  const t = d.directParentOperateTime
   if (t == null || t === '') return ''
   const s = formatDateTime(t)
   return s === '-' ? '' : s

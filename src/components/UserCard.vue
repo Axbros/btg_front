@@ -30,7 +30,7 @@ const displayName = computed(() => {
 })
 
 function pickId(u) {
-  return u.id ?? u.userId ?? u.user_id ?? '—'
+  return u.id ?? u.userId ?? '—'
 }
 </script>
 

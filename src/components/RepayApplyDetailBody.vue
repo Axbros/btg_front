@@ -1,16 +1,16 @@
 <template>
   <van-cell-group v-if="detail">
-    <van-cell title="归仓单号" :value="txt(pick('repayNo', 'repay_no'))" />
+    <van-cell title="归仓单号" :value="txt(pick('repayNo'))" />
     <van-cell title="归仓状态">
       <template #value>
-        <van-tag :type="repayStatusTagType(pick('status', 'status'))" plain round>
-          {{ formatRepayStatus(pick('status', 'status')) }}
+        <van-tag :type="repayStatusTagType(pick('status'))" plain round>
+          {{ formatRepayStatus(pick('status')) }}
         </van-tag>
       </template>
     </van-cell>
-    <van-cell title="用户真实姓名" :value="txt(pick('nickname', 'nick_name'))" />
-    <van-cell title="用户手机" :value="txt(pick('mobile', 'mobile'))" />
-    <!-- <van-cell title="关联补仓 ID" :value="txt(pick('replenishApplyId', 'replenish_apply_id'))" /> -->
+    <van-cell title="用户真实姓名" :value="txt(pick('nickname'))" />
+    <van-cell title="用户手机" :value="txt(pick('mobile'))" />
+    <!-- <van-cell title="关联补仓 ID" :value="txt(pick('replenishApplyId'))" /> -->
     <van-cell
       title="补仓金额"
       title-class="repay-detail__amount"
@@ -21,7 +21,7 @@
       title="归还金额"
       title-class="repay-detail__amount"
       value-class="repay-detail__amount"
-      :value="formatMoney(pick('repayAmount', 'repay_amount'))"
+      :value="formatMoney(pick('repayAmount'))"
     />
     <van-cell
       title="剩余待还"
@@ -35,20 +35,20 @@
         <span v-else>—</span>
       </template>
     </van-cell>
-    <van-cell title="归仓提交时间" :value="formatDateTime(pick('submitTime', 'submit_time'))" />
-    <van-cell-group v-if="replenishmentApply"  title="关联补仓申请" class="repay-detail__repl-group">
-      <van-cell title="申请单号" :value="txt(pickReplen('applyNo', 'apply_no'))" />
+    <van-cell title="归仓提交时间" :value="formatDateTime(pick('submitTime'))" />
+    <van-cell-group v-if="replenishmentApply" title="关联补仓申请" class="repay-detail__repl-group">
+      <van-cell title="申请单号" :value="txt(pickReplen('applyNo'))" />
       <van-cell title="补仓状态">
         <template #value>
-          <van-tag :type="replenishmentStatusTagType(pickReplen('status', 'status'))" plain round>
-            {{ formatReplenishmentStatus(pickReplen('status', 'status')) }}
+          <van-tag :type="replenishmentStatusTagType(pickReplen('status'))" plain round>
+            {{ formatReplenishmentStatus(pickReplen('status')) }}
           </van-tag>
         </template>
       </van-cell>
-      <van-cell title="底仓本金" :value="formatMoney(pickReplen('principalAmount', 'principal_amount'))" />
-      <van-cell title="申报余额" :value="formatMoney(pickReplen('balanceAmount', 'balance_amount'))" />
-      <van-cell title="已还金额" :value="formatMoney(pickReplen('repaidAmount', 'repaid_amount'))" />
-      <van-cell title="待还金额" :value="formatMoney(pickReplen('pendingRepayAmount', 'pending_repay_amount'))" />
+      <van-cell title="底仓本金" :value="formatMoney(pickReplen('principalAmount'))" />
+      <van-cell title="申报余额" :value="formatMoney(pickReplen('balanceAmount'))" />
+      <van-cell title="已还金额" :value="formatMoney(pickReplen('repaidAmount'))" />
+      <van-cell title="待还金额" :value="formatMoney(pickReplen('pendingRepayAmount'))" />
       <van-cell title="补仓截图">
         <template #value>
           <PreviewableRemoteImage v-if="replBalanceShotUrl" :url="replBalanceShotUrl" alt="余额截图" size="large" />
@@ -61,15 +61,15 @@
         </template>
       </van-cell>
       <van-cell
-        v-if="txt(pickReplen('transferRemark', 'transfer_remark')) !== '—'"
+        v-if="txt(pickReplen('transferRemark')) !== '—'"
         title="资方转账备注"
-        :value="txt(pickReplen('transferRemark', 'transfer_remark'))"
+        :value="txt(pickReplen('transferRemark'))"
       />
-      <van-cell title="补仓提交时间" :value="formatDateTime(pickReplen('submitTime', 'submit_time'))" />
-      <van-cell title="补仓审核时间" :value="formatDateTime(pickReplen('auditTime', 'audit_time'))" />
+      <van-cell title="补仓提交时间" :value="formatDateTime(pickReplen('submitTime'))" />
+      <van-cell title="补仓审核时间" :value="formatDateTime(pickReplen('auditTime'))" />
     </van-cell-group>
     <van-cell v-else title="关联补仓申请" value="暂无" />
-    <van-cell v-if="txt(pick('remark', 'remark')) !== '—'" title="备注" :value="txt(pick('remark', 'remark'))" />
+    <van-cell v-if="txt(pick('remark')) !== '—'" title="备注" :value="txt(pick('remark'))" />
   </van-cell-group>
 </template>
 
@@ -93,21 +93,19 @@ const props = defineProps({
 const replenishmentApply = computed(() => {
   const d = props.detail
   if (!d || typeof d !== 'object') return null
-  return d.replenishmentApply ?? d.replenishment_apply ?? null
+  return d.replenishmentApply ?? null
 })
 
-function pickFrom(obj, camel, snake) {
-  if (!obj || typeof obj !== 'object') return null
-  if (camel === snake) return obj[camel]
-  return obj[camel] ?? obj[snake]
+function pick(key) {
+  const o = props.detail
+  if (!o || typeof o !== 'object') return null
+  return o[key] ?? null
 }
 
-function pick(camel, snake) {
-  return pickFrom(props.detail, camel, snake)
-}
-
-function pickReplen(camel, snake) {
-  return pickFrom(replenishmentApply.value, camel, snake)
+function pickReplen(key) {
+  const o = replenishmentApply.value
+  if (!o || typeof o !== 'object') return null
+  return o[key] ?? null
 }
 
 function txt(v) {
@@ -119,12 +117,12 @@ function txt(v) {
 const screenshotUrl = computed(() => {
   const d = props.detail
   if (!d) return ''
-  const u = d.repayScreenshotUrl ?? d.repay_screenshot_url
+  const u = d.repayScreenshotUrl
   return u ? String(u) : ''
 })
 
 const replenishAmountDisplay = computed(() => {
-  const v = pickReplen('replenishAmount', 'replenish_amount')
+  const v = pickReplen('replenishAmount')
   if (v == null || v === '') return '—'
   const n = Number(v)
   if (!Number.isFinite(n)) return '—'
@@ -132,12 +130,12 @@ const replenishAmountDisplay = computed(() => {
 })
 
 const replBalanceShotUrl = computed(() => {
-  const u = pickReplen('balanceScreenshotUrl', 'balance_screenshot_url')
+  const u = pickReplen('balanceScreenshotUrl')
   return u ? String(u) : ''
 })
 
 const replTransferShotUrl = computed(() => {
-  const u = pickReplen('transferScreenshotUrl', 'transfer_screenshot_url')
+  const u = pickReplen('transferScreenshotUrl')
   return u ? String(u) : ''
 })
 
@@ -145,8 +143,8 @@ const remainingToRepayText = computed(() => {
   const d = props.detail
   if (!d) return '—'
   const app = replenishmentApply.value
-  const replenish = Number(app?.replenishAmount ?? app?.replenish_amount)
-  const repay = Number(d.repayAmount ?? d.repay_amount)
+  const replenish = Number(app?.replenishAmount)
+  const repay = Number(d.repayAmount)
   const a = Number.isFinite(replenish) ? replenish : 0
   const b = Number.isFinite(repay) ? repay : 0
   return formatMoney(a - b)

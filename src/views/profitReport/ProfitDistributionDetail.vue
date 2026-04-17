@@ -1,20 +1,22 @@
 <template>
-  <div>
+  <div class="profit-report-shell">
     <AppHeader title="分润明细" />
-    <van-loading v-if="loading" class="pad" vertical>加载分润明细…</van-loading>
-    <template v-else-if="rows.length">
-      <van-cell-group inset title="按链路分配（逐级汇总）">
-        <template v-for="(row, idx) in rows" :key="idx">
-          <van-cell :title="titleCell(row)" :value="amountCell(row)" :label="labelCell(row)" />
-          <div v-if="idx < rows.length - 1" class="dist-chain__arrow" role="presentation">
-            <van-icon name="arrow-up" class="dist-chain__arrow-icon" />
-            <span class="dist-chain__arrow-text">向上一级汇总</span>
-          </div>
-        </template>
-      </van-cell-group>
-      <p v-if="note" class="note">{{ note }}</p>
-    </template>
-    <EmptyState v-else description="暂无分润明细或无权查看" />
+    <div class="profit-report-shell__scroll profit-distribution__scroll">
+      <van-loading v-if="loading" class="pad profit-distribution__center" vertical>加载分润明细…</van-loading>
+      <template v-else-if="rows.length">
+        <van-cell-group inset title="按链路分配（逐级汇总）">
+          <template v-for="(row, idx) in rows" :key="idx">
+            <van-cell :title="titleCell(row)" :value="amountCell(row)" :label="labelCell(row)" />
+            <div v-if="idx < rows.length - 1" class="dist-chain__arrow" role="presentation">
+              <van-icon name="arrow-up" class="dist-chain__arrow-icon" />
+              <span class="dist-chain__arrow-text">向上一级汇总</span>
+            </div>
+          </template>
+        </van-cell-group>
+        <p v-if="note" class="note">{{ note }}</p>
+      </template>
+      <EmptyState v-else class="profit-distribution__center" description="暂无分润明细或无权查看" />
+    </div>
   </div>
 </template>
 
@@ -56,14 +58,13 @@ function titleCell(row) {
   const display =
     pickStr(
       row.beneficiaryDisplayName,
-      row.beneficiary_display_name,
       row.userNickname,
       row.nickname,
       row.userName,
       row.layerName,
     ) || pickStr(row.roleLabel, row.levelLabel)
   if (display) return display
-  const uid = row.beneficiaryUserId ?? row.beneficiary_user_id
+  const uid = row.beneficiaryUserId
   if (uid != null) return `用户 ${uid}`
   return '—'
 }
@@ -71,7 +72,6 @@ function titleCell(row) {
 function amountCell(row) {
   const v =
     row.incomeAmount ??
-    row.income_amount ??
     row.allocatedAmount ??
     row.amount ??
     row.shareAmount ??
@@ -81,8 +81,8 @@ function amountCell(row) {
 }
 
 function labelCell(row) {
-  const u = row.upperRatio ?? row.upper_ratio
-  const l = row.lowerRatio ?? row.lower_ratio
+  const u = row.upperRatio
+  const l = row.lowerRatio
   const parts = []
   if (u != null && l != null && Number.isFinite(Number(u)) && Number.isFinite(Number(l))) {
     parts.push(`比例切片 ${formatRate(Number(u) - Number(l))}（上界 ${formatRate(u)} / 下界 ${formatRate(l)}）`)
@@ -126,6 +126,17 @@ watch(
 </script>
 
 <style scoped>
+.profit-distribution__scroll {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.profit-distribution__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
 .pad {
   padding: 48px 0;
 }

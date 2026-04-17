@@ -66,6 +66,38 @@ body,
 }
 
 /**
+ * 利润上报等：子路由 root 用此类占满 .page-shell__view（flex 子项），中间区域可纵向滚动。
+ */
+.profit-report-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.profit-report-shell__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+.profit-report-shell__list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.profit-report-shell__pull {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/**
  * 全站 Toast：部分环境/主题会把 --van-toast-* 弄成「浅底 + 白字」，看起来像空白。
  * 统一拉回 Vant 默认语义（深底 + 白字），含 Profile、表单提示与 request 等所有 showToast。
  */

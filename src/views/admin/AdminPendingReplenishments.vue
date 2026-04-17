@@ -55,11 +55,11 @@ function txt(v) {
 }
 
 function pendingNick(row) {
-  return txt(row?.nickname ?? row?.userNickname ?? row?.user_nickname)
+  return txt(row?.nickname ?? row?.userNickname)
 }
 
 function pendingMobile(row) {
-  return txt(row?.mobile ?? row?.userMobile ?? row?.user_mobile)
+  return txt(row?.mobile ?? row?.userMobile)
 }
 
 /** 列表标题：nickname#mobile，缺省回退为申请 #id */
@@ -78,7 +78,7 @@ function pendingListMeta(row) {
 }
 
 function pendingReplenishAmount(row) {
-  return row?.replenishAmount ?? row?.replenish_amount ?? 0
+  return row?.replenishAmount ?? 0
 }
 
 function detailRoute(row) {

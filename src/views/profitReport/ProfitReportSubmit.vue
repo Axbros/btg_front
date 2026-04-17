@@ -1,25 +1,26 @@
 <template>
-  <div>
+  <div class="profit-report-shell">
     <AppHeader title="利润上报" />
-    <van-notice-bar
-      v-if="contextLoading"
-      left-icon="info-o"
-      :scrollable="false"
-      text="正在加载分润比例配置…"
-    />
-    <div v-else-if="contextUnavailable" class="hint-block hint-block--warn">
-      <p class="hint-block__text">
-        无法获取您在上级处的分润比例配置，暂时不能提交上报（需已加入团队且上级已为您配置子级利润比例）。
-      </p>
-      <van-button size="small" type="primary" plain @click="loadContext">重新加载</van-button>
-    </div>
-    <van-form
-      v-else
-      scroll-to-error
-      :show-error-message="true"
-      @submit="onSubmit"
-      style="padding-top: 12px;"
-    >
+    <div class="profit-report-shell__scroll">
+      <van-notice-bar
+        v-if="contextLoading"
+        left-icon="info-o"
+        :scrollable="false"
+        text="正在加载分润比例配置…"
+      />
+      <div v-else-if="contextUnavailable" class="hint-block hint-block--warn">
+        <p class="hint-block__text">
+          无法获取您在上级处的分润比例配置，暂时不能提交上报（需已加入团队且上级已为您配置子级利润比例）。
+        </p>
+        <van-button size="small" type="primary" plain @click="loadContext">重新加载</van-button>
+      </div>
+      <van-form
+        v-else
+        scroll-to-error
+        :show-error-message="true"
+        @submit="onSubmit"
+        class="profit-report-submit__form"
+      >
       <van-cell-group inset>
         <van-cell v-if="contextSummaryText" title="当前分润上下文" :label="contextSummaryText" />
         <van-field
@@ -27,7 +28,7 @@
           name="profitAmount"
           label="总利润"
           type="number"
-          placeholder="≥ 0.01"
+          :placeholder="profitAmountPlaceholder"
           required
           :rules="[
             { required: true, message: '请填写金额' },
@@ -82,6 +83,7 @@
         <van-button round block type="primary" native-type="submit" :loading="loading">提交上报</van-button>
       </div>
     </van-form>
+    </div>
   </div>
 </template>
 
@@ -93,6 +95,8 @@ import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { submitProfitReport } from '@/api/profitReport'
 import { fetchSelfProfitConfigUnderParent } from '@/api/profitConfig'
+import { fetchLatestMt5Snapshot } from '@/api/mt5'
+import { fetchMe } from '@/api/user'
 import { formatMoney, formatRate } from '@/utils/format'
 
 const router = useRouter()
@@ -105,6 +109,15 @@ const context = ref(null)
 const contextLoading = ref(true)
 const contextUnavailable = ref(false)
 
+/** MT5：equity≠0 时 净值−底仓本金，供「总利润」占位参考（可能即今日盈利） */
+const mt5EquityMinusPrincipal = ref(null)
+
+const profitAmountPlaceholder = computed(() => {
+  const n = mt5EquityMinusPrincipal.value
+  if (n == null || !Number.isFinite(n)) return '≥ 0.01'
+  return `≥ 0.01，今日盈利（MT5）约 ${formatMoney(n)} USD`
+})
+
 function pickNum(...candidates) {
   for (const v of candidates) {
     const n = Number(v)
@@ -116,9 +129,9 @@ function pickNum(...candidates) {
 /** 需转给直属上级的比例：优先用后端字段，否则按「1 − 子级利润比例」估算 */
 function payableRatioFromContext(c) {
   if (!c) return null
-  const tr = pickNum(c.transferRatio, c.payableToSuperiorRatio, c.payable_ratio)
+  const tr = pickNum(c.transferRatio, c.payableToSuperiorRatio)
   if (tr != null) return tr
-  const child = pickNum(c.childProfitRatio, c.child_profit_ratio)
+  const child = pickNum(c.childProfitRatio)
   if (child != null) return 1 - child
   return null
 }
@@ -129,7 +142,7 @@ const payableRatio = computed(() => payableRatioFromContext(context.value))
 const parentExchangeUid = computed(() => {
   const c = context.value
   if (!c) return ''
-  const uid = c.parentExchangeUid ?? c.parent_exchange_uid
+  const uid = c.parentExchangeUid
   if (uid == null) return ''
   const s = String(uid).trim()
   return s
@@ -139,7 +152,7 @@ const contextSummaryText = computed(() => {
   const c = context.value
   if (!c) return ''
   const parts = []
-  const child = pickNum(c.childProfitRatio, c.child_profit_ratio)
+  const child = pickNum(c.childProfitRatio)
   if (child != null) parts.push(`子级利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
   const pr = payableRatio.value
   if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属上级划转 ${formatRate(pr)} 的利润部分`)
@@ -174,7 +187,39 @@ async function loadContext() {
   }
 }
 
-onMounted(loadContext)
+async function loadMt5TodayProfitHint() {
+  try {
+    const snap = await fetchLatestMt5Snapshot()
+    if (!snap || typeof snap !== 'object' || Array.isArray(snap)) {
+      mt5EquityMinusPrincipal.value = null
+      return
+    }
+    const eq = Number(snap.equity)
+    if (!Number.isFinite(eq) || eq === 0) {
+      mt5EquityMinusPrincipal.value = null
+      return
+    }
+    let principal = pickNum(snap.principalAmount)
+    if (principal == null) {
+      try {
+        const me = await fetchMe()
+        const v = me?.profile?.principalAmount ?? 0
+        const p = Number(v)
+        principal = Number.isFinite(p) ? p : 0
+      } catch {
+        principal = 0
+      }
+    }
+    mt5EquityMinusPrincipal.value = eq - principal
+  } catch {
+    mt5EquityMinusPrincipal.value = null
+  }
+}
+
+onMounted(() => {
+  void loadContext()
+  void loadMt5TodayProfitHint()
+})
 
 async function onSubmit() {
   const amt = Number(profitAmount.value)
@@ -237,5 +282,9 @@ async function onSubmit() {
 }
 .actions {
   margin: 20px 16px 0;
+}
+.profit-report-submit__form {
+  padding-top: 12px;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 </style>

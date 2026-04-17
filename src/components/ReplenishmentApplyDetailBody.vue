@@ -1,20 +1,20 @@
 <template>
   <van-cell-group v-if="detail">
-    <van-cell title="申请单号" :value="txt(pick('applyNo', 'apply_no'))" />
+    <van-cell title="申请单号" :value="txt(pick('applyNo'))" />
     <van-cell title="补仓状态">
       <template #value>
-        <van-tag :type="replenishmentStatusTagType(pick('status', 'status'))" plain round>
-          {{ formatReplenishmentStatus(pick('status', 'status')) }}
+        <van-tag :type="replenishmentStatusTagType(pick('status'))" plain round>
+          {{ formatReplenishmentStatus(pick('status')) }}
         </van-tag>
       </template>
     </van-cell>
-    <van-cell title="底仓本金" :value="formatMoney(pick('principalAmount', 'principal_amount'))" />
-    <van-cell title="申报余额" :value="formatMoney(pick('balanceAmount', 'balance_amount'))" />
-    <van-cell title="补仓额度" :value="formatMoney(pick('replenishAmount', 'replenish_amount'))" />
-    <!-- <van-cell title="已通过额度" :value="formatMoney(pick('approvedAmount', 'approved_amount'))" /> -->
-    <van-cell title="归仓额度" :value="formatMoney(pick('repaidAmount', 'repaid_amount'))" />
-    <van-cell title="待审归仓" :value="formatMoney(pick('pendingRepayAmount', 'pending_repay_amount'))" />
-    <van-cell title="剩余待归" :value="formatMoney(pick('remainingAmount', 'remaining_amount'))" />
+    <van-cell title="底仓本金" :value="formatMoney(pick('principalAmount'))" />
+    <van-cell title="申报余额" :value="formatMoney(pick('balanceAmount'))" />
+    <van-cell title="补仓额度" :value="formatMoney(pick('replenishAmount'))" />
+    <!-- <van-cell title="已通过额度" :value="formatMoney(pick('approvedAmount'))" /> -->
+    <van-cell title="归仓额度" :value="formatMoney(pick('repaidAmount'))" />
+    <van-cell title="待审归仓" :value="formatMoney(pick('pendingRepayAmount'))" />
+    <van-cell title="剩余待归" :value="formatMoney(pick('remainingAmount'))" />
     <van-cell title="余额截图">
       <template #value>
         <PreviewableRemoteImage v-if="balanceShotUrl" :url="balanceShotUrl" alt="余额截图" size="large" />
@@ -25,15 +25,11 @@
       <van-cell title="交易所名称" :value="walletNameDisplay" />
       <van-cell title="钱包地址" :value="walletAddressDisplay" />
     </template>
+    <van-cell v-if="txt(pick('acceptedBy')) !== '—'" title="受理人" :value="txt(pick('acceptedBy'))" />
     <van-cell
-      v-if="txt(pick('acceptedBy', 'accepted_by')) !== '—'"
-      title="受理人"
-      :value="txt(pick('acceptedBy', 'accepted_by'))"
-    />
-    <van-cell
-      v-if="txt(pick('acceptedAt', 'accepted_at')) !== '—'"
+      v-if="txt(pick('acceptedAt')) !== '—'"
       title="受理时间"
-      :value="formatDateTime(pick('acceptedAt', 'accepted_at'))"
+      :value="formatDateTime(pick('acceptedAt'))"
     />
     <van-cell v-if="transferShotUrl" title="资方凭证">
       <template #value>
@@ -41,17 +37,13 @@
       </template>
     </van-cell>
     <van-cell
-      v-if="txt(pick('transferRemark', 'transfer_remark')) !== '—'"
+      v-if="txt(pick('transferRemark')) !== '—'"
       title="资方备注"
-      :value="txt(pick('transferRemark', 'transfer_remark'))"
+      :value="txt(pick('transferRemark'))"
     />
-    <van-cell title="提交时间" :value="formatDateTime(pick('submitTime', 'submit_time'))" />
-    <van-cell
-      v-if="txt(pick('auditTime', 'audit_time')) !== '—'"
-      title="审核时间"
-      :value="formatDateTime(pick('auditTime', 'audit_time'))"
-    />
-    <!-- <van-cell v-if="txt(pick('auditBy', 'audit_by')) !== '—'" title="审核人 ID" :value="txt(pick('auditBy', 'audit_by'))" /> -->
+    <van-cell title="提交时间" :value="formatDateTime(pick('submitTime'))" />
+    <van-cell v-if="txt(pick('auditTime')) !== '—'" title="审核时间" :value="formatDateTime(pick('auditTime'))" />
+    <!-- <van-cell v-if="txt(pick('auditBy')) !== '—'" title="审核人 ID" :value="txt(pick('auditBy'))" /> -->
   </van-cell-group>
 </template>
 
@@ -70,14 +62,10 @@ const props = defineProps({
   detail: { type: Object, default: null },
 })
 
-function pickFrom(obj, camel, snake) {
-  if (!obj || typeof obj !== 'object') return null
-  if (camel === snake) return obj[camel]
-  return obj[camel] ?? obj[snake]
-}
-
-function pick(camel, snake) {
-  return pickFrom(props.detail, camel, snake)
+function pick(key) {
+  const o = props.detail
+  if (!o || typeof o !== 'object') return null
+  return o[key] ?? null
 }
 
 function txt(v) {
@@ -87,18 +75,18 @@ function txt(v) {
 }
 
 const balanceShotUrl = computed(() => {
-  const u = pick('balanceScreenshotUrl', 'balance_screenshot_url')
+  const u = pick('balanceScreenshotUrl')
   return u ? String(u) : ''
 })
 
 const transferShotUrl = computed(() => {
-  const u = pick('transferScreenshotUrl', 'transfer_screenshot_url')
+  const u = pick('transferScreenshotUrl')
   return u ? String(u) : ''
 })
 
-const walletNameDisplay = computed(() => txt(pick('walletName', 'wallet_name')))
+const walletNameDisplay = computed(() => txt(pick('walletName')))
 
-const walletAddressDisplay = computed(() => txt(pick('walletAddress', 'wallet_address')))
+const walletAddressDisplay = computed(() => txt(pick('walletAddress')))
 
 const hasWalletInfo = computed(
   () => walletNameDisplay.value !== '—' || walletAddressDisplay.value !== '—',

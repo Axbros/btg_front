@@ -80,7 +80,7 @@ const matchedConfig = computed(() => {
   const id = childUserId.value
   if (id == null) return null
   return (
-    configRows.value.find((c) => Number(c.childUserId ?? c.child_user_id) === id) ?? null
+    configRows.value.find((c) => Number(c.childUserId) === id) ?? null
   )
 })
 
@@ -88,10 +88,10 @@ const configId = computed(() => matchedConfig.value?.id ?? null)
 
 const currentRatio = computed(() => {
   const fromCfg =
-    matchedConfig.value?.childProfitRatio ?? matchedConfig.value?.child_profit_ratio
+    matchedConfig.value?.childProfitRatio
   if (fromCfg != null && Number.isFinite(Number(fromCfg))) return Number(fromCfg)
   const d = userDetail.value
-  const fromUser = d?.childLineProfitRatio ?? d?.child_line_profit_ratio
+  const fromUser = d?.childLineProfitRatio
   if (fromUser != null && Number.isFinite(Number(fromUser))) return Number(fromUser)
   return null
 })
@@ -102,7 +102,7 @@ const ratioInput = ref('')
 const maxAssignableRatio = computed(() => {
   const d = userDetail.value
   if (!d || typeof d !== 'object') return null
-  const v = d.maxAssignableChildProfitRatio ?? d.max_assignable_child_profit_ratio
+  const v = d.maxAssignableChildProfitRatio
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 })

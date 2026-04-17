@@ -49,12 +49,9 @@ function nodeTitle(n) {
   return (
     String(
       n.nodeName ??
-        n.node_name ??
         n.title ??
         n.fromDisplayName ??
-        n.from_display_name ??
         n.operatorName ??
-        n.operator_name ??
         '节点',
     ).trim() || '—'
   )
@@ -62,19 +59,19 @@ function nodeTitle(n) {
 
 function nodeRole(n) {
   if (!n || typeof n !== 'object') return ''
-  const r = n.nodeRole ?? n.node_role
+  const r = n.nodeRole
   return r != null ? String(r).trim() : ''
 }
 
 function nodeAction(n) {
   if (!n || typeof n !== 'object') return ''
-  const r = n.action ?? n.actionType ?? n.action_type
+  const r = n.action ?? n.actionType
   return r != null ? String(r).trim() : ''
 }
 
 function nodeDisplayStatus(n) {
   if (!n || typeof n !== 'object') return ''
-  const s = n.displayStatus ?? n.display_status ?? n.status ?? n.nodeStatus ?? n.node_status
+  const s = n.displayStatus ?? n.status ?? n.nodeStatus
   return s != null && String(s).trim() !== '' ? String(s).trim() : ''
 }
 
@@ -86,14 +83,14 @@ function nodeRemark(n) {
 
 function nodeTime(n) {
   if (!n || typeof n !== 'object') return null
-  return n.operateTime ?? n.operate_time ?? n.createTime ?? n.create_time ?? n.auditTime ?? n.audit_time ?? null
+  return n.operateTime ?? n.createTime ?? n.auditTime ?? null
 }
 
 function operatorLine(n) {
   if (!n || typeof n !== 'object') return ''
-  const name = n.operatorName ?? n.operator_name
+  const name = n.operatorName
   if (name != null && String(name).trim() !== '') {
-    const uid = n.operatorUserId ?? n.operator_user_id
+    const uid = n.operatorUserId
     const uidPart = uid != null && String(uid).trim() !== '' ? `（ID ${String(uid).trim()}）` : ''
     return `操作人：${String(name).trim()}${uidPart}`
   }
@@ -102,7 +99,7 @@ function operatorLine(n) {
 
 function versionLine(n) {
   if (!n || typeof n !== 'object') return ''
-  const v = n.versionNo ?? n.version_no
+  const v = n.versionNo
   if (v == null || String(v).trim() === '') return ''
   return `提交次数：${String(v).trim()}`
 }

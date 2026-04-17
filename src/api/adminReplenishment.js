@@ -52,7 +52,7 @@ export const submitReplenishmentCapitalVoucherAdmin = submitCapitalVoucherForAdm
  * 待审核归仓列表（分页项仅含 id、repayNo 等简要字段）。
  * GET /api/v1/admin/replenishments/repays/pending
  *
- * @typedef {{ id: number, repayNo?: string, repay_no?: string }} RepayPendingBrief
+ * @typedef {{ id: number, repayNo?: string }} RepayPendingBrief
  * @param {{ page?: number, size?: number, pageSize?: number }} [params]
  */
 export function fetchAdminRepaysPending(params = {}) {

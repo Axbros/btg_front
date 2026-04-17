@@ -4,6 +4,64 @@
     <van-loading v-if="loading" class="repl-mine-detail__loading" vertical>加载中…</van-loading>
     <template v-else>
       <ReplenishmentApplyDetailBody v-if="replenishment" :detail="replenishment" />
+      <van-cell-group v-if="replenishment" inset title="归仓进度" class="repl-mine-detail__repay-progress">
+        <van-cell title="已归还金额" :value="moneyTxt(replenishment.repaidAmount)" />
+        <van-cell title="待审归仓金额" :value="moneyTxt(replenishment.pendingRepayAmount)" />
+        <van-cell title="剩余待归还金额" :value="moneyTxt(replenishment.remainingAmount)" />
+        <template v-if="latestRepayRow">
+          <van-divider dashed />
+          <van-cell title="最近归仓状态">
+            <template #value>
+              <van-tag :type="repayStatusTagType(latestRepayRow.status)" plain round>
+                {{ formatRepayStatus(latestRepayRow.status) }}
+              </van-tag>
+            </template>
+          </van-cell>
+          <van-cell title="最近归仓单号" :value="txt(latestRepayRow.repayNo ?? latestRepayRow.id)" />
+          <van-cell title="当前处理人" :value="txt(latestRepayRow.currentHandlerUserName)" />
+        </template>
+        <van-cell title="">
+          <template #title>
+            <div class="repl-mine-detail__btn-row repl-mine-detail__btn-row--inline">
+              <van-button size="small" type="primary" plain round @click="goMyRepayList">查看我的归仓申请</van-button>
+              <van-button
+                v-if="latestRepayFlowId != null"
+                size="small"
+                type="default"
+                plain
+                round
+                @click="goLatestRepayFlow"
+              >
+                查看归仓状态流
+              </van-button>
+            </div>
+          </template>
+        </van-cell>
+      </van-cell-group>
+      <van-cell-group v-if="replenishment" inset title="资方与到账确认" class="repl-mine-detail__capital">
+        <van-cell title="资方执行人" :value="capitalExecutorText" />
+        <van-cell title="资方收款 UID" :value="txt(replenishment.capitalReceiverUid)" />
+        <van-cell title="到账确认状态">
+          <template #value>
+            <van-tag
+              v-if="replenishment.arrivalConfirmStatus != null && String(replenishment.arrivalConfirmStatus) !== ''"
+              :type="arrivalConfirmStatusTagType(replenishment.arrivalConfirmStatus)"
+              plain
+              round
+            >
+              {{ formatArrivalConfirmStatus(replenishment.arrivalConfirmStatus) }}
+            </van-tag>
+            <span v-else>—</span>
+          </template>
+        </van-cell>
+        <van-cell title="到账确认时间" :value="formatDateTime(replenishment.arrivalConfirmTime)" />
+        <van-cell title="到账确认备注" :value="txt(replenishment.arrivalConfirmRemark)" />
+        <van-cell v-if="transferShotUrl" title="资方转账凭证">
+          <template #value>
+            <PreviewableRemoteImage :url="transferShotUrl" alt="资方转账凭证" size="large" />
+          </template>
+        </van-cell>
+      </van-cell-group>
       <van-cell-group v-if="showApplicantFundProgressHint" inset class="repl-mine-detail__fund">
         <van-cell title="交易所名称" :value="walletNameText" />
         <van-cell title="钱包地址" :value="walletAddressText" />
@@ -32,15 +90,15 @@
         >
           <template #title>
             <div class="repl-mine-detail__repay-title">
-              <span>{{ txt(row.repayNo ?? row.repay_no) }}</span>
+              <span>{{ txt(row.repayNo) }}</span>
               <span class="repl-mine-detail__repay-meta">
-                {{ formatDateTime(row.submitTime ?? row.submit_time) }}
+                {{ formatDateTime(row.submitTime) }}
                
               </span>
             </div>
           </template>
           <template #value>
-            <span class="repl-mine-detail__repay-amt">{{ formatMoney(row.repayAmount ?? row.repay_amount) }}</span>
+            <span class="repl-mine-detail__repay-amt">{{ formatMoney(row.repayAmount) }}</span>
           </template>
         </van-cell>
       </van-cell-group>
@@ -55,9 +113,17 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import ReplenishmentApplyDetailBody from '@/components/ReplenishmentApplyDetailBody.vue'
 import { fetchReplenishmentMineDetail } from '@/api/replenishment'
-import { formatMoney, formatDateTime } from '@/utils/format'
+import {
+  formatArrivalConfirmStatus,
+  arrivalConfirmStatusTagType,
+  formatMoney,
+  formatDateTime,
+  formatRepayStatus,
+  repayStatusTagType,
+} from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +131,7 @@ const router = useRouter()
 const loading = ref(true)
 const replenishment = ref(null)
 const approvedRepays = ref([])
+const pendingRepays = ref([])
 
 const applyId = computed(() => {
   const raw = route.params.id
@@ -98,48 +165,102 @@ const applicantFundProgressTip = computed(() => {
   return ''
 })
 
-function pickWallet(r, camel, snake) {
+function pickWallet(r, key) {
   if (!r || typeof r !== 'object') return ''
-  const v = r[camel] ?? r[snake]
+  const v = r[key]
   if (v == null) return ''
   const s = String(v).trim()
   return s
 }
 
 const walletNameText = computed(() => {
-  const t = pickWallet(replenishment.value, 'walletName', 'wallet_name')
+  const t = pickWallet(replenishment.value, 'walletName')
   return t || '—'
 })
 
 const walletAddressText = computed(() => {
-  const t = pickWallet(replenishment.value, 'walletAddress', 'wallet_address')
+  const t = pickWallet(replenishment.value, 'walletAddress')
   return t || '—'
 })
 
+const capitalExecutorText = computed(() => {
+  const r = replenishment.value
+  if (!r) return '—'
+  const a = r.assignedCapitalNickname
+  const b = r.assignedCapitalUserName
+  const name =
+    (a != null && String(a).trim() !== '' ? String(a).trim() : '') ||
+    (b != null && String(b).trim() !== '' ? String(b).trim() : '')
+  const uid = r.assignedCapitalUserId
+  if (name && uid != null) return `${name}（#${uid}）`
+  if (name) return name
+  if (uid != null) return `用户 #${uid}`
+  return '—'
+})
+
+const transferShotUrl = computed(() => {
+  const u = replenishment.value?.transferScreenshotUrl
+  return u != null && String(u).trim() !== '' ? String(u).trim() : ''
+})
+
+const latestRepayRow = computed(() => {
+  const rows = [...pendingRepays.value, ...approvedRepays.value].filter((x) => x && typeof x === 'object')
+  if (!rows.length) return null
+  return rows.reduce((best, cur) => {
+    const tb = new Date(best?.submitTime || 0).getTime()
+    const tc = new Date(cur?.submitTime || 0).getTime()
+    return tc >= tb ? cur : best
+  })
+})
+
+const latestRepayFlowId = computed(() => {
+  const row = latestRepayRow.value
+  if (row?.id != null) return row.id
+  const r = replenishment.value
+  const lid = r?.latestRepayId ?? r?.lastRepayApplyId
+  return lid != null ? lid : null
+})
+
+function moneyTxt(v) {
+  if (v === null || v === undefined || v === '') return '—'
+  return formatMoney(v)
+}
+
+function goMyRepayList() {
+  router.push({ name: 'RepayMine' })
+}
+
+function goLatestRepayFlow() {
+  const id = latestRepayFlowId.value
+  if (id == null) return
+  router.push({ name: 'RepayFlowDetail', params: { id: String(id) } })
+}
+
 /**
- * GET /replenishments/{id} 返回 { replenishment, approvedRepays }；兼容旧版扁平补仓 VO。
+ * GET /replenishments/{id} 返回 { replenishment, approvedRepays }；或扁平补仓 VO。
  */
 function parseReplenishmentDetailPayload(raw) {
   if (!raw || typeof raw !== 'object') {
-    return { replenishment: null, approvedRepays: [] }
+    return { replenishment: null, approvedRepays: [], pendingRepays: [] }
   }
-  if (
-    'replenishment' in raw ||
-    'replenishment_apply' in raw ||
-    'approvedRepays' in raw ||
-    'approved_repays' in raw
-  ) {
-    const repl = raw.replenishment ?? raw.replenishment_apply ?? null
-    const list = raw.approvedRepays ?? raw.approved_repays
+  const pendingList = Array.isArray(raw.pendingRepays)
+    ? raw.pendingRepays
+    : Array.isArray(raw.pendingRepayApplies)
+      ? raw.pendingRepayApplies
+      : []
+  if ('replenishment' in raw || 'replenishmentApply' in raw || 'approvedRepays' in raw) {
+    const repl = raw.replenishment ?? raw.replenishmentApply ?? null
+    const list = raw.approvedRepays
     return {
       replenishment: repl && typeof repl === 'object' ? repl : null,
       approvedRepays: Array.isArray(list) ? list : [],
+      pendingRepays: pendingList,
     }
   }
-  if (raw.applyNo != null || raw.apply_no != null || raw.principalAmount != null || raw.principal_amount != null) {
-    return { replenishment: raw, approvedRepays: [] }
+  if (raw.applyNo != null || raw.principalAmount != null) {
+    return { replenishment: raw, approvedRepays: [], pendingRepays: pendingList }
   }
-  return { replenishment: null, approvedRepays: [] }
+  return { replenishment: null, approvedRepays: [], pendingRepays: [] }
 }
 
 function txt(v) {
@@ -170,19 +291,24 @@ async function loadDetail() {
     loading.value = false
     replenishment.value = null
     approvedRepays.value = []
+    pendingRepays.value = []
     return
   }
   loading.value = true
   replenishment.value = null
   approvedRepays.value = []
+  pendingRepays.value = []
   try {
     const raw = await fetchReplenishmentMineDetail(id)
-    const { replenishment: repl, approvedRepays: repays } = parseReplenishmentDetailPayload(raw)
+    const { replenishment: repl, approvedRepays: repays, pendingRepays: pend } =
+      parseReplenishmentDetailPayload(raw)
     replenishment.value = repl
     approvedRepays.value = repays
+    pendingRepays.value = pend
   } catch {
     replenishment.value = null
     approvedRepays.value = []
+    pendingRepays.value = []
     showToast('加载失败，请稍后重试')
   } finally {
     loading.value = false
@@ -214,6 +340,9 @@ watch(applyId, () => loadDetail(), { immediate: true })
   font-size: 15px;
   color: #323233;
 }
+.repl-mine-detail__capital {
+  margin-top: 12px;
+}
 .repl-mine-detail__fund {
   margin-top: 12px;
 }
@@ -231,5 +360,12 @@ watch(applyId, () => loadDetail(), { immediate: true })
   flex-direction: column;
   gap: 10px;
   margin-top: 8px;
+}
+.repl-mine-detail__btn-row--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.repl-mine-detail__repay-progress {
+  margin-top: 12px;
 }
 </style>

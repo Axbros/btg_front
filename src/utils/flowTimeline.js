@@ -9,14 +9,11 @@ export function pickFlowTimelineNodes(payload) {
     payload.nodes ??
     payload.Nodes ??
     payload.flowLogs ??
-    payload.flow_logs ??
     payload.FlowLogs ??
     payload.timeline ??
     payload.Timeline ??
     payload.auditLogs ??
-    payload.audit_logs ??
-    payload.operationLogs ??
-    payload.operation_logs
+    payload.operationLogs
   return Array.isArray(raw) ? raw : []
 }
 
@@ -24,11 +21,8 @@ function pickOperateTimeMs(node) {
   if (!node || typeof node !== 'object') return 0
   const t =
     node.operateTime ??
-    node.operate_time ??
     node.createTime ??
-    node.create_time ??
     node.auditTime ??
-    node.audit_time ??
     node.timestamp ??
     null
   if (t == null || t === '') return 0
@@ -54,13 +48,13 @@ export function sortTimelineNodesAscending(nodes) {
  */
 export function stableTimelineNodeKey(node, index) {
   if (!node || typeof node !== 'object') return `tl-fallback-${index}`
-  const id = node.id ?? node.logId ?? node.log_id ?? node.nodeId ?? node.node_id
+  const id = node.id ?? node.logId ?? node.nodeId
   if (id != null && String(id).trim() !== '') return `tl-id-${String(id).trim()}`
-  const uid = node.operatorUserId ?? node.operator_user_id ?? node.operatorId ?? node.operator_id ?? ''
-  const act = node.action ?? node.actionType ?? node.action_type ?? ''
-  const st = node.displayStatus ?? node.display_status ?? node.status ?? ''
+  const uid = node.operatorUserId ?? node.operatorId ?? ''
+  const act = node.action ?? node.actionType ?? ''
+  const st = node.displayStatus ?? node.status ?? ''
   const t = String(
-    node.operateTime ?? node.operate_time ?? node.createTime ?? node.create_time ?? '',
+    node.operateTime ?? node.createTime ?? '',
   ).trim()
   return `tl-${String(uid)}-${String(act)}-${String(st)}-${t}-${index}`
 }

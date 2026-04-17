@@ -71,7 +71,7 @@ function amountField(item) {
 }
 
 function rootReportIdOf(item) {
-  const v = item.reportId ?? item.report_id ?? item.rootReportId ?? item.root_report_id
+  const v = item.reportId ?? item.rootReportId
   if (v == null || v === '') return null
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : null

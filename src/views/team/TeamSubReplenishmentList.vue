@@ -63,7 +63,7 @@ function txt(v) {
 function formatRow(row) {
   const nick = txt(row.nickname)
   const mob = txt(row.mobile)
-  const amt = formatMoney(row.replenishAmount ?? row.replenish_amount ?? 0)
+  const amt = formatMoney(row.replenishAmount ?? 0)
   return `${nick}(${mob})-${amt}`
 }
 
