@@ -19,7 +19,7 @@
         background="#ecf9ff"
         :scrollable="false"
         wrapable
-        text="资料正在等待直属上级审核，请耐心等待。审核完成之前您只能在本页面查看或修改资料，无法使用系统其它功能。"
+        text="资料正在等待系统管理员审核，请耐心等待。审核完成之前您只能查看或修改资料，无法使用系统其它功能。"
       />
       <p v-if="!auth.isProfilePendingReview" class="tip">
         保存后将更新真实姓名与扩展资料。登录手机号以注册账号为准，不可在此修改。
@@ -196,6 +196,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import { completeUserProfile, fetchMe } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
+import { isQualificationApprovedValue } from '@/utils/qualification'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -345,16 +346,23 @@ async function onSubmitDialogBeforeClose(action) {
     try {
       const me = await fetchMe()
       auth.setUserInfo(me)
-      if (Number(me?.status) === -1) {
-        showToast('资料已保存，请等待审核')
-        router.replace('/me/profile-complete')
+      const qual = me?.profile?.qualificationStatus ?? me?.qualificationStatus
+      if (!isQualificationApprovedValue(qual)) {
+        showToast('资料已提交，请等待审核')
+        router.replace({ name: 'QualificationPending' })
       } else {
-        showToast('保存成功')
-        router.replace('/home')
+        const st = Number(me?.status)
+        if (st === 1) {
+          showToast('保存成功')
+          router.replace('/home')
+        } else {
+          showToast('资料已保存')
+          router.replace('/me/profile-complete')
+        }
       }
     } catch {
       showToast('保存成功')
-      router.replace('/home')
+      router.replace('/me/profile-complete')
     }
     return true
   } catch {

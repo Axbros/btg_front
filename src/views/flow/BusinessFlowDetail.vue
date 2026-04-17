@@ -14,7 +14,7 @@
       </van-cell-group>
 
       <van-cell-group v-if="replenishmentFlowExtraVisible" inset title="资方与到账确认" class="flow-detail__block">
-        <van-cell title="资方执行人" :value="replCapitalExecutorText" />
+        <van-cell title="资方执行用户" :value="replCapitalExecutorText" />
         <van-cell title="资方收款 UID" :value="replCapitalReceiverUidText" />
         <van-cell title="到账确认状态">
           <template #value>

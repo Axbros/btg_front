@@ -25,8 +25,11 @@
             </van-cell-group>
             <van-cell v-else title=" " value="加载详情中…" :border="false" />
             <div class="repl-card__actions">
-              <van-button size="small" type="primary" :loading="submittingId === row.id" @click="openCapital(row)">
-                提交补仓凭证
+              <van-button size="small" type="primary" :loading="submittingId === row.id" @click="openCapitalAgree(row)">
+                同意
+              </van-button>
+              <van-button size="small" type="danger" plain :loading="rejectingId === row.id" @click="openCapitalReject(row)">
+                拒绝
               </van-button>
               <van-button size="small" plain @click="goDetail(row)">查看详情</van-button>
               <van-button size="small" plain @click="goFlow(row)">查看状态流</van-button>
@@ -44,7 +47,8 @@
 
     <van-popup v-model:show="capitalShow" position="bottom" round :style="{ maxHeight: '88%' }">
       <div class="capital-popup">
-        <div class="capital-popup__title">提交补仓转账凭证</div>
+        <div class="capital-popup__title">同意补仓</div>
+        <p class="capital-popup__hint">请上传转账凭证并填写备注，确认后将提交同意。</p>
         <van-cell-group inset>
           <van-field label="转账凭证" readonly>
             <template #input>
@@ -65,10 +69,32 @@
         </van-cell-group>
         <div class="capital-popup__actions">
           <van-button block round @click="capitalShow = false">取消</van-button>
-          <van-button block round type="primary" :loading="capitalSubmitting" @click="submitCapital">提交</van-button>
+          <van-button block round type="primary" :loading="capitalSubmitting" @click="submitCapitalAgree">确认同意</van-button>
         </div>
       </div>
     </van-popup>
+
+    <van-dialog
+      v-model:show="rejectShow"
+      title="拒绝补仓"
+      show-cancel-button
+      confirm-button-text="确认拒绝"
+      confirm-button-color="#ee0a24"
+      :before-close="onRejectBeforeClose"
+    >
+      <div class="dialog-field-wrap">
+        <van-field
+          v-model="rejectRemark"
+          rows="3"
+          autosize
+          type="textarea"
+          maxlength="200"
+          placeholder="拒绝原因（必填）"
+          show-word-limit
+          :border="false"
+        />
+      </div>
+    </van-dialog>
   </div>
 </template>
 
@@ -78,7 +104,12 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
-import { getAssignedReplenishments, capitalSubmitReplenishment, fetchReplenishmentMineDetail } from '@/api/replenishment'
+import {
+  getAssignedReplenishments,
+  capitalSubmitReplenishment,
+  capitalRejectReplenishment,
+  fetchReplenishmentMineDetail,
+} from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
 import {
   formatArrivalConfirmStatus,
@@ -103,6 +134,9 @@ const capitalShow = ref(false)
 const capitalTargetId = ref(null)
 const capitalSubmitting = ref(false)
 const submittingId = ref(null)
+const rejectShow = ref(false)
+const rejectRemark = ref('')
+const rejectingId = ref(null)
 
 const capitalForm = reactive({
   transferScreenshotUrl: '',
@@ -224,7 +258,7 @@ function changePage(delta) {
   fetchPage(page.value)
 }
 
-async function openCapital(row) {
+async function openCapitalAgree(row) {
   capitalTargetId.value = row?.id ?? null
   if (capitalTargetId.value == null) return
   await ensureDetail(capitalTargetId.value)
@@ -237,7 +271,15 @@ async function openCapital(row) {
   capitalShow.value = true
 }
 
-async function submitCapital() {
+function openCapitalReject(row) {
+  const id = row?.id
+  if (id == null) return
+  capitalTargetId.value = id
+  rejectRemark.value = ''
+  rejectShow.value = true
+}
+
+async function submitCapitalAgree() {
   const id = capitalTargetId.value
   if (id == null) return
   const url = (capitalForm.transferScreenshotUrl || '').trim()
@@ -258,13 +300,36 @@ async function submitCapital() {
       transferRemark: (capitalForm.transferRemark || '').trim() || undefined,
       capitalReceiverUid: uid,
     })
-    showToast('提交成功')
+    showToast({ type: 'success', message: '已提交同意' })
     capitalShow.value = false
     delete detailMap[id]
     await fetchPage(page.value)
   } finally {
     capitalSubmitting.value = false
     submittingId.value = null
+  }
+}
+
+async function onRejectBeforeClose(action) {
+  if (action === 'cancel') return true
+  const id = capitalTargetId.value
+  const remark = rejectRemark.value.trim()
+  if (id == null) return false
+  if (!remark) {
+    showToast('请填写拒绝原因')
+    return false
+  }
+  rejectingId.value = id
+  try {
+    await capitalRejectReplenishment(id, { remark })
+    showToast('已拒绝')
+    delete detailMap[id]
+    await fetchPage(page.value)
+    return true
+  } catch {
+    return false
+  } finally {
+    rejectingId.value = null
   }
 }
 </script>
@@ -307,6 +372,16 @@ async function submitCapital() {
   font-size: 16px;
   font-weight: 600;
   padding: 8px 16px 4px;
+}
+.capital-popup__hint {
+  margin: 0 16px 12px;
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+  text-align: center;
+}
+.dialog-field-wrap {
+  padding: 0 8px 8px;
 }
 .capital-popup__actions {
   display: flex;

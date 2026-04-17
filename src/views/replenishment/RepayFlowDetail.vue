@@ -16,17 +16,17 @@
           </template>
         </van-cell>
         <van-cell title="当前处理人" :value="txt(summary.currentHandlerUserName)" />
-        <van-cell title="资方执行人" :value="txt(summary.capitalUserName)" />
+        <van-cell title="资方执行用户" :value="txt(summary.capitalUserName)" />
         <van-cell title="资方收款 UID" :value="txt(summary.capitalReceiverUid)" />
         <van-cell title="提交次数" :value="submitVersionText(summary.submitVersion)" />
         <van-cell v-if="summary.lastRejectReason" title="最后拒绝原因" :label="txt(summary.lastRejectReason)" />
       </van-cell-group>
 
       <van-cell-group v-if="showReplBlock" inset title="关联补仓摘要" class="block">
-        <van-cell title="审核通过金额" :value="formatMoney(num(repl.approvedAmount))" />
-        <van-cell title="已归还金额" :value="formatMoney(num(repl.repaidAmount))" />
+        <van-cell title="补仓申请金额" :value="formatMoney(num(repl.approvedAmount))" />
+        <van-cell title="完成归仓金额" :value="formatMoney(num(repl.repaidAmount))" />
         <van-cell title="待审归仓金额" :value="formatMoney(num(repl.pendingRepayAmount))" />
-        <van-cell title="剩余金额" :value="formatMoney(num(repl.remainingAmount))" />
+        <van-cell title="剩余归仓金额" :value="formatMoney(num(repl.remainingAmount))" />
       </van-cell-group>
 
       <van-cell-group inset title="状态流时间线" class="block">

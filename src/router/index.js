@@ -151,6 +151,13 @@ const routes = [
         meta: { title: '更新资料', tab: 'me', hideTab: true },
       },
       {
+        path: 'qualification/pending',
+        name: 'QualificationPending',
+        component: () => import('@/views/user/QualificationPending.vue'),
+        meta: { requiresAuth: true, title: '等待审核', tab: 'me', hideTab: true },
+      },
+      { path: 'user/qualification-pending', redirect: '/qualification/pending' },
+      {
         path: 'me/account',
         name: 'AccountSummary',
         component: () => import('@/views/me/AccountSummary.vue'),
@@ -261,7 +268,7 @@ const routes = [
         path: 'admin/replenishments/pending',
         name: 'AdminPendingReplenishments',
         component: () => import('@/views/replenishment/AdminReplenishmentPending.vue'),
-        meta: { title: '待审核补仓', requiresAdmin: true, hideTab: true },
+        meta: { title: '补仓审核', requiresAdmin: true, hideTab: true },
       },
       {
         path: 'replenishment/admin/pending',
@@ -338,10 +345,31 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  /** status -1 待完善 / 0 待审核：仅允许 /me/profile-complete */
-  if (requiresAuth && auth.isLogin && auth.isRestrictedToProfileComplete) {
+  /** status -1 待完善：仅允许资料编辑页 */
+  if (requiresAuth && auth.isLogin && auth.isProfileOnlyLocked) {
     if (to.path !== '/me/profile-complete') {
       next({ path: '/me/profile-complete', replace: true })
+      return
+    }
+  }
+
+  /** status 0 资料待审核：等待审核页 + 资料编辑页 */
+  if (requiresAuth && auth.isLogin && auth.isProfilePendingReview) {
+    const allowed = new Set(['/qualification/pending', '/me/profile-complete', '/user/qualification-pending'])
+    if (!allowed.has(to.path)) {
+      next({ path: '/qualification/pending', replace: true })
+      return
+    }
+  }
+
+  /**
+   * 资格 PENDING / REJECTED：禁止进入其它业务页，仅允许等待页、资料编辑、我的信息（只读）
+   * （-1 待完善仍由上方规则独占 profile-complete）
+   */
+  if (requiresAuth && auth.isLogin && auth.isQualificationPendingOrRejected && !auth.isProfileOnlyLocked) {
+    const allowed = new Set(['/qualification/pending', '/me/profile-complete', '/me/profile', '/user/qualification-pending'])
+    if (!allowed.has(to.path)) {
+      next({ path: '/qualification/pending', replace: true })
       return
     }
   }

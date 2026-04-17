@@ -6,9 +6,13 @@
         <template v-if="list.length">
           <van-card
             v-for="(row, idx) in list"
-            :key="row.id ?? idx"
-            class="repl-mine-card"
+            :key="pickApplyId(row) ?? idx"
+            class="repl-mine-card repl-mine-card--clickable"
             :title="`单号 ${txt(row.applyNo)}`"
+            role="button"
+            tabindex="0"
+            @click="goDetail(row)"
+            @keydown.enter.prevent="goDetail(row)"
           >
             <template #tags>
               <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
@@ -19,8 +23,8 @@
               <van-cell title="当前余额" :value="moneyTxt(row.balanceAmount)" />
               <van-cell title="补仓额度" :value="moneyTxt(row.replenishAmount)" />
               <van-cell title="当前处理人" :value="handlerLine(row)" />
-              <van-cell title="资方执行人" :value="capitalExecutorLine(row)" />
-              <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" />
+              <van-cell title="资方执行用户" :value="capitalExecutorLine(row)" />
+              <!-- <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" /> -->
               <van-cell title="到账确认状态">
                 <template #value>
                   <van-tag
@@ -47,7 +51,7 @@
             </p>
             <p v-else-if="hintSuccess(row)" class="repl-mine-card__hint repl-mine-card__hint--ok">补仓成功</p>
 
-            <div v-if="isPendingApplicantConfirm(row)" class="repl-mine-card__actions">
+            <div v-if="isPendingApplicantConfirm(row)" class="repl-mine-card__actions" @click.stop>
               <van-button size="small" type="primary" plain round @click.stop="openArrivalPopup(row, 'confirm')">
                 确认到账
               </van-button>
@@ -56,7 +60,7 @@
               </van-button>
             </div>
 
-            <div class="repl-mine-card__footer">
+            <div class="repl-mine-card__footer" @click.stop>
               <van-button size="small" plain round type="primary" @click.stop="goDetail(row)">查看详情</van-button>
               <van-button size="small" plain round @click.stop="goFlow(row)">状态流</van-button>
             </div>
@@ -135,6 +139,15 @@ function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'
 }
 
+/** 列表项与详情路由共用的申请主键（驼峰；后端可能用 id / replenishmentId / replenishApplyId 之一） */
+function pickApplyId(row) {
+  if (!row || typeof row !== 'object') return null
+  const raw = row.id ?? row.replenishmentId ?? row.replenishApplyId
+  if (raw == null || raw === '') return null
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 function moneyTxt(v) {
   if (v === null || v === undefined || v === '') return '—'
   return formatMoney(v)
@@ -190,21 +203,30 @@ function hintSuccess(row) {
 }
 
 function goDetail(row) {
-  const id = row?.id
-  if (id == null) return
+  const id = pickApplyId(row)
+  if (id == null) {
+    showToast('缺少单号，无法打开详情')
+    return
+  }
   router.push({ name: 'ReplenishmentMineDetail', params: { id: String(id) } })
 }
 
 function goFlow(row) {
-  const id = row?.id
-  if (id == null) return
+  const id = pickApplyId(row)
+  if (id == null) {
+    showToast('缺少单号')
+    return
+  }
   router.push({ name: 'ReplenishmentFlow', params: { id: String(id) } })
 }
 
 function openArrivalPopup(row, mode) {
-  const id = row?.id
-  if (id == null) return
-  arrivalTargetId.value = Number(id)
+  const id = pickApplyId(row)
+  if (id == null) {
+    showToast('缺少单号')
+    return
+  }
+  arrivalTargetId.value = id
   arrivalMode.value = mode
   arrivalRemark.value = ''
   if (mode === 'reject') {
@@ -254,7 +276,7 @@ async function submitArrivalPopup() {
 async function fetchPage(p) {
   const raw = await fetchReplenishmentMine({ page: p, size: pageSize.value })
   const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
-  list.value = rows
+  list.value = Array.isArray(rows) ? rows : []
   hasMore.value = more
   finished.value = !more
   loaded.value = true
@@ -298,6 +320,12 @@ function next() {
 .repl-mine-card {
   margin: 10px 12px 0;
   overflow: hidden;
+}
+.repl-mine-card--clickable {
+  cursor: pointer;
+}
+.repl-mine-card--clickable :deep(.van-card__header) {
+  cursor: pointer;
 }
 .repl-mine-card__hint {
   margin: 8px 16px 0;

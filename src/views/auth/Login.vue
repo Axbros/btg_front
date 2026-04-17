@@ -90,8 +90,8 @@ async function onSubmit() {
       return
     }
     if (auth.isProfilePendingReview) {
-      showToast('资料审核中，请耐心等待上级通过')
-      router.replace('/me/profile-complete')
+      showToast('资料已提交，请等待管理员审核')
+      router.replace({ name: 'QualificationPending' })
       return
     }
     dashboard.fetchPendingSummary().catch(() => {})

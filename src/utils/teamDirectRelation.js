@@ -17,12 +17,7 @@ export function pickLoggedInUserId(viewer) {
  */
 export function pickSubjectReferrerUserId(subjectUser) {
   if (!subjectUser || typeof subjectUser !== 'object') return null
-  const v =
-    subjectUser.referrerUserId ??
-    subjectUser.referrerId ??
-    subjectUser.referrer_user_id ??
-    subjectUser.parentUserId ??
-    subjectUser.parent_user_id
+  const v = subjectUser.referrerUserId ?? subjectUser.referrerId ?? subjectUser.parentUserId
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : null
 }

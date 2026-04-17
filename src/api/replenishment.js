@@ -31,7 +31,7 @@ export function fetchReplenishmentCurrent() {
 }
 
 /**
- * 查询可归仓补仓单（资方执行人 / 收款 UID 等由后端带出）。
+ * 查询可归仓补仓单（资方执行用户 / 收款 UID 等由后端带出）。
  * GET /api/v1/replenishments/repayable
  */
 export function getRepayableReplenishments() {
@@ -90,7 +90,7 @@ export function resubmitRepayApply(id, data) {
 }
 
 /**
- * 待我审核的归仓申请（资方执行人）。
+ * 待我审核的归仓申请（资方执行用户）。
  * GET /api/v1/replenishments/repays/pending-review
  */
 export function getPendingRepayReviewList(params = {}) {
@@ -193,7 +193,7 @@ export function assignReplenishment(id, data) {
   return postAdmin(`/admin/replenishments/${id}/assign`, data ?? {})
 }
 
-// ——— 资方执行人 / 申请人补仓动作 ———
+// ——— 资方执行用户 / 申请人补仓动作 ———
 
 /** GET /replenishments/assigned-to-me */
 export function getAssignedReplenishments(params = {}) {
@@ -207,6 +207,11 @@ export function getAssignedReplenishments(params = {}) {
 /** POST /replenishments/{id}/capital-submit */
 export function capitalSubmitReplenishment(id, data) {
   return post(`/replenishments/${id}/capital-submit`, data ?? {})
+}
+
+/** POST /replenishments/{id}/capital-reject — 资方拒绝（body 建议 { remark }） */
+export function capitalRejectReplenishment(id, data) {
+  return post(`/replenishments/${id}/capital-reject`, data ?? {})
 }
 
 /** POST /replenishments/{id}/confirm-arrival — body 可选 { remark } */

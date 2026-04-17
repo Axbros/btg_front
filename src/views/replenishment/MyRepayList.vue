@@ -16,15 +16,15 @@
                 {{ formatRepayStatus(row.status) }}
               </van-tag>
             </div>
-            <van-cell title="补仓审核通过金额" :value="formatMoney(num(row.approvedAmount))" />
-            <van-cell title="已归还金额" :value="formatMoney(num(row.repaidAmount))" />
+            <van-cell title="补仓申请金额" :value="formatMoney(num(row.approvedAmount))" />
+            <van-cell title="完成归仓金额" :value="formatMoney(num(row.repaidAmount))" />
             <van-cell title="待审归仓金额" :value="formatMoney(num(row.pendingRepayAmount))" />
-            <van-cell title="剩余金额" :value="formatMoney(num(row.remainingAmount))" />
-            <van-cell title="资方执行人" :value="txt(row.capitalUserName)" />
-            <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" />
-            <van-cell title="当前处理人" :value="txt(row.currentHandlerUserName)" />
+            <!-- <van-cell title="剩余归仓金额" :value="formatMoney(num(row.remainingAmount))" /> -->
+            <van-cell title="资方执行用户" :value="txt(row.capitalUserName)" />
+            <!-- <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" /> -->
+            <!-- <van-cell title="当前处理人" :value="txt(row.currentHandlerUserName)" /> -->
             <van-cell v-if="hasRejectReason(row)" title="拒绝原因" :label="txt(row.lastRejectReason)" />
-            <van-cell title="提交次数" :value="submitVersionText(row.submitVersion)" />
+            <!-- <van-cell title="提交次数" :value="submitVersionText(row.submitVersion)" /> -->
             <van-cell title="操作">
               <template #value>
                 <div class="mine-card__actions">

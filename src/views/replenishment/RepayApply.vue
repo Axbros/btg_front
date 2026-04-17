@@ -27,12 +27,12 @@
                   </van-tag>
                 </div>
                 <div class="pick-card__grid">
-                  <span>审核通过金额</span><span>{{ formatMoney(num(item.approvedAmount)) }}</span>
-                  <span>已归还金额</span><span>{{ formatMoney(num(item.repaidAmount)) }}</span>
+                  <span>补仓申请金额</span><span>{{ formatMoney(num(item.approvedAmount)) }}</span>
+                  <span>完成归仓金额</span><span>{{ formatMoney(num(item.repaidAmount)) }}</span>
                   <span>待审归仓金额</span><span>{{ formatMoney(num(item.pendingRepayAmount)) }}</span>
-                  <span>剩余金额</span><span class="emph">{{ formatMoney(num(item.remainingAmount)) }}</span>
-                  <span>资方执行人</span><span>{{ txt(item.assignedCapitalUserName) }}</span>
-                  <span>资方收款 UID</span><span>{{ txt(item.capitalReceiverUid) }}</span>
+                  <span>剩余归仓金额</span><span class="emph">{{ formatMoney(num(item.remainingAmount)) }}</span>
+                  <span>资方执行用户</span><span>{{ txt(item.assignedCapitalUserName) }}</span>
+                  <span>资方收款 UID</span><span>{{ txt(item.assignedCapitalExchangeUid) }}</span>
                 </div>
               </div>
             </template>
@@ -56,9 +56,19 @@
         >
           <van-cell-group inset title="当前选中补仓单" class="block">
             <van-cell title="补仓单号" :value="txt(selectedItem.applyNo)" />
-            <van-cell title="资方执行人" :value="txt(selectedItem.assignedCapitalUserName)" />
-            <van-cell title="资方收款 UID" :value="txt(selectedItem.capitalReceiverUid)" />
-            <van-cell title="剩余待归还金额" :value="formatMoney(maxRepay)" />
+            <van-cell title="资方执行用户" :value="txt(selectedItem.assignedCapitalUserName)" />
+            <van-cell
+              title="资方收款 UID"
+              title-class="repay-apply-emph"
+              value-class="repay-apply-emph"
+              :value="txt(selectedItem.assignedCapitalExchangeUid)"
+            />
+            <van-cell
+              title="剩余待归还金额"
+              title-class="repay-apply-emph"
+              value-class="repay-apply-emph"
+              :value="formatMoney(maxRepay)"
+            />
           </van-cell-group>
 
           <van-cell-group inset title="归仓申请" class="block">
@@ -253,7 +263,7 @@ async function onSubmit() {
     return
   }
   if (amt > rem + 1e-9) {
-    showToast(`归仓金额不能超过剩余金额 ${formatMoney(rem)}`)
+    showToast(`归仓金额不能超过剩余归仓金额 ${formatMoney(rem)}`)
     return
   }
   if (amt > cap + 1e-9) {
@@ -330,5 +340,9 @@ async function onSubmit() {
   font-size: 13px;
   color: #969799;
   line-height: 1.5;
+}
+:deep(.repay-apply-emph) {
+  color: #ee0a24;
+  font-weight: 700;
 }
 </style>

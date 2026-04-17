@@ -4,42 +4,14 @@
     <van-loading v-if="loading" class="detail-loading" vertical>加载中…</van-loading>
     <template v-else-if="detail">
       <ReplenishmentApplyDetailBody :detail="detail" />
-      <van-cell v-if="Number(detail.status) === 7" class="status-hint-cell">
-        <template #title>
-          <span class="status-hint">待资方上传打款凭证并填写备注，完成后进入终审确认。</span>
-        </template>
-      </van-cell>
-      <van-cell v-if="Number(detail.status) === 8" class="status-hint-cell">
-        <template #title>
-          <span class="status-hint">
-            待终审：可多次「更新凭证/备注」修改转账凭证或备注（不上传新图则保留原凭证），确认无误后再终审通过。
-          </span>
-        </template>
-      </van-cell>
-      <van-cell-group inset class="detail-actions">
+      <van-cell-group v-if="showActionBar" inset class="detail-actions">
         <van-cell>
           <div class="card__actions">
-            <van-button
-              v-if="canAccept"
-              size="small"
-              type="primary"
-              plain
-              :loading="accepting"
-              @click="onAccept"
-            >
-              受理
+            <van-button v-if="canAgree" size="small" type="primary" plain :loading="agreeSubmitting" @click="openAgree">
+              同意
             </van-button>
-            <van-button
-              v-if="canUploadCapitalVoucher"
-              size="small"
-              type="primary"
-              plain
-              @click="openCapitalVoucher"
-            >
-              {{ capitalVoucherButtonLabel }}
-            </van-button>
-            <van-button v-if="canFinalApprove" size="small" type="primary" plain @click="openApprove">
-              终审确认
+            <van-button v-if="canAssign" size="small" type="warning" plain :loading="assignSubmitting" @click="openAssign">
+              转派
             </van-button>
             <van-button v-if="canReject" size="small" type="danger" plain @click="openReject">拒绝</van-button>
           </div>
@@ -48,21 +20,22 @@
     </template>
     <EmptyState v-else description="未获取到补仓信息" />
 
-    <van-popup v-model:show="capitalVoucherPopupShow" position="bottom" round :style="{ maxHeight: '88%' }">
-      <div class="approve-popup">
-        <div class="approve-popup__title">{{ capitalVoucherPopupTitle }}</div>
+    <van-popup v-model:show="agreePopupShow" position="bottom" round :style="{ maxHeight: '88%' }">
+      <div class="action-popup">
+        <div class="action-popup__title">同意补仓</div>
+        <p class="action-popup__hint">请上传打款凭证并填写备注，确认后将提交同意。</p>
         <van-cell-group inset>
-          <van-field label="资方凭证" readonly :placeholder="capitalVoucherUrlPlaceholder">
+          <van-field label="打款凭证" readonly placeholder="请上传">
             <template #input>
               <ImageUploadField
-                v-model="capitalVoucherForm.transferScreenshotUrl"
+                v-model="agreeForm.transferScreenshotUrl"
                 upload-type="TRANSFER"
-                :hint="capitalVoucherUploadHint"
+                hint="转账截图（必填）"
               />
             </template>
           </van-field>
           <van-field
-            v-model="capitalVoucherForm.transferRemark"
+            v-model="agreeForm.transferRemark"
             label="备注"
             type="textarea"
             rows="2"
@@ -72,32 +45,38 @@
             placeholder="选填"
           />
         </van-cell-group>
-        <div class="approve-popup__actions">
-          <van-button block round @click="closeCapitalVoucherPopup">取消</van-button>
-          <van-button
-            block
-            round
-            type="primary"
-            :loading="capitalVoucherSubmitting"
-            @click="submitCapitalVoucher"
-          >
-            提交
-          </van-button>
+        <div class="action-popup__actions">
+          <van-button block round @click="closeAgreePopup">取消</van-button>
+          <van-button block round type="primary" :loading="agreeSubmitting" @click="submitAgree">确认同意</van-button>
         </div>
       </div>
     </van-popup>
 
-    <van-popup v-model:show="approvePopupShow" position="bottom" round :style="{ maxHeight: '88%' }">
-      <div class="approve-popup">
-        <div class="approve-popup__title">资方终审确认</div>
-        <p class="approve-popup__desc">
-          请核对申请信息与已提交的打款凭证、备注一致后，确认通过以完成审核。
-        </p>
-        <div class="approve-popup__actions">
-          <van-button block round @click="closeApprovePopup">取消</van-button>
-          <van-button block round type="primary" :loading="approveSubmitting" @click="submitApprove">
-            确认通过
-          </van-button>
+    <van-popup v-model:show="assignPopupShow" position="bottom" round :style="{ maxHeight: '85%' }">
+      <div class="assign-popup">
+        <div class="assign-popup__title">转派资方执行用户</div>
+        <van-cell-group inset>
+          <van-field
+            v-model="assignCapitalUserId"
+            label="执行人用户ID"
+            type="digit"
+            placeholder="填写 capitalUserId（btg_user.id）"
+            required
+          />
+          <van-field
+            v-model="assignRemark"
+            label="转派备注"
+            type="textarea"
+            rows="2"
+            autosize
+            maxlength="500"
+            placeholder="选填"
+            show-word-limit
+          />
+        </van-cell-group>
+        <div class="assign-popup__actions">
+          <van-button block round @click="assignPopupShow = false">取消</van-button>
+          <van-button block round type="primary" :loading="assignSubmitting" @click="submitAssign">确认转派</van-button>
         </div>
       </div>
     </van-popup>
@@ -134,31 +113,25 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import ReplenishmentApplyDetailBody from '@/components/ReplenishmentApplyDetailBody.vue'
-import {
-  fetchAdminReplenishmentDetail,
-  approveReplenishmentAdmin,
-  rejectReplenishmentAdmin,
-  acceptReplenishmentAdmin,
-  submitCapitalVoucherForAdmin,
-} from '@/api/adminReplenishment'
+import { fetchAdminReplenishmentDetail, approveReplenishmentAdmin, rejectReplenishmentAdmin } from '@/api/adminReplenishment'
+import { assignReplenishment } from '@/api/replenishment'
 
 const route = useRoute()
 
 const loading = ref(true)
 const detail = ref(null)
-const accepting = ref(false)
 
-const capitalVoucherPopupShow = ref(false)
-const capitalVoucherSubmitting = ref(false)
-/** 打开弹窗时详情上的备注（trimmed），用于判断状态 8 是否仅改备注 */
-const initialRemarkOnOpen = ref('')
-const capitalVoucherForm = reactive({
+const agreePopupShow = ref(false)
+const agreeSubmitting = ref(false)
+const agreeForm = reactive({
   transferScreenshotUrl: '',
   transferRemark: '',
 })
 
-const approvePopupShow = ref(false)
-const approveSubmitting = ref(false)
+const assignPopupShow = ref(false)
+const assignCapitalUserId = ref('')
+const assignRemark = ref('')
+const assignSubmitting = ref(false)
 
 const rejectShow = ref(false)
 const rejectRemark = ref('')
@@ -181,31 +154,21 @@ const statusN = computed(() => {
   return Number.isFinite(n) ? n : NaN
 })
 
-const canAccept = computed(() => statusN.value === 1)
-const canFinalApprove = computed(() => statusN.value === 8)
-const canUploadCapitalVoucher = computed(() => statusN.value === 7 || statusN.value === 8)
+function hasAssignedCapitalUser(row) {
+  const uid = row?.assignedCapitalUserId
+  if (uid === null || uid === undefined || uid === '') return false
+  const n = Number(uid)
+  return Number.isFinite(n) && n > 0
+}
 
-const capitalVoucherButtonLabel = computed(() =>
-  statusN.value === 8 ? '更新凭证/备注' : '上传资方凭证',
-)
+/** 1 待管理员审核：同意、拒绝 */
+const canAgree = computed(() => statusN.value === 1)
+/** 2 已通过待转派且尚未指定资方执行用户：转派 */
+const canAssign = computed(() => statusN.value === 1 )
+/** 待管理员审核或待转派阶段可拒绝 */
+const canReject = computed(() => statusN.value === 1 )
 
-const capitalVoucherPopupTitle = computed(() =>
-  statusN.value === 8 ? '更新资方凭证或备注' : '上传资方凭证',
-)
-
-const capitalVoucherUrlPlaceholder = computed(() =>
-  statusN.value === 8 ? '选填，不上传则保留原凭证' : '请上传',
-)
-
-const capitalVoucherUploadHint = computed(() =>
-  statusN.value === 8
-    ? '不上传新图则保留库里已有凭证；上传新图将覆盖。'
-    : '资方给申请人的打款凭证（必填）',
-)
-const canReject = computed(() => {
-  const s = statusN.value
-  return s === 1 || s === 7 || s === 8
-})
+const showActionBar = computed(() => canAgree.value || canAssign.value || canReject.value)
 
 async function loadDetail() {
   const id = applyId.value
@@ -229,120 +192,78 @@ async function loadDetail() {
 
 watch(applyId, () => loadDetail(), { immediate: true })
 
-async function onAccept() {
+function resetAgreeForm() {
+  agreeForm.transferScreenshotUrl = ''
+  agreeForm.transferRemark = ''
+}
+
+function openAgree() {
+  resetAgreeForm()
+  agreePopupShow.value = true
+}
+
+function closeAgreePopup() {
+  agreePopupShow.value = false
+  resetAgreeForm()
+}
+
+async function submitAgree() {
   const id = applyId.value
   if (id == null) return
-  accepting.value = true
-  try {
-    await acceptReplenishmentAdmin(id)
-    showToast({ type: 'success', message: '已受理' })
-    await loadDetail()
-  } catch {
-    /* 请求层 */
-  } finally {
-    accepting.value = false
-  }
-}
-
-function resetCapitalVoucherForm() {
-  capitalVoucherForm.transferScreenshotUrl = ''
-  capitalVoucherForm.transferRemark = ''
-  initialRemarkOnOpen.value = ''
-}
-
-function openCapitalVoucher() {
-  resetCapitalVoucherForm()
-  const st = statusN.value
-  const d = detail.value
-  if (st === 8 && d) {
-    const ex = String(d.transferRemark ?? '').trim()
-    capitalVoucherForm.transferRemark = ex
-    initialRemarkOnOpen.value = ex
-  }
-  capitalVoucherPopupShow.value = true
-}
-
-function closeCapitalVoucherPopup() {
-  capitalVoucherPopupShow.value = false
-  resetCapitalVoucherForm()
-}
-
-async function submitCapitalVoucher() {
-  const id = applyId.value
-  if (id == null) return
-  const st = Number(detail.value?.status)
-  const url = capitalVoucherForm.transferScreenshotUrl?.trim()
-  const remarkNow = capitalVoucherForm.transferRemark?.trim() ?? ''
-
-  if (st === 7) {
-    if (!url) {
-      showToast('请上传资方凭证')
-      return
-    }
-    capitalVoucherSubmitting.value = true
-    try {
-      await submitCapitalVoucherForAdmin(id, {
-        transferScreenshotUrl: url,
-        transferRemark: remarkNow || undefined,
-      })
-      showToast({ type: 'success', message: '已提交，待终审确认' })
-      closeCapitalVoucherPopup()
-      await loadDetail()
-    } catch {
-      /* 请求层 */
-    } finally {
-      capitalVoucherSubmitting.value = false
-    }
+  const url = String(agreeForm.transferScreenshotUrl || '').trim()
+  if (!url) {
+    showToast('请上传打款凭证')
     return
   }
-
-  if (st === 8) {
-    const body = {}
-    if (url) {
-      body.transferScreenshotUrl = url
-    }
-    if (remarkNow !== initialRemarkOnOpen.value) {
-      body.transferRemark = remarkNow
-    }
-    if (Object.keys(body).length === 0) {
-      showToast('请上传新凭证或修改备注')
-      return
-    }
-    capitalVoucherSubmitting.value = true
-    try {
-      await submitCapitalVoucherForAdmin(id, body)
-      showToast({ type: 'success', message: '已保存' })
-      closeCapitalVoucherPopup()
-      await loadDetail()
-    } catch {
-      /* 请求层；异常无凭证时后端 400 */
-    } finally {
-      capitalVoucherSubmitting.value = false
-    }
-  }
-}
-
-function openApprove() {
-  approvePopupShow.value = true
-}
-
-function closeApprovePopup() {
-  approvePopupShow.value = false
-}
-
-async function submitApprove() {
-  const id = applyId.value
-  if (id == null) return
-  approveSubmitting.value = true
+  const transferRemark = String(agreeForm.transferRemark || '').trim()
+  agreeSubmitting.value = true
   try {
-    await approveReplenishmentAdmin(id)
-    showToast({ type: 'success', message: '审核通过' })
-    closeApprovePopup()
+    await approveReplenishmentAdmin(id, {
+      transferScreenshotUrl: url,
+      transferRemark: transferRemark || undefined,
+    })
+    showToast({ type: 'success', message: '已同意' })
+    closeAgreePopup()
     await loadDetail()
   } catch {
     /* 请求层 */
   } finally {
-    approveSubmitting.value = false
+    agreeSubmitting.value = false
+  }
+}
+
+function openAssign() {
+  assignCapitalUserId.value = ''
+  assignRemark.value = ''
+  assignPopupShow.value = true
+}
+
+async function submitAssign() {
+  const id = applyId.value
+  if (id == null) return
+  const uid = assignCapitalUserId.value.trim()
+  if (!uid) {
+    showToast('请填写执行人用户ID')
+    return
+  }
+  const n = Number(uid)
+  if (!Number.isFinite(n) || n <= 0) {
+    showToast('用户ID无效')
+    return
+  }
+  assignSubmitting.value = true
+  try {
+    await assignReplenishment(id, {
+      capitalUserId: n,
+      remark: assignRemark.value.trim() || undefined,
+    })
+    showToast({ type: 'success', message: '转派成功' })
+    assignPopupShow.value = false
+    await loadDetail()
+  } catch {
+    /* 请求层 */
+  } finally {
+    assignSubmitting.value = false
   }
 }
 
@@ -384,34 +305,40 @@ async function onRejectBeforeClose(action) {
   gap: 10px;
   justify-content: flex-end;
 }
-.status-hint-cell :deep(.van-cell__title) {
-  flex: 1;
-}
-.status-hint {
-  font-size: 13px;
-  color: #646566;
-  line-height: 1.5;
-}
 .dialog-field-wrap {
   padding: 0 8px 8px;
 }
-.approve-popup {
+.action-popup {
   padding: 16px 0 20px;
 }
-.approve-popup__title {
+.action-popup__title {
   font-size: 16px;
   font-weight: 600;
   text-align: center;
-  padding: 0 16px 12px;
+  padding: 0 16px 8px;
 }
-.approve-popup__desc {
-  margin: 0 16px 4px;
-  font-size: 14px;
+.action-popup__hint {
+  margin: 0 16px 12px;
+  font-size: 13px;
   color: #646566;
-  line-height: 1.55;
+  line-height: 1.5;
   text-align: center;
 }
-.approve-popup__actions {
+.action-popup__actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 0;
+}
+.assign-popup {
+  padding: 12px 0 20px;
+}
+.assign-popup__title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 16px 12px;
+}
+.assign-popup__actions {
   display: flex;
   gap: 10px;
   padding: 12px 16px 0;

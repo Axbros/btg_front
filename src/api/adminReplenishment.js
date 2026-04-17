@@ -1,4 +1,4 @@
-import { getAdmin, postAdmin, postAdminWithoutBody } from './request'
+import { getAdmin, postAdmin } from './request'
 
 /** GET /api/admin/replenishments/pending */
 export function fetchAdminPendingReplenishments(params = {}) {
@@ -15,20 +15,17 @@ export function fetchAdminReplenishmentDetail(id) {
 
 /**
  * POST /api/admin/replenishments/{id}/approve
- * 资方终审确认（通常 8→2）；无请求体。
+ * 同意补仓（可带打款凭证与备注，字段以后端为准）。
+ * @param {string|number} id
+ * @param {{ transferScreenshotUrl?: string, transferRemark?: string, remark?: string }} [data]
  */
-export function approveReplenishmentAdmin(id) {
-  return postAdminWithoutBody(`/admin/replenishments/${id}/approve`)
+export function approveReplenishmentAdmin(id, data) {
+  return postAdmin(`/admin/replenishments/${id}/approve`, data ?? {})
 }
 
 /** POST /api/admin/replenishments/{id}/reject */
 export function rejectReplenishmentAdmin(id, remark) {
   return postAdmin(`/admin/replenishments/${id}/reject`, remark ? { remark } : {})
-}
-
-/** POST /api/admin/replenishments/{id}/accept — 受理（1→7） */
-export function acceptReplenishmentAdmin(id) {
-  return postAdmin(`/admin/replenishments/${id}/accept`, {})
 }
 
 /**
@@ -77,7 +74,7 @@ export function fetchAdminRepayDetail(id) {
 
 /** POST /api/admin/replenishments/repays/{id}/approve */
 export function approveRepayAdmin(id, remark) {
-  return postAdmin(`/admin/replenishments/repays/${id}/approve`, remark ? { remark } : {})
+  return postAdmin(`/replenishments/repays/${id}/approve`, remark ? { remark } : {})
 }
 
 /** POST /api/admin/replenishments/repays/{id}/reject */

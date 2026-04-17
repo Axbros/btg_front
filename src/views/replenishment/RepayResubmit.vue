@@ -8,10 +8,10 @@
         <van-notice-bar left-icon="info-o" :scrollable="false" text="已退回待修改：请核对归仓金额与截图后重新提交。" />
         <template v-if="replBlock">
           <van-cell title="补仓单号" :value="txt(replBlock.applyNo)" />
-          <van-cell title="审核通过金额" :value="formatMoney(num(replBlock.approvedAmount))" />
-          <van-cell title="已归还金额" :value="formatMoney(num(replBlock.repaidAmount))" />
+          <van-cell title="补仓申请金额" :value="formatMoney(num(replBlock.approvedAmount))" />
+          <van-cell title="完成归仓金额" :value="formatMoney(num(replBlock.repaidAmount))" />
           <van-cell title="待审归仓金额" :value="formatMoney(num(replBlock.pendingRepayAmount))" />
-          <van-cell title="剩余金额" :value="formatMoney(num(replBlock.remainingAmount))" />
+          <van-cell title="剩余归仓金额" :value="formatMoney(num(replBlock.remainingAmount))" />
         </template>
         <van-field
           v-model="repayAmount"
