@@ -84,12 +84,16 @@
         :badge="repayAdminMenuBadge"
       />
       <van-grid-item
-        v-if="isRootUser && auth.isAdmin"
+        v-if="isRootUser"
         icon="passed"
         text="待审核资格"
         @click="goHomeNav({ name: 'AdminUserQualificationPending' })"
       />
     </van-grid>
+
+    <van-cell-group v-if="isRootUser" inset title="管理" class="home__root-tools">
+      <van-cell title="待审核资格" is-link @click="goHomeNav({ name: 'AdminUserQualificationPending' })" />
+    </van-cell-group>
 
     <van-cell-group v-if="auth.isAdmin && !isRootUser" inset title="管理员" class="home__admin">
       <!-- <van-cell is-link to="/admin/pending">
@@ -113,13 +117,6 @@
           <span class="home__menu-title">
             <span>待审核归仓</span>
             <van-badge v-if="repayReviewBadge > 0" :content="repayReviewBadge" max="99" />
-          </span>
-        </template>
-      </van-cell>
-      <van-cell is-link @click="goHomeNav({ name: 'AdminUserQualificationPending' })">
-        <template #title>
-          <span class="home__menu-title">
-            <span>待审核资格</span>
           </span>
         </template>
       </van-cell>
@@ -285,6 +282,9 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+.home__root-tools {
+  margin-top: 12px;
 }
 .home__admin,
 .home__links {

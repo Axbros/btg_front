@@ -19,15 +19,18 @@
         </van-cell>
       </van-cell-group>
 
-      <van-cell-group v-if="profile" inset title="券商资料">
+      <van-cell-group v-if="showBrokerSection" inset title="券商资料">
         <van-cell title="券商名称" :value="txt(profile.walletName)" />
         <van-cell title="钱包地址（TRC20）" :value="txt(profile.walletAddress)" />
+      </van-cell-group>
+      <van-cell-group v-else-if="profile" inset title="券商资料">
+        <van-cell title="资料" value="尚未录入" />
       </van-cell-group>
       <van-cell-group v-else inset title="券商资料">
         <van-cell title="资料" value="尚未录入" />
       </van-cell-group>
 
-      <van-cell-group v-if="profile" inset title="交易信息">
+      <van-cell-group v-if="showTradingSection" inset title="交易信息">
         <van-cell title="服务器名称" :value="txt(profile.serverName)" />
         <van-cell title="交易账号" :value="txt(profile.tradingAccountId)" />
         <van-cell title="交易所 UID" :value="txt(profile.exchangeUid)" />
@@ -42,41 +45,23 @@
             </van-tag>
           </template>
         </van-cell>
-        <van-cell title="审核时间" :value="formatDateTime(qualificationAuditTime)" />
-        <van-cell title="审核备注" :value="txtCell(qualificationAuditRemark)" />
+        <van-cell
+          v-if="showServerNameInQualificationSlice"
+          title="服务器名称"
+          :value="txtCell(profile.serverName)"
+        />
+        <van-cell
+          v-if="qualificationAuditRemarkPresent"
+          title="审核备注"
+          :value="txtCell(qualificationAuditRemark)"
+        />
       </van-cell-group>
 
-      <van-cell-group  v-if="Number(user.status) === 1"  inset title="分润比例配置">
+      <van-cell-group v-if="canAdjustChildProfitRatio" inset title="分润比例配置">
         <van-cell title="子级总利润占比" :value="rateTxt(childProfitRatioField)" />
       </van-cell-group>
 
-      <div v-if="canReviewProfile" class="actions">
-        <van-button
-          round
-          block
-          type="primary"
-          :loading="reviewLoading"
-          :disabled="reviewLoading"
-          @click="onApproveProfile"
-        >
-          通过审核
-        </van-button>
-        <van-button
-          round
-          block
-          plain
-          type="danger"
-          class="actions__btn-spaced"
-          :loading="reviewLoading"
-          :disabled="reviewLoading"
-          @click="onRejectProfile"
-        >
-          退回待完善
-        </van-button>
-        <p class="actions__hint">仅直属上级可操作：通过后该下级为正常可用；退回后需重新填写资料。</p>
-      </div>
-
-      <div v-if="Number(user.status) === 1" class="actions">
+      <div v-if="canAdjustChildProfitRatio" class="actions">
         <van-button round block type="primary" @click="onRatioConfigClick">调整分润比例</van-button>
         <p class="actions__hint">仅可为直属下级设置</p>
       </div>
@@ -89,17 +74,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
-import { showConfirmDialog, showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import {
-  approveTeamMemberProfile,
-  fetchUserDetail,
-  rejectTeamMemberProfile,
-} from '@/api/user'
+import { fetchUserDetail } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
+import { canAdjustChildProfitRatioOnFrontend } from '@/utils/teamDirectRelation'
 import {
-  formatDateTime,
   formatMoney,
   formatQualificationStatus,
   formatRate,
@@ -110,34 +90,57 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
-const { userInfo } = storeToRefs(auth)
+const { userInfo } = storeToRefs(useAuthStore())
 
 const detail = ref(null)
 const loading = ref(true)
-const reviewLoading = ref(false)
 
 const user = computed(() => detail.value?.user ?? {})
 const profile = computed(() => detail.value?.profile ?? null)
 
+function hasTextField(v) {
+  return v != null && String(v).trim() !== ''
+}
+
+/** 后端对非根「上级看下级」返回资料切片时无钱包字段；不展示空券商/交易区块，避免误显敏感结构 */
+const showBrokerSection = computed(() => {
+  const p = profile.value
+  if (!p || typeof p !== 'object') return false
+  return hasTextField(p.walletName) || hasTextField(p.walletAddress)
+})
+
+const showTradingSection = computed(() => {
+  const p = profile.value
+  if (!p || typeof p !== 'object') return false
+  if (hasTextField(p.tradingAccountId) || hasTextField(p.exchangeUid)) return true
+  const amt = p.principalAmount
+  if (amt == null || amt === '') return false
+  const n = Number(amt)
+  return Number.isFinite(n) && n > 0
+})
+
+/** 仅切片场景：有服务器名但无完整交易信息时，放在资格区只读展示 */
+const showServerNameInQualificationSlice = computed(() => {
+  if (!showTradingSection.value) return hasTextField(profile.value?.serverName)
+  return false
+})
+
 const qualificationSectionVisible = computed(() => {
   const p = profile.value
   if (!p || typeof p !== 'object') return false
-  const keys = [
-    'qualificationStatus',
-    'qualificationAuditTime',
-    'qualificationAuditRemark',
-    'qualificationSubmitCount',
-    'qualificationLastSubmitTime',
-  ]
-  return keys.some((k) => p[k] != null && p[k] !== '')
+  const st = p.qualificationStatus
+  if (st != null && st !== '') return true
+  return qualificationAuditRemarkPresent.value
 })
 
 const qualStatusRaw = computed(() => profile.value?.qualificationStatus)
 
-const qualificationAuditTime = computed(() => profile.value?.qualificationAuditTime)
-
 const qualificationAuditRemark = computed(() => profile.value?.qualificationAuditRemark)
+
+const qualificationAuditRemarkPresent = computed(() => {
+  const r = qualificationAuditRemark.value
+  return r != null && String(r).trim() !== ''
+})
 
 function txtCell(v) {
   if (v === null || v === undefined || v === '') return '—'
@@ -155,29 +158,10 @@ const childProfitRatioField = computed(
   () => detail.value?.childLineProfitRatio ?? null,
 )
 
-function pickSelfUserId() {
-  const u = userInfo.value
-  if (!u) return null
-  const v = u.id ?? u.userId
-  const n = Number(v)
-  return Number.isFinite(n) && n > 0 ? n : null
-}
-
-function pickMemberReferrerId(u) {
-  if (!u || typeof u !== 'object') return null
-  const v = u.referrerUserId ?? u.referrerId
-  const n = Number(v)
-  return Number.isFinite(n) && n > 0 ? n : null
-}
-
-/** 下级 status 为 0（待审核）且当前用户为其直属上级时可审核 */
-const canReviewProfile = computed(() => {
-  if (Number(user.value.status) !== 0) return false
-  const selfId = pickSelfUserId()
-  const refId = pickMemberReferrerId(user.value)
-  if (selfId == null || refId == null) return false
-  return selfId === refId
-})
+/** 分润比例：仅非根、直属上级、下级已激活；从「全部下级」打开非直属详情时为 false */
+const canAdjustChildProfitRatio = computed(() =>
+  canAdjustChildProfitRatioOnFrontend(userInfo.value, user.value),
+)
 
 function memberIdNum() {
   const n = Number(route.params.memberId)
@@ -212,52 +196,6 @@ async function loadMemberDetail() {
     return
   }
   detail.value = await fetchUserDetail(id)
-}
-
-async function onApproveProfile() {
-  const id = memberIdNum()
-  if (id == null) return
-  try {
-    await showConfirmDialog({
-      title: '通过审核',
-      message: '确认将该下级设为正常可用？',
-    })
-  } catch {
-    return
-  }
-  reviewLoading.value = true
-  try {
-    await approveTeamMemberProfile(id)
-    showToast('已通过审核')
-    await loadMemberDetail()
-  } catch {
-    /* 错误由请求拦截器提示 */
-  } finally {
-    reviewLoading.value = false
-  }
-}
-
-async function onRejectProfile() {
-  const id = memberIdNum()
-  if (id == null) return
-  try {
-    await showConfirmDialog({
-      title: '退回待完善',
-      message: '确认退回？下级将需重新填写资料后再提交。',
-    })
-  } catch {
-    return
-  }
-  reviewLoading.value = true
-  try {
-    await rejectTeamMemberProfile(id)
-    showToast('已退回待完善')
-    await loadMemberDetail()
-  } catch {
-    /* 错误由请求拦截器提示 */
-  } finally {
-    reviewLoading.value = false
-  }
 }
 
 onMounted(async () => {

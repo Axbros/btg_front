@@ -19,7 +19,7 @@
         </template>
       </van-cell>
       <van-cell
-        v-if="auth.isAdmin"
+        v-if="isRootUser"
         title="待审核资格"
         is-link
         @click="goNav({ name: 'AdminUserQualificationPending' })"

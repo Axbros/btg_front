@@ -71,6 +71,8 @@ function hasChildren(node) {
 function nodeTitle(node) {
   const n = node?.nickname ?? node?.nickName
   if (n != null && String(n).trim() !== '') return String(n).trim()
+  const m = node?.mobile
+  if (m != null && String(m).trim() !== '') return String(m).trim()
   return '—'
 }
 

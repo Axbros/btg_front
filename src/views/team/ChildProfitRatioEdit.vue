@@ -46,16 +46,20 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchUserDetail } from '@/api/user'
+import { useAuthStore } from '@/stores/auth'
+import { canAdjustChildProfitRatioOnFrontend } from '@/utils/teamDirectRelation'
 import { fetchMyChildProfitConfigs, createProfitConfig, updateProfitConfig } from '@/api/profitConfig'
 import { formatRate } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
+const { userInfo } = storeToRefs(useAuthStore())
 
 const loading = ref(true)
 const saving = ref(false)
@@ -168,6 +172,13 @@ async function load() {
       fetchUserDetail(id),
       fetchMyChildProfitConfigs().catch(() => []),
     ])
+    const child = detail?.user
+    if (!canAdjustChildProfitRatioOnFrontend(userInfo.value, child)) {
+      userDetail.value = null
+      configRows.value = []
+      ratioInput.value = ''
+      return
+    }
     userDetail.value = detail
     configRows.value = Array.isArray(cfgRaw) ? cfgRaw : []
     const cur = currentRatio.value
@@ -189,6 +200,11 @@ watch(
 async function onSubmit() {
   const id = childUserId.value
   if (id == null) return
+  const child = userDetail.value?.user
+  if (!canAdjustChildProfitRatioOnFrontend(userInfo.value, child)) {
+    showToast('仅可为直属且已激活的下级调整分润比例')
+    return
+  }
   const pct = Number(String(ratioInput.value).trim())
   if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
     showToast('请输入 0～100 之间的百分比')

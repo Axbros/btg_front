@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { isUserAdmin } from '@/utils/permission'
+import { isUserAdmin, isUserRoot } from '@/utils/permission'
 import MainLayout from '@/layout/MainLayout.vue'
 
 const routes = [
@@ -255,7 +255,7 @@ const routes = [
         path: 'admin/users/pending-qualification',
         name: 'AdminUserQualificationPending',
         component: () => import('@/views/admin/UserQualificationPending.vue'),
-        meta: { title: '待审核资格', requiresAdmin: true, hideTab: true },
+        meta: { title: '待审核资格', requiresRoot: true, hideTab: true },
       },
       {
         path: 'admin/replenishments/pending',
@@ -328,6 +328,12 @@ router.beforeEach((to, from, next) => {
   }
 
   if (requiresAdmin && !isUserAdmin(auth.userInfo)) {
+    next({ path: '/home' })
+    return
+  }
+
+  const requiresRoot = to.matched.some((r) => r.meta.requiresRoot)
+  if (requiresRoot && !isUserRoot(auth.userInfo)) {
     next({ path: '/home' })
     return
   }

@@ -1,4 +1,4 @@
-import { get, post, put } from './request'
+import { get, put } from './request'
 
 /** GET /api/v1/me — UserMeVo（含直属上级展示名 referrerNickname） */
 export function fetchMe() {
@@ -25,16 +25,6 @@ export function completeUserProfile(data) {
  */
 export function fetchDescendantsTeam() {
   return get('/user/team/descendants')
-}
-
-/** POST /api/v1/user/team/{userId}/approve-profile — 直属上级通过资料，下级 status 0→1 */
-export function approveTeamMemberProfile(userId) {
-  return post(`/user/team/${userId}/approve-profile`, {})
-}
-
-/** POST /api/v1/user/team/{userId}/reject-profile — 直属上级退回资料，下级 status 0→-1 */
-export function rejectTeamMemberProfile(userId) {
-  return post(`/user/team/${userId}/reject-profile`, {})
 }
 
 export function fetchAccountSummary() {
