@@ -12,8 +12,8 @@
             <template #title>
               <div class="qual-pending__card-head">
                 <span class="qual-pending__title">#{{ rowKey(row, idx) }}</span>
-                <van-tag :type="qualificationStatusTagType(row.qualificationStatus)" plain round>
-                  {{ formatQualificationStatus(row.qualificationStatus) }}
+                <van-tag :type="qualificationStatusTagType(rowQualDisplay(row))" plain round>
+                  {{ formatQualificationStatus(rowQualDisplay(row)) }}
                 </van-tag>
               </div>
             </template>
@@ -119,6 +119,7 @@ import {
   formatQualificationStatus,
   qualificationStatusTagType,
 } from '@/utils/format'
+import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 
 const list = ref([])
 const loading = ref(false)
@@ -160,6 +161,10 @@ function mergeRow(row) {
   const u = row.user && typeof row.user === 'object' ? row.user : {}
   const p = row.profile && typeof row.profile === 'object' ? row.profile : {}
   return { ...row, ...u, ...p }
+}
+
+function rowQualDisplay(row) {
+  return effectiveQualificationStatusForDisplay(row)
 }
 
 const detailImages = computed(() => {

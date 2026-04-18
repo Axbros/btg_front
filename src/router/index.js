@@ -26,7 +26,7 @@ const routes = [
         path: 'home',
         name: 'Home',
         component: () => import('@/views/home/Home.vue'),
-        meta: { title: '工作台', tab: 'home' },
+        meta: { title: '工作台', tab: 'home', lockViewport: true },
       },
       {
         path: 'todo',
@@ -88,7 +88,7 @@ const routes = [
         path: 'profit-report/mine',
         name: 'ProfitReportList',
         component: () => import('@/views/profitReport/ProfitReportList.vue'),
-        meta: { title: '我的利润上报记录', tab: 'report', hideTab: true, lockViewport: true },
+        meta: { title: '利润记录', tab: 'report', hideTab: true, lockViewport: true },
       },
       {
         path: 'profit-report/:profitReportId/resubmit',
@@ -222,7 +222,7 @@ const routes = [
         path: 'replenishment/repay-mine',
         name: 'RepayMine',
         component: () => import('@/views/replenishment/MyRepayList.vue'),
-        meta: { title: '我的归仓申请', tab: 'home', hideTab: true },
+        meta: { title: '归仓申请', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/repay/:id/resubmit',
@@ -238,7 +238,7 @@ const routes = [
         path: 'replenishment/repays/pending-review',
         name: 'RepayPendingReview',
         component: () => import('@/views/replenishment/RepayPendingReview.vue'),
-        meta: { title: '待我审核的归仓申请', tab: 'home', hideTab: true },
+        meta: { title: '待审归仓申请', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/repays/:id/flow',

@@ -11,9 +11,10 @@ body,
 #app {
   margin: 0;
   min-height: 100%;
-  background: #f5f6f8;
+  background: var(--app-page-bg, #f2f5fa);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
+  font-weight: 600;
   -webkit-font-smoothing: antialiased;
   /* 配合 viewport：抑制双击缩放、避免部分 WebKit 自动调字号 */
   touch-action: manipulation;
@@ -23,7 +24,7 @@ body,
 
 .page-shell {
   min-height: 100vh;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  padding-bottom: calc(50px + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 

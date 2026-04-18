@@ -40,8 +40,8 @@
       <van-cell-group v-if="qualificationSectionVisible" inset title="资格审核">
         <van-cell title="当前状态">
           <template #value>
-            <van-tag :type="qualificationStatusTagType(qualStatusRaw)" plain round>
-              {{ formatQualificationStatus(qualStatusRaw) }}
+            <van-tag :type="qualificationStatusTagType(qualStatusForDisplay)" plain round>
+              {{ formatQualificationStatus(qualStatusForDisplay) }}
             </van-tag>
           </template>
         </van-cell>
@@ -79,6 +79,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { fetchUserDetail } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import { canAdjustChildProfitRatioOnFrontend } from '@/utils/teamDirectRelation'
+import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 import {
   formatMoney,
   formatQualificationStatus,
@@ -133,7 +134,12 @@ const qualificationSectionVisible = computed(() => {
   return qualificationAuditRemarkPresent.value
 })
 
-const qualStatusRaw = computed(() => profile.value?.qualificationStatus)
+const qualStatusForDisplay = computed(() =>
+  effectiveQualificationStatusForDisplay({
+    status: user.value?.status,
+    profile: profile.value ?? undefined,
+  }),
+)
 
 const qualificationAuditRemark = computed(() => profile.value?.qualificationAuditRemark)
 

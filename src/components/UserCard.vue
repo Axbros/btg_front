@@ -52,9 +52,6 @@ function pickId(u) {
       #3d9dfe 68%,
       #5ec8ff 100%
     );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 4px 14px rgba(25, 137, 250, 0.35);
 }
 .user-card__main {
   min-width: 0;

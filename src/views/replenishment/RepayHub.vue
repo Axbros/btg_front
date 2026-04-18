@@ -34,12 +34,12 @@
       <p class="hub-actions__title">归仓</p>
       <van-grid :column-num="2" :gutter="10" clickable class="hub-actions__grid">
         <van-grid-item icon="balance-list-o" text="提交归仓申请" @click="goNav({ name: 'RepayApply' })" />
-        <van-grid-item icon="records" text="我的归仓申请" @click="goNav({ name: 'RepayMine' })" />
-        <van-grid-item icon="passed" text="待我审核的归仓" @click="goNav({ name: 'RepayPendingReview' })" />
+        <van-grid-item icon="records" text="归仓申请" @click="goNav({ name: 'RepayMine' })" />
+        <van-grid-item icon="passed" text="待审归仓" @click="goNav({ name: 'RepayPendingReview' })" />
       </van-grid>
       <van-cell-group inset title="快捷入口" class="hub-links">
-        <van-cell title="我的归仓申请" is-link @click="goNav({ name: 'RepayMine' })" />
-        <van-cell title="待我审核的归仓" is-link @click="goNav({ name: 'RepayPendingReview' })" />
+        <van-cell title="归仓申请" is-link @click="goNav({ name: 'RepayMine' })" />
+        <van-cell title="待审归仓" is-link @click="goNav({ name: 'RepayPendingReview' })" />
       </van-cell-group>
     </div>
   </div>

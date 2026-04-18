@@ -23,7 +23,7 @@
         <van-cell title="">
           <template #title>
             <div class="repl-mine-detail__btn-row repl-mine-detail__btn-row--inline">
-              <van-button size="small" type="primary" plain round @click="goMyRepayList">查看我的归仓申请</van-button>
+              <van-button size="small" type="primary" plain round @click="goMyRepayList">查看归仓申请</van-button>
               <van-button
                 v-if="latestRepayFlowId != null"
                 size="small"
@@ -338,7 +338,7 @@ const applicantFundProgressTip = computed(() => {
     return '当前为「待资方补充资料」阶段，资方将上传打款凭证并填写备注；您无需在此提交。请核对打款信息，并留意状态更新。'
   }
   if (Number(r.status) === 8) {
-    return '当前为「待资方终审确认」阶段，资方将核对信息后完成终审。请留意状态更新。'
+    return '当前补仓已经完成，订单关闭。'
   }
   return ''
 })

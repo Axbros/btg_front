@@ -389,7 +389,6 @@ async function onSubmitDialogBeforeClose(action) {
   padding: 10px 16px;
   padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   background: #fff;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
 }
 .tip--pending {
   color: #646566;

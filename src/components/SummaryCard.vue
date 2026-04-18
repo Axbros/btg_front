@@ -21,7 +21,6 @@ defineProps({
   background: #fff;
   border-radius: 12px;
   padding: 14px 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 .summary-card__label {
   font-size: 13px;

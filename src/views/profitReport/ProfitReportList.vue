@@ -1,6 +1,6 @@
 <template>
   <div class="profit-report-shell">
-    <AppHeader title="我的利润上报记录" />
+    <AppHeader title="利润记录" />
     <div class="profit-report-shell__scroll profit-report-shell__list profit-report-list__body">
       <van-pull-refresh v-model="refreshing" class="profit-report-shell__pull" @refresh="onRefresh">
         <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">

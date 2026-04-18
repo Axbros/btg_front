@@ -58,7 +58,7 @@ import {
 const props = defineProps({
   item: { type: Object, required: true },
   showDistributionLink: { type: Boolean, default: false },
-  /** 为 true 时（如「我的利润上报记录」）点击卡片跳结算详情；路由 id 为 root_report_id（与利润单 id 一致） */
+  /** 为 true 时（如「利润记录」）点击卡片跳结算详情；路由 id 为 root_report_id（与利润单 id 一致） */
   linkToSettlement: { type: Boolean, default: false },
 })
 

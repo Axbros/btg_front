@@ -323,7 +323,6 @@ function settlementStatusText(layer) {
   border-radius: 12px;
   background: linear-gradient(180deg, #fafbfc 0%, #f3f4f6 100%);
   border: 1px solid #e8eaed;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   font-size: 15px;
   line-height: 1.55;
   color: #323233;
@@ -331,7 +330,6 @@ function settlementStatusText(layer) {
 .pf-layers__card--settlement-approved {
   background: linear-gradient(180deg, #f0faf3 0%, #e4f5ea 100%);
   border-color: #c5e8cf;
-  box-shadow: 0 1px 3px rgba(7, 193, 96, 0.08);
 }
 .pf-layers__card--settlement-approved .pf-layers__mark {
   color: #07c160;
@@ -339,7 +337,6 @@ function settlementStatusText(layer) {
 .pf-layers__card--settlement-rejected {
   background: linear-gradient(180deg, #fff8f8 0%, #fdeeee 100%);
   border-color: #f5c2c7;
-  box-shadow: 0 1px 3px rgba(238, 10, 36, 0.08);
 }
 .pf-layers__card--settlement-rejected .pf-layers__mark {
   color: #ee0a24;
@@ -347,14 +344,10 @@ function settlementStatusText(layer) {
 .pf-layers__card--current {
   border-color: rgba(237, 106, 12, 0.45);
   background: linear-gradient(180deg, #fffaf5 0%, #fff3e8 100%);
-  box-shadow: 0 0 0 1px rgba(237, 106, 12, 0.12), 0 2px 8px rgba(237, 106, 12, 0.08);
 }
 .pf-layers__card--settlement-approved.pf-layers__card--current {
   border-color: rgba(7, 193, 96, 0.42);
   background: linear-gradient(180deg, #f5fff8 0%, #e8f9ec 100%);
-  box-shadow:
-    0 0 0 1px rgba(7, 193, 96, 0.1),
-    0 2px 8px rgba(7, 193, 96, 0.1);
 }
 .pf-layers__card--current::before {
   content: '';
@@ -372,9 +365,6 @@ function settlementStatusText(layer) {
 .pf-layers__card--settlement-rejected.pf-layers__card--current {
   border-color: rgba(238, 10, 36, 0.42);
   background: linear-gradient(180deg, #fff5f5 0%, #ffe8ea 100%);
-  box-shadow:
-    0 0 0 1px rgba(238, 10, 36, 0.12),
-    0 2px 8px rgba(238, 10, 36, 0.1);
 }
 .pf-layers__card--settlement-rejected.pf-layers__card--current::before {
   background: #ee0a24;
@@ -455,9 +445,6 @@ function settlementStatusText(layer) {
     rgba(237, 106, 12, 0.12) 45%,
     rgba(150, 151, 153, 0.45) 100%
   );
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.85) inset,
-    0 1px 4px rgba(237, 106, 12, 0.15);
 }
 .pf-layers__connector-cap {
   display: flex;
@@ -470,9 +457,6 @@ function settlementStatusText(layer) {
   color: #d9650a;
   background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
   border: 1px solid rgba(237, 106, 12, 0.22);
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
 }
 .pf-layers__connector-icon {
   width: 18px;

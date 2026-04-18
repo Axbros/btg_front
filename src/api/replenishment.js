@@ -51,7 +51,7 @@ export function submitRepayApply(data) {
 export const submitRepay = submitRepayApply
 
 /**
- * 我的归仓申请分页。
+ * 归仓申请分页。
  * GET /api/v1/replenishments/repays/mine
  */
 export function getMyRepayApplyList(params = {}) {
@@ -90,7 +90,7 @@ export function resubmitRepayApply(id, data) {
 }
 
 /**
- * 待我审核的归仓申请（资方执行用户）。
+ * 待审归仓申请（资方执行用户）。
  * GET /api/v1/replenishments/repays/pending-review
  */
 export function getPendingRepayReviewList(params = {}) {

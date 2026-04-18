@@ -34,6 +34,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAuthStore } from '@/stores/auth'
+import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 import { fetchMe } from '@/api/user'
 import {
   formatQualificationStatus,
@@ -52,7 +53,7 @@ const profileBlock = computed(() => {
   return p
 })
 
-const qualStatus = computed(() => profileBlock.value?.qualificationStatus)
+const qualStatus = computed(() => effectiveQualificationStatusForDisplay(userInfo.value))
 
 const remarkText = computed(() => {
   const r = profileBlock.value?.qualificationAuditRemark

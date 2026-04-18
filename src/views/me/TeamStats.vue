@@ -52,7 +52,6 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 .stats__label {
   font-size: 13px;

@@ -45,8 +45,8 @@
       <van-cell-group v-if="qualificationSectionVisible" inset title="资格审核" class="profile__block">
         <van-cell title="审核状态">
           <template #value>
-            <van-tag :type="qualificationStatusTagType(qualStatusRaw)" plain round>
-              {{ formatQualificationStatus(qualStatusRaw) }}
+            <van-tag :type="qualificationStatusTagType(qualStatusForDisplay)" plain round>
+              {{ formatQualificationStatus(qualStatusForDisplay) }}
             </van-tag>
           </template>
         </van-cell>
@@ -74,7 +74,7 @@
 
       <!-- <van-cell-group inset title="分润与结算" class="profile__block">
         <van-cell title="利润上报" is-link to="/profit-report/submit" />
-        <van-cell title="我的利润上报记录" is-link to="/profit-report/mine" />
+        <van-cell title="利润记录" is-link to="/profit-report/mine" />
         <van-cell title="待支付给上级" is-link to="/settlement/pending-pay" />
         <van-cell title="待审核下级结算" is-link to="/settlement/pending-review" />
       </van-cell-group> -->
@@ -128,6 +128,7 @@ import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
+import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 import { useDashboardStore } from '@/stores/dashboard'
 import { fetchMe } from '@/api/user'
 import { resubmitQualification } from '@/api/userQualification'
@@ -222,6 +223,10 @@ const qualificationSectionVisible = computed(() => {
 
 const qualStatusRaw = computed(() => profileRaw.value?.qualificationStatus)
 
+const qualStatusForDisplay = computed(() =>
+  effectiveQualificationStatusForDisplay(userInfo.value),
+)
+
 const qualificationAuditTime = computed(() => profileRaw.value?.qualificationAuditTime)
 
 const qualificationAuditRemark = computed(() => profileRaw.value?.qualificationAuditRemark)
@@ -235,8 +240,9 @@ function txtCell(v) {
   return String(v)
 }
 
-/** 仅已拒绝时展示「重新提交审核」与资料修改引导（与已通过/待审核区分） */
+/** 仅已拒绝时展示「重新提交审核」与资料修改引导（与已通过/待审核区分）；资料已重新提交待审（status=0）时不展示 */
 const showQualRejectedActions = computed(() => {
+  if (Number(userInfo.value?.status) === 0) return false
   const v = qualStatusRaw.value
   if (v === 3 || v === 'REJECTED') return true
   const s = v != null ? String(v).trim().toUpperCase() : ''
@@ -376,7 +382,6 @@ function onLogoutConfirm() {
   text-align: center;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
 }
 .invite-qr__title {
   font-size: 15px;

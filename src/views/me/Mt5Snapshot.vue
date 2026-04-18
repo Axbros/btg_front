@@ -305,7 +305,6 @@ onUnmounted(() => {
   min-height: 0;
   box-sizing: border-box;
   background: linear-gradient(155deg, #0f172a 0%, #1e293b 38%, #172554 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   color: #e2e8f0;
 }
 .mt5-snap__glow {
@@ -363,7 +362,6 @@ onUnmounted(() => {
   height: 8px;
   border-radius: 50%;
   background: #34d399;
-  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
   animation: mt5-live-breathe 2.2s ease-in-out infinite;
 }
 .mt5-snap__live-text {
@@ -375,12 +373,10 @@ onUnmounted(() => {
   100% {
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.45);
   }
   50% {
     opacity: 0.88;
     transform: scale(1.2);
-    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
   }
 }
 .mt5-snap__hero {

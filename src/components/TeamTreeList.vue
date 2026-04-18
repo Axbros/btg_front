@@ -24,12 +24,12 @@
           </van-tag>
           <van-tag
             v-if="hasQualificationStatus(node)"
-            :type="qualificationStatusTagType(node.qualificationStatus)"
+            :type="qualificationStatusTagType(nodeQualDisplay(node))"
             plain
             round
             class="team-tree-tags__qual"
           >
-            资格 {{ formatQualificationStatus(node.qualificationStatus) }}
+            资格 {{ formatQualificationStatus(nodeQualDisplay(node)) }}
           </van-tag>
         </div>
       </template>
@@ -53,6 +53,7 @@ import {
   qualificationStatusTagType,
   userStatusTagType,
 } from '@/utils/format'
+import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 
 defineOptions({ name: 'TeamTreeList' })
 
@@ -92,7 +93,12 @@ function isQualificationRejected(st) {
   return false
 }
 
+function nodeQualDisplay(node) {
+  return effectiveQualificationStatusForDisplay(node)
+}
+
 function qualificationRejectRemarkLine(node) {
+  if (Number(node?.status) === 0) return ''
   if (!isQualificationRejected(node?.qualificationStatus)) return ''
   const r = node?.qualificationAuditRemark
   if (r == null || String(r).trim() === '') return ''
