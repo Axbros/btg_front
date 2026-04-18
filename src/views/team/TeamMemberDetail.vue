@@ -5,18 +5,19 @@
       <van-loading type="spinner" />
     </div>
     <template v-else-if="detail">
-      <van-cell-group inset title="账号信息">
+      <van-cell-group inset title="基本信息">
         <!-- <van-cell title="用户ID" :value="txt(user.id)" /> -->
-        <van-cell title="手机号" :value="txt(user.mobile)" />
-        <van-cell title="真实姓名" :value="txt(user.nickname)" />
-        <van-cell title="上级用户" :value="referrerNicknameText" />
-        <van-cell title="账号状态">
+        <van-cell title="手机号码" :value="txt(user.mobile)" />
+        <van-cell title="用户姓名" :value="txt(user.nickname)" />
+        <van-cell title="所属上级" :value="referrerNicknameText" />
+        <van-cell title="注册时间" :value="formatDateTime(user.createdAt)" />
+        <!-- <van-cell title="账号状态">
           <template #value>
             <van-tag :type="userStatusTagType(user.status)" plain round>
               {{ formatUserStatus(user.status) }}
             </van-tag>
           </template>
-        </van-cell>
+        </van-cell> -->
       </van-cell-group>
 
       <van-cell-group v-if="showBrokerSection" inset title="券商资料">
@@ -33,11 +34,17 @@
       <van-cell-group v-if="showTradingSection" inset title="交易信息">
         <van-cell title="服务器名称" :value="txt(profile.serverName)" />
         <van-cell title="交易账号" :value="txt(profile.tradingAccountId)" />
-        <van-cell title="交易所 UID" :value="txt(profile.exchangeUid)" />
+        <van-cell title="交易密码">
+          <template #value>
+            <template v-if="isViewerRoot">{{ txt(profile.tradingAccountPassword) }}</template>
+            <span v-else class="member-detail-field-hint">********</span>
+          </template>
+        </van-cell>
+        <van-cell title="交易所UID" :value="txt(profile.exchangeUid)" />
         <van-cell title="本金金额" :value="moneyTxt(profile.principalAmount)" />
       </van-cell-group>
 
-      <van-cell-group v-if="qualificationSectionVisible" inset title="资格审核">
+      <van-cell-group v-if="qualificationSectionVisible" inset title="用户状态">
         <van-cell title="当前状态">
           <template #value>
             <van-tag :type="qualificationStatusTagType(qualStatusForDisplay)" plain round>
@@ -58,7 +65,10 @@
       </van-cell-group>
 
       <van-cell-group v-if="canAdjustChildProfitRatio" inset title="分润比例配置">
-        <van-cell title="子级总利润占比" :value="rateTxt(childProfitRatioField)" />
+        
+        <van-cell title="当前分润比例" :value="rateTxt(childProfitRatioField)" />
+
+        <van-cell title="最大可分润比例" :value="rateTxt(maxAssignableChildProfitRatio)" />
       </van-cell-group>
 
       <div v-if="canAdjustChildProfitRatio" class="actions">
@@ -79,6 +89,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import { fetchUserDetail } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import { canAdjustChildProfitRatioOnFrontend } from '@/utils/teamDirectRelation'
+import { isUserRoot } from '@/utils/permission'
 import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 import {
   formatMoney,
@@ -87,6 +98,7 @@ import {
   formatUserStatus,
   qualificationStatusTagType,
   userStatusTagType,
+  formatDateTime,
 } from '@/utils/format'
 
 const route = useRoute()
@@ -98,6 +110,9 @@ const loading = ref(true)
 
 const user = computed(() => detail.value?.user ?? {})
 const profile = computed(() => detail.value?.profile ?? null)
+
+/** 与后端一致：仅根用户接口会返回 tradingAccountPassword */
+const isViewerRoot = computed(() => isUserRoot(userInfo.value))
 
 function hasTextField(v) {
   return v != null && String(v).trim() !== ''
@@ -163,6 +178,14 @@ const referrerNicknameText = computed(() => {
 const childProfitRatioField = computed(
   () => detail.value?.childLineProfitRatio ?? null,
 )
+
+const maxAssignableChildProfitRatio = computed(() => {
+  const d = detail.value
+  if (!d || typeof d !== 'object') return null
+  const v = d.maxAssignableChildProfitRatio
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+})
 
 /** 分润比例：仅非根、直属上级、下级已激活；从「全部下级」打开非直属详情时为 false */
 const canAdjustChildProfitRatio = computed(() =>
@@ -239,5 +262,11 @@ onMounted(async () => {
   color: #969799;
   line-height: 1.45;
   text-align: center;
+}
+.member-detail-field-hint {
+  font-size: 13px;
+  color: #969799;
+  line-height: 1.45;
+  text-align: right;
 }
 </style>

@@ -1,31 +1,37 @@
 <template>
-  <van-cell-group v-if="detail">
-    <van-cell title="申请单号" :value="txt(pick('applyNo'))" />
-    <van-cell title="补仓申请人" :value="txt(pick('nickname'))" />
-    <van-cell title="联系电话" :value="txt(pick('mobile'))" />
-    <van-cell title="补仓状态">
+  <van-cell-group title="补仓详情" inset v-if="detail">
+    <van-cell title="订单单号" :value="txt(pick('applyNo'))" />
+     <van-cell title="补仓状态">
       <template #value>
         <van-tag :type="replenishmentStatusTagType(pick('status'))" plain round>
           {{ formatReplenishmentStatus(pick('status')) }}
         </van-tag>
       </template>
     </van-cell>
-    <van-cell title="底仓本金" :value="formatMoney(pick('principalAmount'))" />
-    <van-cell title="申报余额" :value="formatMoney(pick('balanceAmount'))" />
-    <van-cell title="补仓额度" :value="formatMoney(pick('replenishAmount'))" />
+    <van-cell title="申请人姓名" :value="txt(pick('nickname'))" />
+    <van-cell title="申请人电话" :value="txt(pick('mobile'))" />
+   
+    <van-cell title="申请人底仓" :value="formatMoney(pick('principalAmount'))" />
+   
+    <van-cell title="申请补仓额度">
+      <template #value>
+        <span class="repl-apply-detail__amount">{{ formatMoney(pick('replenishAmount')) }}</span>
+      </template>
+    </van-cell>
     <!-- <van-cell title="已通过额度" :value="formatMoney(pick('approvedAmount'))" /> -->
     <!-- <van-cell title="归仓额度" :value="formatMoney(pick('repaidAmount'))" />
     <van-cell title="待审归仓" :value="formatMoney(pick('pendingRepayAmount'))" />
     <van-cell title="剩余待归" :value="formatMoney(pick('remainingAmount'))" /> -->
-    <van-cell title="余额截图">
+     <van-cell title="申请人余额" :value="formatMoney(pick('balanceAmount'))" />
+    <van-cell title="申请人余额截图">
       <template #value>
         <PreviewableRemoteImage v-if="balanceShotUrl" :url="balanceShotUrl" alt="余额截图" size="large" />
         <span v-else>—</span>
       </template>
     </van-cell>
     <template v-if="hasWalletInfo">
-      <van-cell title="交易所名称" :value="walletNameDisplay" />
-      <van-cell title="钱包地址" :value="walletAddressDisplay" />
+      <van-cell title="申请人交易所名" :value="walletNameDisplay" />
+      <van-cell title="申请人钱包地址" :value="walletAddressDisplay" />
     </template>
     <van-cell v-if="txt(pick('acceptedBy')) !== '—'" title="受理人" :value="txt(pick('acceptedBy'))" />
     <van-cell
@@ -39,8 +45,8 @@
       </template>
     </van-cell> -->
     
-    <van-cell title="提交时间" :value="formatDateTime(pick('submitTime'))" />
-    <van-cell v-if="txt(pick('auditTime')) !== '—'" title="审核时间" :value="formatDateTime(pick('auditTime'))" />
+    <van-cell title="申请提交时间" :value="formatDateTime(pick('submitTime'))" />
+    <van-cell v-if="txt(pick('auditTime')) !== '—'" title="申请审核时间" :value="formatDateTime(pick('auditTime'))" />
     <!-- <van-cell v-if="txt(pick('auditBy')) !== '—'" title="审核人 ID" :value="txt(pick('auditBy'))" /> -->
   </van-cell-group>
 </template>
@@ -90,3 +96,10 @@ const hasWalletInfo = computed(
   () => walletNameDisplay.value !== '—' || walletAddressDisplay.value !== '—',
 )
 </script>
+
+<style scoped>
+.repl-apply-detail__amount {
+  color: #ee0a24;
+  font-weight: 700;
+}
+</style>

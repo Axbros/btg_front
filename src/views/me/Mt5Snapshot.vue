@@ -1,6 +1,6 @@
 <template>
   <div class="mt5-full">
-    <AppHeader title="账户快照" :show-back="false" />
+    <AppHeader title="账户快照" />
     <van-loading v-if="loading" class="mt5-full__loading" vertical>加载中…</van-loading>
     <template v-else-if="mt5Rows.length">
       <div class="mt5-full__stack">

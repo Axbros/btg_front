@@ -1,34 +1,34 @@
 <template>
-  <van-cell-group v-if="detail">
+  <van-cell-group title="归仓详情" inset v-if="detail">
     <van-cell title="归仓单号" :value="txt(pick('repayNo'))" />
-    <van-cell title="归仓状态">
+    <van-cell title="本笔归仓状态">
       <template #value>
         <van-tag :type="repayStatusTagType(pick('status'))" plain round>
           {{ formatRepayStatus(pick('status')) }}
         </van-tag>
       </template>
     </van-cell>
-    <van-cell title="用户真实姓名" :value="txt(pick('nickname'))" />
-    <van-cell title="用户手机" :value="txt(pick('mobile'))" />
+    <van-cell title="补仓用户姓名" :value="txt(pick('nickname'))" />
+    <van-cell title="补仓用户手机" :value="txt(pick('mobile'))" />
     <!-- <van-cell title="关联补仓 ID" :value="txt(pick('replenishApplyId'))" /> -->
     <van-cell
-      title="补仓金额"
+      title="申请补仓额度"
       title-class="repay-detail__amount"
       value-class="repay-detail__amount"
       :value="replenishAmountDisplay"
     />
     <van-cell
-      title="归还金额"
+      title="申请归仓金额"
       title-class="repay-detail__amount"
       value-class="repay-detail__amount"
       :value="formatMoney(pick('repayAmount'))"
     />
-    <van-cell
-      title="剩余待还"
+    <!-- <van-cell
+      title="剩余待归"
       title-class="repay-detail__amount"
       value-class="repay-detail__amount"
       :value="remainingToRepayText"
-    />
+    /> -->
     <van-cell title="归仓转账凭证">
       <template #value>
         <PreviewableRemoteImage v-if="screenshotUrl" :url="screenshotUrl" alt="归仓转账凭证" size="large" />
@@ -36,8 +36,12 @@
       </template>
     </van-cell>
     <van-cell title="归仓提交时间" :value="formatDateTime(pick('submitTime'))" />
-    <van-cell-group v-if="replenishmentApply" title="关联补仓申请" class="repay-detail__repl-group">
-      <van-cell title="申请单号" :value="txt(pickReplen('applyNo'))" />
+    
+    <van-cell v-if="txt(pick('remark')) !== '—'" title="备注" :value="txt(pick('remark'))" />
+  </van-cell-group>
+
+  <van-cell-group v-if="replenishmentApply"  inset title="关联补仓" class="repay-detail__repl-group">
+      <van-cell title="补仓单号" :value="txt(pickReplen('applyNo'))" />
       <van-cell title="补仓状态">
         <template #value>
           <van-tag :type="replenishmentStatusTagType(pickReplen('status'))" plain round>
@@ -46,9 +50,17 @@
         </template>
       </van-cell>
       <van-cell title="底仓本金" :value="formatMoney(pickReplen('principalAmount'))" />
-      <van-cell title="申报余额" :value="formatMoney(pickReplen('balanceAmount'))" />
-      <van-cell title="已还金额" :value="formatMoney(pickReplen('repaidAmount'))" />
-      <van-cell title="待还金额" :value="formatMoney(pickReplen('pendingRepayAmount'))" />
+      <van-cell
+        title="申报余额"
+        :value="formatMoney(pickReplen('balanceAmount'))"
+        value-class="repay-detail__amount"
+      />
+      <van-cell
+        title="已还金额"
+        :value="formatMoney(pickReplen('repaidAmount'))"
+        value-class="repay-detail__amount"
+      />
+      <!-- <van-cell title="待还金额" :value="formatMoney(pickReplen('pendingRepayAmount'))" /> -->
       <van-cell title="补仓截图">
         <template #value>
           <PreviewableRemoteImage v-if="replBalanceShotUrl" :url="replBalanceShotUrl" alt="余额截图" size="large" />
@@ -69,8 +81,6 @@
       <van-cell title="补仓审核时间" :value="formatDateTime(pickReplen('auditTime'))" />
     </van-cell-group>
     <van-cell v-else title="关联补仓申请" value="暂无" />
-    <van-cell v-if="txt(pick('remark')) !== '—'" title="备注" :value="txt(pick('remark'))" />
-  </van-cell-group>
 </template>
 
 <script setup>
@@ -139,16 +149,16 @@ const replTransferShotUrl = computed(() => {
   return u ? String(u) : ''
 })
 
-const remainingToRepayText = computed(() => {
-  const d = props.detail
-  if (!d) return '—'
-  const app = replenishmentApply.value
-  const replenish = Number(app?.replenishAmount)
-  const repay = Number(d.repayAmount)
-  const a = Number.isFinite(replenish) ? replenish : 0
-  const b = Number.isFinite(repay) ? repay : 0
-  return formatMoney(a - b)
-})
+// const remainingToRepayText = computed(() => {
+//   const d = props.detail
+//   if (!d) return '—'
+//   const app = replenishmentApply.value
+//   const replenish = Number(app?.replenishAmount)
+//   const repay = Number(d.repayAmount)
+//   const a = Number.isFinite(replenish) ? replenish : 0
+//   const b = Number.isFinite(repay) ? repay : 0
+//   return formatMoney(a - b)
+// })
 
 </script>
 

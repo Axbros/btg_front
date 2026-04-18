@@ -4,40 +4,7 @@
     <van-loading v-if="loading" class="repl-mine-detail__loading" vertical>加载中…</van-loading>
     <template v-else>
       <ReplenishmentApplyDetailBody v-if="replenishment" :detail="replenishment" />
-      <!-- <van-cell-group v-if="replenishment" inset title="归仓进度" class="repl-mine-detail__repay-progress">
-        <van-cell title="完成归仓金额" :value="moneyTxt(replenishment.repaidAmount)" />
-        <van-cell title="待审归仓金额" :value="moneyTxt(replenishment.pendingRepayAmount)" />
-        <van-cell title="剩余待归还金额" :value="moneyTxt(replenishment.remainingAmount)" />
-        <template v-if="latestRepayRow">
-          <van-divider dashed />
-          <van-cell title="最近归仓状态">
-            <template #value>
-              <van-tag :type="repayStatusTagType(latestRepayRow.status)" plain round>
-                {{ formatRepayStatus(latestRepayRow.status) }}
-              </van-tag>
-            </template>
-          </van-cell>
-          <van-cell title="最近归仓单号" :value="txt(latestRepayRow.repayNo ?? latestRepayRow.id)" />
-          <van-cell title="当前处理人" :value="txt(latestRepayRow.currentHandlerUserName)" />
-        </template>
-        <van-cell title="">
-          <template #title>
-            <div class="repl-mine-detail__btn-row repl-mine-detail__btn-row--inline">
-              <van-button size="small" type="primary" plain round @click="goMyRepayList">查看归仓申请</van-button>
-              <van-button
-                v-if="latestRepayFlowId != null"
-                size="small"
-                type="default"
-                plain
-                round
-                @click="goLatestRepayFlow"
-              >
-                查看归仓状态流
-              </van-button>
-            </div>
-          </template>
-        </van-cell>
-      </van-cell-group> -->
+     
       <van-cell-group v-if="replenishment" inset title="资方与到账确认" class="repl-mine-detail__capital">
         <van-cell title="资方执行用户" :value="capitalExecutorText" />
         <!-- <van-cell title="资方收款 UID" :value="txt(replenishment.capitalReceiverUid)" /> -->
@@ -68,7 +35,7 @@
           </template>
         </van-cell>
       </van-cell-group>
-      <van-cell-group v-if="showApplicantFundProgressHint" inset class="repl-mine-detail__fund">
+      <!-- <van-cell-group v-if="showApplicantFundProgressHint" inset class="repl-mine-detail__fund">
         <van-cell title="交易所名称" :value="walletNameText" />
         <van-cell title="钱包地址" :value="walletAddressText" />
         <van-cell title="">
@@ -76,7 +43,7 @@
             <p class="repl-mine-detail__fund-tip">{{ applicantFundProgressTip }}</p>
           </template>
         </van-cell>
-      </van-cell-group>
+      </van-cell-group> -->
       <van-cell-group v-if="showApplicantArrivalActions" inset class="repl-mine-detail__actions">
         <van-cell title="到账确认">
           <template #label>
@@ -113,7 +80,7 @@
           </template>
         </van-cell>
       </van-cell-group>
-      <van-cell-group v-if="approvedRepays.length"  title="已通过归仓" class="repl-mine-detail__repays">
+      <van-cell-group inset v-if="approvedRepays.length"  title="对应归仓" class="repl-mine-detail__repays">
         <van-cell
           v-for="(row, idx) in approvedRepays"
           :key="row.id ?? idx"

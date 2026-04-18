@@ -4,7 +4,7 @@
     <van-loading v-if="loading" class="repay-mine-detail__loading" vertical>加载中…</van-loading>
     <template v-else-if="detail">
       <RepayApplyDetailBody :detail="detail" />
-      <van-cell-group v-if="showReturnedActions" inset class="repay-mine-detail__actions">
+      <van-cell-group title="归仓详情" inset v-if="showReturnedActions" class="repay-mine-detail__actions">
         <van-cell title="已退回待修改">
           <template #label>
             <div class="repay-mine-detail__btn-row">

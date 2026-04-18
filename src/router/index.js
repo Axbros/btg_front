@@ -38,7 +38,7 @@ const routes = [
         path: 'me/mt5',
         name: 'Mt5Snapshot',
         component: () => import('@/views/me/Mt5Snapshot.vue'),
-        meta: { title: '账户快照', tab: 'me', hideTab: false, lockViewport: true },
+        meta: { title: '账户快照', tab: 'home', hideTab: false, lockViewport: true },
       },
       {
         path: 'team',
@@ -165,21 +165,16 @@ const routes = [
       },
       {
         path: 'me/team-stats',
-        name: 'TeamStats',
-        component: () => import('@/views/me/TeamStats.vue'),
-        meta: { title: '团队统计', tab: 'me', hideTab: true },
+        redirect: '/team/descendants',
       },
       {
         path: 'replenishment',
-        name: 'ReplenishmentHub',
-        component: () => import('@/views/replenishment/ReplenishmentHub.vue'),
-        meta: { title: '补仓', tab: 'home', hideTab: true },
+        redirect: { name: 'ReplenishmentMine' },
       },
       {
         path: 'repay',
         name: 'RepayHub',
-        component: () => import('@/views/replenishment/RepayHub.vue'),
-        meta: { title: '归仓', tab: 'home', hideTab: true },
+        redirect: { name: 'RepayMine' },
       },
       {
         path: 'replenishment/submit',
@@ -191,7 +186,7 @@ const routes = [
         path: 'replenishment/mine',
         name: 'ReplenishmentMine',
         component: () => import('@/views/replenishment/ReplenishmentMine.vue'),
-        meta: { title: '我的补仓记录', tab: 'home', hideTab: true },
+        meta: { title: '补仓', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/mine/:id/resubmit',
@@ -222,7 +217,7 @@ const routes = [
         path: 'replenishment/repay-mine',
         name: 'RepayMine',
         component: () => import('@/views/replenishment/MyRepayList.vue'),
-        meta: { title: '归仓申请', tab: 'home', hideTab: true },
+        meta: { title: '归仓', tab: 'home', hideTab: true },
       },
       {
         path: 'replenishment/repay/:id/resubmit',

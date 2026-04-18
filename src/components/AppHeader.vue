@@ -12,11 +12,17 @@
         <span class="app-header__title-text">{{ title }}</span>
       </span>
     </template>
+    <template v-if="slots.right" #right>
+      <slot name="right" />
+    </template>
   </van-nav-bar>
 </template>
 
 <script setup>
+import { useSlots } from 'vue'
 import { useRouter } from 'vue-router'
+
+const slots = useSlots()
 
 defineProps({
   title: { type: String, default: '' },

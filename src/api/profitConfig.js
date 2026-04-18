@@ -1,8 +1,11 @@
 import { get, post, put } from './request'
 
-/** GET /api/v1/profit-configs/self-under-parent — 分润配置平铺 + parentExchangeUid（上级 exchange_uid） */
-export function fetchSelfProfitConfigUnderParent() {
-  return get('/profit-configs/self-under-parent')
+/**
+ * GET /api/v1/profit-configs/self-under-parent — 分润配置平铺 + parentExchangeUid（上级 exchange_uid）
+ * @param {Record<string, unknown>} [config] — 可传 `{ skipGlobalToast: true }` 由调用方处理错误提示
+ */
+export function fetchSelfProfitConfigUnderParent(config = {}) {
+  return get('/profit-configs/self-under-parent', undefined, config)
 }
 
 /** GET /api/v1/profit-configs/my-children */

@@ -15,7 +15,11 @@
         </van-tag>
       </template>
     </van-cell>
-    <van-cell title="总利润" :value="formatMoney(item.profitAmount)" />
+    <van-cell title="上报利润">
+      <template #value>
+        <span class="profit-card__amount">{{ formatMoney(item.profitAmount) }}</span>
+      </template>
+    </van-cell>
     <!-- <van-cell title="子级利润比例" :value="formatRate(ratioField)" /> -->
     <!-- <van-cell title="自留分润" :value="formatMoney(netField)" /> -->
     <!-- <van-cell title="链路上级计提" :value="formatMoney(shareUpField)" /> -->
@@ -28,12 +32,12 @@
       is-link
       @click.stop="goDistribution"
     />
-    <van-cell
+    <!-- <van-cell
       v-if="profitFlowRootId != null"
       title="查看利润分润链路"
       is-link
       @click.stop="goProfitFlowDetail"
-    />
+    /> -->
     <template v-if="showReturnedResubmitActions">
       <van-cell title="去修改并重提" is-link @click.stop="goProfitResubmit" />
       <van-cell title="查看状态流" is-link @click.stop="goProfitFlow" />
@@ -196,5 +200,10 @@ function goProfitFlowDetail() {
 }
 .profit-card--clickable:active {
   opacity: 0.92;
+}
+.profit-card__amount {
+  color: #ee0a24;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 </style>

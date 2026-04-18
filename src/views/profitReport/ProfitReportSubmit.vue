@@ -8,6 +8,19 @@
         :scrollable="false"
         text="正在加载分润比例配置…"
       />
+      <div v-else-if="needsParentProfitConfig" class="profit-report-submit__state">
+        <van-empty image="default" :description="''">
+          <template #description>
+            <p class="state-page__lead">{{ parentConfigBlockText }}</p>
+            <p class="state-page__hint">
+              暂时无法进行利润上报。请主动联系直属上级，请其在系统中为您配置「子级总利润占比」后再返回本页操作。
+            </p>
+          </template>
+        </van-empty>
+        <div class="state-page__actions">
+          <van-button round block type="primary" plain @click="loadContext">重新检测配置</van-button>
+        </div>
+      </div>
       <div v-else-if="contextUnavailable" class="hint-block hint-block--warn">
         <p class="hint-block__text">
           无法获取您在上级处的分润比例配置，暂时不能提交上报（需已加入团队且上级已为您配置子级利润比例）。
@@ -26,7 +39,7 @@
         <van-field
           v-model="profitAmount"
           name="profitAmount"
-          label="总利润"
+          label="今日盈利"
           type="number"
           :placeholder="profitAmountPlaceholder"
           required
@@ -80,7 +93,7 @@
         </div>
       </van-cell-group>
       <div class="actions">
-        <van-button round block type="primary" native-type="submit" :loading="loading">提交上报</van-button>
+        <van-button round block type="primary" native-type="submit" :loading="loading">上报</van-button>
       </div>
     </van-form>
     </div>
@@ -108,6 +121,11 @@ const loading = ref(false)
 const context = ref(null)
 const contextLoading = ref(true)
 const contextUnavailable = ref(false)
+/** 上级未配置子级总利润占比（接口业务码或 HTTP 409） */
+const needsParentProfitConfig = ref(false)
+const parentConfigBlockText = ref('')
+
+const PROFIT_CONFIG_PARENT_PENDING_CODE = 409
 
 /** MT5：equity≠0 时 净值−底仓本金，供「总利润」占位参考（可能即今日盈利） */
 const mt5EquityMinusPrincipal = ref(null)
@@ -164,7 +182,7 @@ const contextSummaryText = computed(() => {
 
 /** 划转金额提示中的数字部分（加粗红色在模板中） */
 const transferHintAmount = computed(() => {
-  if (contextUnavailable.value || contextLoading.value) return ''
+  if (contextUnavailable.value || contextLoading.value || needsParentProfitConfig.value) return ''
   const ratio = payableRatio.value
   if (ratio == null || !Number.isFinite(ratio)) return ''
   const p = Number(profitAmount.value)
@@ -175,13 +193,30 @@ const transferHintAmount = computed(() => {
 async function loadContext() {
   contextLoading.value = true
   contextUnavailable.value = false
+  needsParentProfitConfig.value = false
+  parentConfigBlockText.value = ''
   context.value = null
+  mt5EquityMinusPrincipal.value = null
   try {
-    context.value = await fetchSelfProfitConfigUnderParent()
+    context.value = await fetchSelfProfitConfigUnderParent({ skipGlobalToast: true })
     contextUnavailable.value = false
-  } catch {
+    void loadMt5TodayProfitHint()
+  } catch (e) {
     context.value = null
-    contextUnavailable.value = true
+    if (String(e?.message) === 'unauthorized') {
+      return
+    }
+    const code = Number(e?.code)
+    if (code === PROFIT_CONFIG_PARENT_PENDING_CODE) {
+      needsParentProfitConfig.value = true
+      const m = typeof e?.message === 'string' ? e.message.trim() : ''
+      parentConfigBlockText.value =
+        m.length > 0 ? m : '直属上级尚未为您配置分润比例'
+    } else {
+      contextUnavailable.value = true
+      const m = typeof e?.message === 'string' ? e.message.trim() : ''
+      showToast(m.length > 0 ? m : '加载分润配置失败')
+    }
   } finally {
     contextLoading.value = false
   }
@@ -218,7 +253,6 @@ async function loadMt5TodayProfitHint() {
 
 onMounted(() => {
   void loadContext()
-  void loadMt5TodayProfitHint()
 })
 
 async function onSubmit() {
@@ -286,5 +320,34 @@ async function onSubmit() {
 .profit-report-submit__form {
   padding-top: 12px;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.profit-report-submit__state {
+  padding: 24px 16px 32px;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+}
+
+.state-page__lead {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--app-text-primary, #323233);
+}
+
+.state-page__hint {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--app-text-secondary, #646566);
+  text-align: left;
+}
+
+.state-page__actions {
+  margin: 24px 16px 0;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>

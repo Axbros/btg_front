@@ -293,16 +293,14 @@ onBeforeUnmount(() => {
   backface-visibility: hidden;
 }
 
-/** 首页一屏布局：图表高度随剩余空间伸缩（父级传入 chart-card） */
+/** 首页：与 lockViewport 下整页滚动配合，使用固定图表高度（小屏可滚到底） */
 .profit-trend.chart-card {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .profit-trend.chart-card .profit-trend__card {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -318,10 +316,10 @@ onBeforeUnmount(() => {
 }
 
 .profit-trend.chart-card .profit-trend__chart {
-  flex: 1;
-  min-height: 72px;
+  flex: 0 0 auto;
   width: 100%;
-  height: 0;
+  height: 196px;
+  min-height: 196px;
   position: relative;
   background-color: var(--home-card-surface, #ffffff);
   overflow: hidden;
@@ -338,12 +336,12 @@ onBeforeUnmount(() => {
 }
 
 .profit-trend.chart-card .profit-trend__empty {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 0;
+  padding: 24px 0 28px;
+  min-height: 200px;
 }
 
 .profit-trend__empty {

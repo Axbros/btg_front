@@ -19,9 +19,10 @@ export function completeUserProfile(data) {
 }
 
 /**
- * 全部下级树（网关 /api/user/team/descendants → 反代 /api/v1/...）
- * GET /api/user/team/descendants，需登录。
- * 返回 data 为数组：{ id, nickname, status, children[] } 根节点列表，非分页 PageVo。
+ * 团队树 + 统计（单接口）
+ * GET /api/v1/user/team/descendants
+ * 响应 data 建议结构：{ directCount, allDescendantCount, records: { descendants: Node[] } }；亦兼容根数组等旧形。
+ * Node：{ id, nickname, status, children[] }。
  */
 export function fetchDescendantsTeam() {
   return get('/user/team/descendants')
@@ -29,10 +30,6 @@ export function fetchDescendantsTeam() {
 
 export function fetchAccountSummary() {
   return get('/me/account-summary')
-}
-
-export function fetchTeamStats() {
-  return get('/me/team-stats')
 }
 
 export function fetchUserProfile() {

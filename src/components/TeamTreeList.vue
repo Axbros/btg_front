@@ -1,8 +1,20 @@
 <template>
-  <template v-for="node in nodes" :key="node.id">
-    <van-cell class="team-tree-cell" @click="onCellClick(node, $event)">
+  <template v-for="(node, idx) in nodes" :key="node.id">
+    <van-cell
+      class="team-tree-cell"
+      :style="{ paddingLeft: `${depth * 14}px` }"
+      :label="nodeMobile(node) || undefined"
+      :border="true"
+      @click="onCellClick(node, $event)"
+    >
       <template #title>
-        <div class="team-tree-row" :style="{ paddingLeft: `${depth * 14}px` }">
+        <div class="team-tree-title">
+          <span class="team-tree-index" :class="{ 'team-tree-index--nested': pathPrefix }">{{ nodeIndexLabel(idx) }}</span>
+          <span class="team-tree-name">{{ nodeNickname(node) }}</span>
+        </div>
+      </template>
+      <template #icon>
+        <div class="team-tree-icon-wrap">
           <button
             v-if="hasChildren(node)"
             type="button"
@@ -14,67 +26,65 @@
             <van-icon :name="ctx.isExpanded(node.id) ? 'arrow-down' : 'arrow'" class="team-tree-toggle__icon" />
           </button>
           <span v-else class="team-tree-toggle team-tree-toggle--spacer" aria-hidden="true" />
-          <span class="team-tree-name">{{ nodeTitle(node) }}</span>
         </div>
       </template>
       <template #value>
-        <div class="team-tree-tags" @click.stop="ctx.openMember(node)">
-          <van-tag :type="userStatusTagType(node.status)" plain round>
-            {{ formatUserStatus(node.status) }}
-          </van-tag>
-          <van-tag
-            v-if="hasQualificationStatus(node)"
-            :type="qualificationStatusTagType(nodeQualDisplay(node))"
-            plain
-            round
-            class="team-tree-tags__qual"
-          >
-            资格 {{ formatQualificationStatus(nodeQualDisplay(node)) }}
-          </van-tag>
-        </div>
-      </template>
-      <template v-if="qualificationRejectRemarkLine(node)" #label>
-        <span class="team-tree-qual-remark">{{ qualificationRejectRemarkLine(node) }}</span>
+        <van-tag
+          :type="qualificationStatusTagType(nodeQualDisplay(node))"
+          plain
+          round
+          class="team-tree-qual-tag"
+        >
+          {{ formatQualificationStatus(nodeQualDisplay(node)) }}
+        </van-tag>
       </template>
     </van-cell>
     <TeamTreeList
       v-if="hasChildren(node) && ctx.isExpanded(node.id)"
       :nodes="node.children"
       :depth="depth + 1"
+      :path-prefix="nodeIndexLabel(idx)"
     />
   </template>
 </template>
 
 <script setup>
 import { inject } from 'vue'
-import {
-  formatQualificationStatus,
-  formatUserStatus,
-  qualificationStatusTagType,
-  userStatusTagType,
-} from '@/utils/format'
+import { formatQualificationStatus, qualificationStatusTagType } from '@/utils/format'
 import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 
 defineOptions({ name: 'TeamTreeList' })
 
-defineProps({
+const props = defineProps({
   nodes: { type: Array, default: () => [] },
   depth: { type: Number, default: 0 },
+  /** 上级序号，如 `"1"`；根级留空则本层为 `1`、`2`… */
+  pathPrefix: { type: String, default: '' },
 })
 
 const ctx = inject('teamTreeCtx')
+
+function nodeIndexLabel(indexInSiblings) {
+  const n = indexInSiblings + 1
+  if (!props.pathPrefix) return String(n)+"."
+  return `${props.pathPrefix}.${n}`
+}
 
 function hasChildren(node) {
   const ch = node?.children
   return Array.isArray(ch) && ch.length > 0
 }
 
-function nodeTitle(node) {
+function nodeNickname(node) {
   const n = node?.nickname ?? node?.nickName
   if (n != null && String(n).trim() !== '') return String(n).trim()
-  const m = node?.mobile
-  if (m != null && String(m).trim() !== '') return String(m).trim()
   return '—'
+}
+
+function nodeMobile(node) {
+  const m = node?.mobile
+  if (m == null || String(m).trim() === '') return ''
+  return String(m).trim()
 }
 
 function onCellClick(node, e) {
@@ -82,27 +92,8 @@ function onCellClick(node, e) {
   ctx.openMember(node)
 }
 
-function hasQualificationStatus(node) {
-  const v = node?.qualificationStatus
-  return v != null && String(v).trim() !== ''
-}
-
-function isQualificationRejected(st) {
-  if (st === 3) return true
-  if (typeof st === 'string' && st.trim().toUpperCase() === 'REJECTED') return true
-  return false
-}
-
 function nodeQualDisplay(node) {
   return effectiveQualificationStatusForDisplay(node)
-}
-
-function qualificationRejectRemarkLine(node) {
-  if (Number(node?.status) === 0) return ''
-  if (!isQualificationRejected(node?.qualificationStatus)) return ''
-  const r = node?.qualificationAuditRemark
-  if (r == null || String(r).trim() === '') return ''
-  return `审核备注：${String(r).trim()}`
 }
 </script>
 
@@ -111,11 +102,37 @@ function qualificationRejectRemarkLine(node) {
   flex: 1;
   min-width: 0;
 }
-.team-tree-row {
+.team-tree-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.team-tree-index {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1989fa;
+}
+.team-tree-index--nested {
+  font-size: 13px;
+  font-weight: 500;
+  color: #646566;
+}
+.team-tree-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  color: #323233;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-tree-icon-wrap {
   display: flex;
   align-items: center;
-  gap: 4px;
-  min-width: 0;
+  margin-right: 4px;
+  min-height: 24px;
 }
 .team-tree-toggle {
   flex-shrink: 0;
@@ -124,7 +141,7 @@ function qualificationRejectRemarkLine(node) {
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin: -4px 0 -4px -6px;
+  margin: -4px 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -139,33 +156,9 @@ function qualificationRejectRemarkLine(node) {
 .team-tree-toggle__icon {
   font-size: 14px;
 }
-.team-tree-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 15px;
-  color: #323233;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.team-tree-tags {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  max-width: 100%;
-}
-.team-tree-tags__qual {
+.team-tree-qual-tag {
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.team-tree-qual-remark {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #646566;
-  line-height: 1.45;
 }
 </style>

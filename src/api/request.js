@@ -128,6 +128,18 @@ function normalizeToastMessage(raw) {
   return TOAST_FALLBACK
 }
 
+/** 业务层可读取 err.code / err.httpStatus；用于页面内状态分支（如 409 静默处理） */
+function createApiRejectionError(rawMsg, { code, httpStatus } = {}) {
+  const msg = normalizeToastMessage(rawMsg)
+  const err = new Error(msg)
+  if (code !== undefined && code !== null) {
+    const n = Number(code)
+    if (!Number.isNaN(n)) err.code = n
+  }
+  if (httpStatus != null) err.httpStatus = httpStatus
+  return err
+}
+
 function toastApiMessage(raw) {
   const normalized = normalizeToastMessage(raw)
   const asString = typeof normalized === 'string' ? normalized : String(normalized)
@@ -246,6 +258,7 @@ instance.interceptors.response.use(
   (res) => {
     const status = res.status
     const body = res.data
+    const skipGlobalToast = Boolean(res.config?.skipGlobalToast)
 
     if (status === 401 ) {
       redirectToLogin()
@@ -257,8 +270,17 @@ instance.interceptors.response.use(
 
     if (status < 200 || status >= 400) {
       const msg = toastMessageFromErrorBody(status, body) || `请求失败 (${status})`
-      toastApiMessage(msg)
-      return Promise.reject(new Error(normalizeToastMessage(msg)))
+      if (!skipGlobalToast) toastApiMessage(msg)
+      let bizCode
+      if (body != null && typeof body === 'object' && !Array.isArray(body)) {
+        const b = unwrapNestedBusinessEnvelope(body)
+        if (b && typeof b === 'object' && b.code != null) {
+          const n = Number(b.code)
+          if (!Number.isNaN(n)) bizCode = n
+        }
+      }
+      if (bizCode == null && status === 409) bizCode = 409
+      return Promise.reject(createApiRejectionError(msg, { code: bizCode, httpStatus: status }))
     }
 
     const wrapped = normalizeEnvelope(body)
@@ -273,15 +295,16 @@ instance.interceptors.response.use(
 
     if (businessCodeIsError(envelope.code)) {
       const msg = pickRawErrorMessage(envelope) ?? TOAST_FALLBACK
-      toastApiMessage(msg)
-      return Promise.reject(new Error(normalizeToastMessage(msg)))
+      if (!skipGlobalToast) toastApiMessage(msg)
+      return Promise.reject(createApiRejectionError(msg, { code: envelope.code }))
     }
 
     return { ...res, data: envelope.data }
   },
   (err) => {
+    const skipGlobalToast = Boolean(err.config?.skipGlobalToast)
     if (!err.response) {
-      toastApiMessage(err?.message || '网络异常')
+      if (!skipGlobalToast) toastApiMessage(err?.message || '网络异常')
       return Promise.reject(err)
     }
 
@@ -299,7 +322,7 @@ instance.interceptors.response.use(
       toastMessageFromErrorBody(status, body) ||
       err?.message ||
       '网络异常'
-    toastApiMessage(msg)
+    if (!skipGlobalToast) toastApiMessage(msg)
     return Promise.reject(err)
   },
 )

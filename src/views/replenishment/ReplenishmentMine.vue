@@ -1,121 +1,102 @@
 <template>
-  <div>
-    <AppHeader title="我的补仓记录" />
-    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-      <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <template v-if="list.length">
-          <van-card
-            v-for="(row, idx) in list"
-            :key="pickApplyId(row) ?? idx"
-            class="repl-mine-card repl-mine-card--clickable"
-            :title="`单号 ${txt(row.applyNo)}`"
-            role="button"
-            tabindex="0"
-            @click="goDetail(row)"
-            @keydown.enter.prevent="goDetail(row)"
-          >
-            <template #tags>
-              <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
-                {{ formatReplenishmentStatus(row.status) }}
-              </van-tag>
-            </template>
-            <van-cell-group :border="false" inset>
-              <van-cell title="当前余额" :value="moneyTxt(row.balanceAmount)" />
-              <van-cell title="补仓额度" :value="moneyTxt(row.replenishAmount)" />
-              <van-cell title="当前处理人" :value="handlerLine(row)" />
-              <van-cell title="资方执行用户" :value="capitalExecutorLine(row)" />
-              <!-- <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" /> -->
-              <van-cell title="到账确认状态">
-                <template #value>
-                  <van-tag
-                    v-if="row.arrivalConfirmStatus != null && String(row.arrivalConfirmStatus) !== ''"
-                    :type="arrivalConfirmStatusTagType(row.arrivalConfirmStatus)"
-                    plain
-                    round
-                  >
-                    {{ formatArrivalConfirmStatus(row.arrivalConfirmStatus) }}
-                  </van-tag>
-                  <span v-else>—</span>
-                </template>
-              </van-cell>
-              <van-cell v-if="img(row.transferScreenshotUrl)" title="资方转账凭证">
-                <template #value>
-                  <PreviewableRemoteImage :url="String(row.transferScreenshotUrl)" alt="资方转账凭证" size="large" />
-                </template>
-              </van-cell>
-              <van-cell v-if="hasTransferRemark(row)" title="资方备注" :value="txt(row.transferRemark)" />
-            </van-cell-group>
-
-            <p v-if="hintReturnedToCapital(row)" class="repl-mine-card__hint repl-mine-card__hint--muted">
-              已退回资方重新处理
-            </p>
-            <p v-else-if="hintSuccess(row)" class="repl-mine-card__hint repl-mine-card__hint--ok">补仓成功</p>
-
-            <div v-if="isPendingApplicantConfirm(row)" class="repl-mine-card__actions" @click.stop>
-              <van-button size="small" type="primary" plain round @click.stop="openArrivalPopup(row, 'confirm')">
-                确认到账
-              </van-button>
-              <van-button size="small" type="danger" plain round @click.stop="openArrivalPopup(row, 'reject')">
-                拒绝到账
-              </van-button>
-            </div>
-
-            <div class="repl-mine-card__footer" @click.stop>
-              <van-button size="small" plain round type="primary" @click.stop="goDetail(row)">查看详情</van-button>
-              <van-button size="small" plain round @click.stop="goFlow(row)">状态流</van-button>
-            </div>
-          </van-card>
-        </template>
-        <EmptyState v-if="!loading && !list.length && loaded" />
-      </van-list>
-    </van-pull-refresh>
-    <div class="pager">
-      <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
-      <span class="pager__text">第 {{ page }} 页</span>
-      <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
-    </div>
-
-    <van-popup v-model:show="arrivalPopupShow" position="bottom" round teleport="body" :style="{ width: '100%' }">
-      <div class="repl-mine-popup">
-        <div class="repl-mine-popup__title">{{ arrivalPopupTitle }}</div>
-        <van-field
-          v-model="arrivalRemark"
-          type="textarea"
-          rows="3"
-          autosize
-          maxlength="500"
-          :placeholder="arrivalRemarkPlaceholder"
-          show-word-limit
+  <div class="repl-mine">
+    <AppHeader title="补仓">
+      <template #right>
+        <van-icon
+          name="gold-coin-o"
+          class="repl-mine-header-icon"
+          role="button"
+          tabindex="0"
+          aria-label="提交补仓申请"
+          @click="goSubmitReplenishment"
+          @keydown.enter.prevent="goSubmitReplenishment"
+          @keydown.space.prevent="goSubmitReplenishment"
         />
-        <div class="repl-mine-popup__actions">
-          <van-button block round @click="closeArrivalPopup">取消</van-button>
-          <van-button block round type="primary" :loading="arrivalSubmitting" @click="submitArrivalPopup">
-            提交
-          </van-button>
+      </template>
+    </AppHeader>
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <div class="repl-mine-wrap" :class="{ 'repl-mine-wrap--docked': loaded }">
+        <div v-if="currentUnsettled" class="hub-banner">
+          <van-tag
+            :type="replenishmentStatusTagType(currentUnsettled.status)"
+            plain
+            round
+            class="hub-banner__tag"
+          >
+            {{ formatReplenishmentStatus(currentUnsettled.status) }}
+          </van-tag>
+          <p class="hub-banner__text">{{ hubBannerRest }}</p>
         </div>
+        <van-cell-group v-if="currentUnsettled" inset title="当前未结清补仓" class="hub-current">
+          <van-cell title="剩余待归还" :value="formatMoney(currentUnsettled.remainingAmount ?? 0)" />
+          <van-cell title="资方转账凭证">
+            <template #value>
+              <PreviewableRemoteImage v-if="transferProofUrl" :url="transferProofUrl" alt="资方转账凭证" />
+              <span v-else>—</span>
+            </template>
+          </van-cell>
+          <van-cell v-if="transferRemarkText" title="资方转账备注" :value="transferRemarkText" />
+        </van-cell-group>
+
+        <p v-if="list.length || loaded" class="repl-mine-list-title">补仓记录</p>
+
+        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+          <van-cell-group v-if="list.length" inset :border="false" class="repl-mine-list-group">
+            <van-cell
+              v-for="row in list"
+              :key="row.id"
+              :title="txt(row.applyNo)"
+              :label="moneyTxt(row.replenishAmount)"
+              :border="false"
+              is-link
+              role="button"
+              tabindex="0"
+              @click="goDetail(row)"
+              @keydown.enter.prevent="goDetail(row)"
+            >
+              <template #value>
+                <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
+                  {{ formatReplenishmentStatus(row.status) }}
+                </van-tag>
+              </template>
+            </van-cell>
+          </van-cell-group>
+          <EmptyState v-if="!loading && !list.length && loaded" />
+        </van-list>
       </div>
-    </van-popup>
+    </van-pull-refresh>
+
+    <div v-show="loaded" class="repl-mine-bottom-dock" aria-label="底部汇总与分页">
+      <footer v-if="recordsTotal > 0" class="repl-mine-footer-sum" aria-label="补仓金额汇总">
+        <div class="repl-mine-footer-sum__row">
+          <span class="repl-mine-footer-sum__label">{{ replenishSumLabel }}</span>
+          <span class="repl-mine-footer-sum__value">{{ formatMoney(replenishAmountPageSum) }}</span>
+        </div>
+        <p class="repl-mine-footer-sum__meta">共 {{ recordsTotal }} 笔</p>
+      </footer>
+      <div class="repl-mine-pager" role="toolbar" aria-label="分页">
+        <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
+        <span class="repl-mine-pager__text">第 {{ page }} 页</span>
+        <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
-import { confirmArrival, fetchReplenishmentMine, rejectArrival } from '@/api/replenishment'
+import { fetchReplenishmentCurrent, fetchReplenishmentMine } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import {
-  formatArrivalConfirmStatus,
-  formatMoney,
-  formatReplenishmentStatus,
-  arrivalConfirmStatusTagType,
-  replenishmentStatusTagType,
-} from '@/utils/format'
+import { formatMoney, formatReplenishmentStatus, replenishmentStatusTagType } from '@/utils/format'
 
 const router = useRouter()
+
+/** GET /replenishments/current，原补仓首页横幅与「当前未结清」区块 */
+const currentUnsettled = ref(null)
 
 const list = ref([])
 const loading = ref(false)
@@ -125,161 +106,66 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
+/** 列表总条数（分页 total，与当前页 list 长度可对照） */
+const recordsTotal = ref(0)
 
-const arrivalPopupShow = ref(false)
-const arrivalMode = ref('confirm')
-const arrivalTargetId = ref(null)
-const arrivalRemark = ref('')
-const arrivalSubmitting = ref(false)
+const transferProofUrl = computed(
+  () => String(currentUnsettled.value?.transferScreenshotUrl ?? '').trim(),
+)
 
-const arrivalPopupTitle = ref('确认到账')
-const arrivalRemarkPlaceholder = ref('选填备注，如：已到账')
+const transferRemarkText = computed(
+  () => String(currentUnsettled.value?.transferRemark ?? '').trim(),
+)
+
+const hubBannerRest = computed(() => {
+  const rem = formatMoney(currentUnsettled.value?.remainingAmount)
+  return `当前补仓单；剩余待归还 ${rem} 元（含待审核归仓请留意额度）。`
+})
+
+const replenishAmountPageSum = computed(() =>
+  list.value.reduce((sum, row) => sum + Number(row.replenishAmount), 0),
+)
+
+const replenishSumLabel = computed(() => {
+  if (
+    !hasMore.value &&
+    recordsTotal.value > 0 &&
+    list.value.length === recordsTotal.value
+  ) {
+    return '补仓金额合计'
+  }
+  return '本页补仓金额合计'
+})
+
+async function loadCurrentUnsettled() {
+  currentUnsettled.value = await fetchReplenishmentCurrent()
+}
+
+function goSubmitReplenishment() {
+  router.push({ name: 'ReplenishmentSubmit' })
+}
 
 function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'
 }
 
-/** 列表项与详情路由共用的申请主键（驼峰；后端可能用 id / replenishmentId / replenishApplyId 之一） */
-function pickApplyId(row) {
-  if (!row || typeof row !== 'object') return null
-  const raw = row.id ?? row.replenishmentId ?? row.replenishApplyId
-  if (raw == null || raw === '') return null
-  const n = Number(raw)
-  return Number.isFinite(n) && n > 0 ? n : null
-}
-
 function moneyTxt(v) {
   if (v === null || v === undefined || v === '') return '—'
-  return formatMoney(v)
-}
-
-function img(u) {
-  return u != null && String(u).trim() !== ''
-}
-
-function hasTransferRemark(row) {
-  const r = row?.transferRemark
-  return r != null && String(r).trim() !== ''
-}
-
-function handlerLine(row) {
-  if (!row) return '—'
-  const name = row.currentHandlerUserName
-  const hid = row.currentHandlerUserId
-  const parts = []
-  if (name != null && String(name).trim() !== '') parts.push(String(name).trim())
-  if (hid != null && String(hid).trim() !== '') parts.push(`#${String(hid).trim()}`)
-  return parts.length ? parts.join(' ') : '—'
-}
-
-function capitalExecutorLine(row) {
-  if (!row) return '—'
-  const a = row.assignedCapitalNickname
-  const b = row.assignedCapitalUserName
-  const s = (a != null && String(a).trim() !== '' ? String(a).trim() : '') || (b != null && String(b).trim() !== '' ? String(b).trim() : '')
-  const uid = row.assignedCapitalUserId
-  if (s && uid != null) return `${s}（#${uid}）`
-  if (s) return s
-  if (uid != null) return `用户 #${uid}`
-  return '—'
-}
-
-function isPendingApplicantConfirm(row) {
-  const s = row?.status
-  if (typeof s === 'string' && s.trim().toUpperCase().replace(/-/g, '_') === 'PENDING_APPLICANT_CONFIRM') return true
-  return Number(s) === 4
-}
-
-function hintReturnedToCapital(row) {
-  const s = row?.status
-  if (typeof s === 'string' && s.trim().toUpperCase().replace(/-/g, '_') === 'RETURNED_TO_CAPITAL') return true
-  return Number(s) === 5
-}
-
-function hintSuccess(row) {
-  const s = row?.status
-  if (typeof s === 'string' && s.trim().toUpperCase() === 'SUCCESS') return true
-  return Number(s) === 6
+  return "补仓金额："+formatMoney(v)
 }
 
 function goDetail(row) {
-  const id = pickApplyId(row)
-  if (id == null) {
-    showToast('缺少单号，无法打开详情')
-    return
-  }
-  router.push({ name: 'ReplenishmentMineDetail', params: { id: String(id) } })
-}
-
-function goFlow(row) {
-  const id = pickApplyId(row)
-  if (id == null) {
-    showToast('缺少单号')
-    return
-  }
-  router.push({ name: 'ReplenishmentFlow', params: { id: String(id) } })
-}
-
-function openArrivalPopup(row, mode) {
-  const id = pickApplyId(row)
-  if (id == null) {
-    showToast('缺少单号')
-    return
-  }
-  arrivalTargetId.value = id
-  arrivalMode.value = mode
-  arrivalRemark.value = ''
-  if (mode === 'reject') {
-    arrivalPopupTitle.value = '拒绝到账'
-    arrivalRemarkPlaceholder.value = '请填写原因（必填），如：未到账，请重新提交凭证'
-  } else {
-    arrivalPopupTitle.value = '确认到账'
-    arrivalRemarkPlaceholder.value = '选填备注，如：已到账'
-  }
-  arrivalPopupShow.value = true
-}
-
-function closeArrivalPopup() {
-  arrivalPopupShow.value = false
-  arrivalSubmitting.value = false
-}
-
-async function submitArrivalPopup() {
-  const id = arrivalTargetId.value
-  if (id == null || !Number.isFinite(id)) {
-    showToast('无效单号')
-    return
-  }
-  const remark = String(arrivalRemark.value ?? '').trim()
-  if (arrivalMode.value === 'reject' && remark === '') {
-    showToast('请填写拒绝原因')
-    return
-  }
-  arrivalSubmitting.value = true
-  try {
-    if (arrivalMode.value === 'reject') {
-      await rejectArrival(id, { remark })
-      showToast('已提交拒绝到账')
-    } else {
-      await confirmArrival(id, remark ? { remark } : {})
-      showToast('已确认到账')
-    }
-    closeArrivalPopup()
-    await fetchPage(page.value)
-  } catch {
-    /* 错误由拦截器提示 */
-  } finally {
-    arrivalSubmitting.value = false
-  }
+  router.push({ name: 'ReplenishmentMineDetail', params: { id: String(row.id) } })
 }
 
 async function fetchPage(p) {
   const raw = await fetchReplenishmentMine({ page: p, size: pageSize.value })
-  const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
-  list.value = Array.isArray(rows) ? rows : []
-  hasMore.value = more
-  finished.value = !more
+  const parsed = parsePageResponse(raw, pageSize.value)
+  list.value = parsed.list
+  hasMore.value = parsed.hasMore
+  finished.value = !parsed.hasMore
   loaded.value = true
+  recordsTotal.value = parsed.total
 }
 
 async function onLoad() {
@@ -287,8 +173,6 @@ async function onLoad() {
   loading.value = true
   try {
     await fetchPage(page.value)
-  } catch {
-    finished.value = true
   } finally {
     loading.value = false
   }
@@ -297,7 +181,7 @@ async function onLoad() {
 async function onRefresh() {
   page.value = 1
   try {
-    await fetchPage(1)
+    await Promise.all([fetchPage(1), loadCurrentUnsettled()])
   } finally {
     refreshing.value = false
   }
@@ -314,67 +198,137 @@ function next() {
   page.value += 1
   fetchPage(page.value)
 }
+
+onMounted(() => {
+  void loadCurrentUnsettled()
+})
 </script>
 
 <style scoped>
-.repl-mine-card {
-  margin: 10px 12px 0;
-  overflow: hidden;
+.repl-mine {
+  min-width: 0;
 }
-.repl-mine-card--clickable {
+.repl-mine-wrap {
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.repl-mine-wrap--docked {
+  /* 为底部固定区预留空间（汇总 + 分页 + 底栏安全区，略放大避免裁切） */
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+.repl-mine-bottom-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.repl-mine-header-icon {
+  display: block;
+  font-size: 22px;
+  color: #1989fa;
+  padding: 4px 10px 4px 4px;
+  margin-right: -6px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.repl-mine-card--clickable :deep(.van-card__header) {
-  cursor: pointer;
-}
-.repl-mine-card__hint {
-  margin: 8px 16px 0;
-  font-size: 13px;
-  line-height: 1.45;
-}
-.repl-mine-card__hint--muted {
-  color: #646566;
-}
-.repl-mine-card__hint--ok {
-  color: #07c160;
+.repl-mine-list-title {
+  margin: 16px 16px 8px;
+  font-size: 15px;
   font-weight: 600;
-}
-.repl-mine-card__actions {
-  display: flex;
-  gap: 10px;
-  padding: 12px 16px 0;
-  flex-wrap: wrap;
-}
-.repl-mine-card__footer {
-  display: flex;
-  gap: 10px;
-  padding: 12px 16px 14px;
-  flex-wrap: wrap;
-}
-.repl-mine-popup {
-  padding: 16px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-}
-.repl-mine-popup__title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
   color: #323233;
 }
-.repl-mine-popup__actions {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.repl-mine-list-group {
+  margin-top: 4px;
+  background: transparent;
 }
-.pager {
+/* 行与行之间留出上下空白（与页面底背景区分，参见归仓 list） */
+.repl-mine-list-group :deep(.van-cell) {
+  margin: 0 0 8px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.repl-mine-list-group :deep(.van-cell:last-of-type) {
+  margin-bottom: 0;
+}
+.repl-mine-list-group :deep(.van-cell__title) {
+  flex: 1.2;
+  min-width: 0;
+  font-weight: 500;
+}
+.repl-mine-list-group :deep(.van-cell__value) {
+  flex-shrink: 0;
+}
+.hub-current {
+  margin-bottom: 4px;
+}
+.hub-banner {
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 10px;
+  background: #f7f8fa;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.hub-banner__tag {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.hub-banner__text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #646566;
+}
+.repl-mine-pager {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 12px 0 20px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid #ebedf0;
+  box-sizing: border-box;
 }
-.pager__text {
+.repl-mine-pager__text {
   font-size: 13px;
   color: #646566;
+}
+.repl-mine-footer-sum {
+  margin: 0;
+  padding: 10px 16px 4px;
+  background: #f7f8fa;
+  box-sizing: border-box;
+  border: none;
+}
+.repl-mine-footer-sum__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.repl-mine-footer-sum__label {
+  font-size: 14px;
+  color: #646566;
+}
+.repl-mine-footer-sum__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1989fa;
+  flex-shrink: 0;
+}
+.repl-mine-footer-sum__meta {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #969799;
 }
 </style>

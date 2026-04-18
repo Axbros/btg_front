@@ -45,25 +45,21 @@
             <div class="icon"><van-icon name="records" /></div>
             <span class="text">利润记录</span>
           </div>
-          <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav('/me/team-stats')">
-            <div class="icon"><van-icon name="chart-trending-o" /></div>
-            <span class="text">团队统计</span>
-          </div>
-          <div v-if="!isRootUser" class="quick-entry-item quick-entry-item--accent" @click="goHomeNav('/replenishment')">
+          <div v-if="!isRootUser" class="quick-entry-item quick-entry-item--accent" @click="goHomeNav({ name: 'ReplenishmentMine' })">
             <div class="icon"><van-icon name="gold-coin-o" /></div>
             <span class="text">补仓</span>
           </div>
-          <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav('/repay')">
+          <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav({ name: 'RepayMine' })">
             <div class="icon"><van-icon name="balance-list-o" /></div>
             <span class="text">归仓</span>
           </div>
-          <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav({ name: 'RepayMine' })">
-            <div class="icon"><van-icon name="records" /></div>
-            <span class="text">归仓申请</span>
-          </div>
-          <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav({ name: 'RepayPendingReview' })">
+          <!-- <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav({ name: 'RepayPendingReview' })">
             <div class="icon"><van-icon name="passed" /></div>
             <span class="text">待审归仓</span>
+          </div> -->
+          <div class="quick-entry-item" @click="goHomeNav({ name: 'Mt5Snapshot' })">
+            <div class="icon"><van-icon name="exchange" /></div>
+            <span class="text">MT5</span>
           </div>
           <div class="quick-entry-item" @click="goHomeNav('/team/descendants')">
             <div class="icon"><van-icon name="friends-o" /></div>
@@ -158,8 +154,6 @@ onMounted(async () => {
 
   flex: 1;
   min-height: 0;
-  height: 100%;
-  max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -308,6 +302,7 @@ onMounted(async () => {
 .home-quick-wrap {
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
   width: 100%;
   max-width: 520px;
   margin: 8px auto 0;
@@ -328,13 +323,12 @@ onMounted(async () => {
 }
 
 .home-body {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   margin: 0 auto;
   padding: 12px 16px 16px;
-  overflow: hidden;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   max-width: 520px;
   width: 100%;
   position: relative;
@@ -404,12 +398,12 @@ onMounted(async () => {
   padding: 0 2px;
 }
 
-/** 图表区在 home-body 内占满剩余高度（子组件 .chart-card 配合） */
+/** 图表区随内容增高，整页由 .home 纵向滚动（适配小屏 + lockViewport） */
 .chart-card {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .home__profit-trend {

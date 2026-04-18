@@ -436,14 +436,14 @@ export function repayStatusTagType(val) {
 /** 新成员资格审核：1 待审核 2 已通过 3 已拒绝 */
 const QUALIFICATION_STATUS_NUM = {
   1: '待审核',
-  2: '已通过',
-  3: '已拒绝',
+  2: '正常',
+  3: '拒绝',
 }
 
 const QUALIFICATION_STATUS_STR = {
   PENDING: '待审核',
-  APPROVED: '已通过',
-  REJECTED: '已拒绝',
+  APPROVED: '正常',
+  REJECTED: '拒绝',
 }
 
 export function formatQualificationStatus(val) {

@@ -5,7 +5,7 @@
     <van-notice-bar v-if="loadingList" left-icon="info-o" :scrollable="false" text="加载可归仓补仓单…" />
 
     <template v-else>
-      <van-cell-group inset title="可归仓补仓单" class="block">
+      <van-cell-group inset class="block">
         <van-empty
           v-if="!list.length"
           description="当前没有可归仓的补仓单"
