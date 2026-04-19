@@ -152,30 +152,30 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
 import { isUserRoot } from '@/utils/permission'
-import { formatDateTime } from '@/utils/format'
-import {
-  formatDashboardTodoType,
-  formatTodoItemCurrentStatus,
-  resolveTodoNavigation,
-  isDashboardTodoReadOnly,
-} from '@/utils/dashboardTodo'
+// import { formatDateTime } from '@/utils/format'
+// import {
+//   formatDashboardTodoType,
+//   formatTodoItemCurrentStatus,
+//   resolveTodoNavigation,
+//   isDashboardTodoReadOnly,
+// } from '@/utils/dashboardTodo'
 import AppHeader from '@/components/AppHeader.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const { userInfo } = storeToRefs(auth)
-const { pendingSummary, todoItems, todoLoading } = storeToRefs(dashboard)
+const { pendingSummary /* , todoItems, todoLoading */ } = storeToRefs(dashboard)
 
-const actionableTodoItems = computed(() => todoItems.value.filter((r) => !isDashboardTodoReadOnly(r)))
-const readonlyTodoItems = computed(() => todoItems.value.filter((r) => isDashboardTodoReadOnly(r)))
+// const actionableTodoItems = computed(() => todoItems.value.filter((r) => !isDashboardTodoReadOnly(r)))
+// const readonlyTodoItems = computed(() => todoItems.value.filter((r) => isDashboardTodoReadOnly(r)))
 
 const isRootUser = computed(() => isUserRoot(userInfo.value))
 
@@ -226,17 +226,17 @@ const summaryStatRows = computed(() => {
   return rows
 })
 
-function rejectReasonText(row) {
-  const s = row?.lastRejectReason
-  if (s == null || String(s).trim() === '') return ''
-  return `拒绝说明：${String(s).trim()}`
-}
+// function rejectReasonText(row) {
+//   const s = row?.lastRejectReason
+//   if (s == null || String(s).trim() === '') return ''
+//   return `拒绝说明：${String(s).trim()}`
+// }
 
-function actionHintText(row) {
-  const s = row?.actionHint
-  if (s == null || String(s).trim() === '') return ''
-  return String(s).trim()
-}
+// function actionHintText(row) {
+//   const s = row?.actionHint
+//   if (s == null || String(s).trim() === '') return ''
+//   return String(s).trim()
+// }
 
 function goNav(to) {
   if (auth.isRestrictedToProfileComplete) {
@@ -247,49 +247,45 @@ function goNav(to) {
   router.push(to)
 }
 
-function onTodoRowClick(row) {
-  const nav = resolveTodoNavigation(row)
-  if (!nav) {
-    showToast('暂无法跳转')
-    return
-  }
-  if (nav.external && nav.url) {
-    window.location.href = nav.url
-    return
-  }
-  if (nav.path) {
-    goNav(nav.path)
-    return
-  }
-  if (nav.name) {
-    goNav({ name: nav.name, params: nav.params, query: nav.query })
-  }
-}
+// function onTodoRowClick(row) {
+//   const nav = resolveTodoNavigation(row)
+//   if (!nav) {
+//     showToast('暂无法跳转')
+//     return
+//   }
+//   if (nav.external && nav.url) {
+//     window.location.href = nav.url
+//     return
+//   }
+//   if (nav.path) {
+//     goNav(nav.path)
+//     return
+//   }
+//   if (nav.name) {
+//     goNav({ name: nav.name, params: nav.params, query: nav.query })
+//   }
+// }
 
-function readonlyTodoActionLabel(row) {
-  const t = String(row?.todoType || '')
-    .toUpperCase()
-    .replace(/-/g, '_')
-  if (t === 'REPLENISHMENT_CHAIN_WATCH') return '查看补仓状态流'
-  if (t === 'REPLENISHMENT_REPAY_CHAIN_WATCH') return '查看归仓状态流'
-  if (t.includes('REPLENISHMENT') && t.includes('REPAY')) return '查看归仓状态流'
-  return '查看链路'
-}
+// function readonlyTodoActionLabel(row) {
+//   const t = String(row?.todoType || '')
+//     .toUpperCase()
+//     .replace(/-/g, '_')
+//   if (t === 'REPLENISHMENT_CHAIN_WATCH') return '查看补仓状态流'
+//   if (t === 'REPLENISHMENT_REPAY_CHAIN_WATCH') return '查看归仓状态流'
+//   if (t.includes('REPLENISHMENT') && t.includes('REPAY')) return '查看归仓状态流'
+//   return '查看链路'
+// }
 
-function onViewReadonlyTodo(row) {
-  const nav = resolveTodoNavigation(row)
-  if (!nav?.path) {
-    showToast('暂无法跳转')
-    return
-  }
-  goNav(nav.path)
-}
+// function onViewReadonlyTodo(row) {
+//   const nav = resolveTodoNavigation(row)
+//   if (!nav?.path) {
+//     showToast('暂无法跳转')
+//     return
+//   }
+//   goNav(nav.path)
+// }
 
-onMounted(() => {
-  if (!auth.isLogin) return
-  void dashboard.fetchPendingSummary().catch(() => {})
-  void dashboard.fetchTodoItems({ page: 1, size: 30 }).catch(() => {})
-})
+/** pending-summary 由 MainLayout 统一请求（Tab 角标 + 各页共用），此处不再重复拉取 */
 </script>
 
 <style scoped>

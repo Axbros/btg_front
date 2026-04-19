@@ -10,8 +10,8 @@ export function getPendingSummary() {
  * GET /dashboard/todo-items
  * @param {{ page?: number, size?: number }} [params]
  */
-export function getTodoItems(params = {}) {
-  const page = params.page ?? 1
-  const size = params.size ?? params.pageSize ?? 20
-  return get('/dashboard/todo-items', { page, size })
-}
+// export function getTodoItems(params = {}) {
+//   const page = params.page ?? 1
+//   const size = params.size ?? params.pageSize ?? 20
+//   return get('/dashboard/todo-items', { page, size })
+// }

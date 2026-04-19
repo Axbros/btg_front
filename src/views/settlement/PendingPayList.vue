@@ -1,60 +1,69 @@
 <template>
-  <div>
+  <div class="ppay-mine">
     <AppHeader title="待支付给上级" />
-    <p class="intro">以下为需向直属上级完成划转并等待逐级结算的待办（资金流仅指向直属上级）。</p>
-    <van-pull-refresh v-model="refreshing" @refresh="onRefresh" style="margin-top: 8px;">
-      <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <van-cell
-          v-for="item in list"
-          :key="item.id"
-          :title="settlementListTitle(item)"
-          is-link
-          :to="detailTo(item)"
-        >
-          <template #label>
-            <div class="meta-row">
-              <van-tag :type="settlementStatusTagType(item.status)" plain round class="meta-row__tag">
-                {{ formatSettlementStatus(item.status) }}
-              </van-tag>
-              <span class="meta-row__rest">{{ settlementListMetaRest(item) }}</span>
-            </div>
-            <!-- <van-button
-              v-if="rootReportIdOf(item) != null"
-              class="meta-row__flow"
-              size="small"
-              type="primary"
-              plain
-              round
-              @click.stop="goProfitFlow(item)"
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <div class="ppay-mine-wrap" :class="{ 'ppay-mine-wrap--docked': loaded }">
+        <!-- <p class="ppay-mine-intro">
+          以下为需向直属上级完成划转并等待逐级结算的待办（资金流仅指向直属上级）。
+        </p> -->
+
+        <!-- <p v-if="list.length || loaded" class="ppay-mine-list-title">待支付记录</p> -->
+
+        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+          <van-cell-group v-if="list.length" inset :border="false" class="ppay-mine-list-group">
+            <van-cell
+              v-for="row in list"
+              :key="row.id"
+              :title="cellTitle(row)"
+              :label="payLabel(row)"
+              :border="false"
+              is-link
+              role="button"
+              tabindex="0"
+              @click="goDetail(row)"
+              @keydown.enter.prevent="goDetail(row)"
+              @keydown.space.prevent="goDetail(row)"
             >
-              查看链路
-            </van-button> -->
-          </template>
-          <template #value>
-            <span class="amt">{{ formatMoney(amountField(item)) }}</span>
-          </template>
-        </van-cell>
-        <EmptyState v-if="!loading && !list.length && loaded" />
-      </van-list>
+              <template #value>
+                <van-tag :type="settlementStatusTagType(row.status)" plain round>
+                  {{ formatSettlementStatus(row.status) }}
+                </van-tag>
+              </template>
+            </van-cell>
+          </van-cell-group>
+          <EmptyState v-if="!loading && !list.length && loaded" />
+        </van-list>
+      </div>
     </van-pull-refresh>
-    <div class="pager">
-      <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
-      <span class="pager__text">第 {{ page }} 页</span>
-      <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
+
+    <div v-show="loaded" class="ppay-mine-bottom-dock" aria-label="底部汇总与分页">
+      <footer v-if="recordsTotal > 0" class="ppay-mine-footer-sum" aria-label="应付金额汇总">
+        <div class="ppay-mine-footer-sum__row">
+          <span class="ppay-mine-footer-sum__label">{{ paySumLabel }}</span>
+          <span class="ppay-mine-footer-sum__value">{{ formatMoney(payAmountPageSum) }}</span>
+        </div>
+        <p class="ppay-mine-footer-sum__meta">共 {{ recordsTotal }} 笔</p>
+      </footer>
+      <div class="ppay-mine-pager" role="toolbar" aria-label="分页">
+        <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
+        <span class="ppay-mine-pager__text">第 {{ page }} 页</span>
+        <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchMyPendingPaySettlements } from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
-import { settlementListTitle, settlementListMetaRest } from '@/utils/settlementDisplay'
 import { formatMoney, formatSettlementStatus, settlementStatusTagType } from '@/utils/format'
+
+const router = useRouter()
 
 const list = ref([])
 const loading = ref(false)
@@ -64,38 +73,59 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
-const router = useRouter()
+const recordsTotal = ref(0)
 
-function amountField(item) {
-  return item.payAmount ?? item.payableAmount ?? item.amount ?? item.profitAmount ?? 0
+const payAmountPageSum = computed(() =>
+  list.value.reduce((sum, row) => {
+    const n = Number(row.payAmount ?? row.payableAmount ?? row.amount ?? 0)
+    return sum + (Number.isFinite(n) ? n : 0)
+  }, 0),
+)
+
+const paySumLabel = computed(() => {
+  if (!hasMore.value && recordsTotal.value > 0 && list.value.length === recordsTotal.value) {
+    return '应付金额合计'
+  }
+  return '本页应付金额合计'
+})
+
+function cellTitle(row) {
+  const nick = String(row?.reportUserNickname ?? '').trim()
+  if (nick) return `利润来源 · ${nick}`
+  return row?.id != null ? `结算 #${row.id}` : '—'
 }
 
-function rootReportIdOf(item) {
-  const v = item.reportId ?? item.rootReportId
-  if (v == null || v === '') return null
+function payLabel(row) {
+  const v = row?.payAmount ?? row?.payableAmount ?? row?.amount
+  if (v === null || v === undefined || v === '') return '—'
   const n = Number(v)
-  return Number.isFinite(n) && n > 0 ? n : null
+  const t = Number.isFinite(n) ? formatMoney(n) : String(v).trim()
+  return `应付金额：${t}`
 }
 
-function detailTo(item) {
-  const rid = rootReportIdOf(item)
-  if (rid != null) return { name: 'SettlementDetail', params: { id: String(rid) } }
-  return undefined
-}
-
-function goProfitFlow(item) {
-  const rid = rootReportIdOf(item)
-  if (rid == null) return
-  router.push({ name: 'ProfitFlowDetail', params: { rootReportId: String(rid) } })
+function goDetail(row) {
+  const root = row?.rootReportId ?? row?.reportId
+  if (root != null && String(root).trim() !== '') {
+    const n = Number(root)
+    if (Number.isFinite(n) && n > 0) {
+      router.push({ name: 'SettlementDetail', params: { id: String(n) } })
+      return
+    }
+  }
+  if (row?.id != null) {
+    router.push({ name: 'SettlementDetailByRow', params: { rowId: String(row.id) } })
+  }
 }
 
 async function fetchPage(p) {
   const raw = await fetchMyPendingPaySettlements({ page: p, pageSize: pageSize.value })
-  const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
-  list.value = rows
-  hasMore.value = more
-  finished.value = !more
+  const parsed = parsePageResponse(raw, pageSize.value)
+  list.value = parsed.list
+  hasMore.value = parsed.hasMore
+  finished.value = !parsed.hasMore
   loaded.value = true
+  const t = parsed.total != null ? Number(parsed.total) : 0
+  recordsTotal.value = Number.isFinite(t) && t >= 0 ? t : 0
 }
 
 async function onLoad() {
@@ -134,42 +164,100 @@ function next() {
 </script>
 
 <style scoped>
-.intro {
+.ppay-mine {
+  min-width: 0;
+}
+.ppay-mine-wrap {
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.ppay-mine-wrap--docked {
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+.ppay-mine-bottom-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.ppay-mine-intro {
   margin: 10px 16px 0;
   font-size: 13px;
   color: #646566;
   line-height: 1.5;
 }
-.meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  margin-top: 2px;
-}
-.meta-row__tag {
-  flex-shrink: 0;
-}
-.meta-row__rest {
-  font-size: 12px;
-  color: #969799;
-  line-height: 1.4;
-}
-.meta-row__flow {
-  margin-top: 8px;
-}
-.amt {
+.ppay-mine-list-title {
+  margin: 16px 16px 8px;
+  font-size: 15px;
   font-weight: 600;
+  color: #323233;
 }
-.pager {
+.ppay-mine-list-group {
+  margin-top: 4px;
+  background: transparent;
+}
+.ppay-mine-list-group :deep(.van-cell) {
+  margin: 0 0 8px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.ppay-mine-list-group :deep(.van-cell:last-of-type) {
+  margin-bottom: 0;
+}
+.ppay-mine-list-group :deep(.van-cell__title) {
+  flex: 1.2;
+  min-width: 0;
+  font-weight: 500;
+}
+.ppay-mine-list-group :deep(.van-cell__value) {
+  flex-shrink: 0;
+  padding-right: 22px;
+}
+.ppay-mine-pager {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 12px 0 24px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid #ebedf0;
+  box-sizing: border-box;
 }
-.pager__text {
+.ppay-mine-pager__text {
   font-size: 13px;
   color: #646566;
+}
+.ppay-mine-footer-sum {
+  margin: 0;
+  padding: 10px 16px 4px;
+  background: #f7f8fa;
+  box-sizing: border-box;
+  border: none;
+}
+.ppay-mine-footer-sum__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ppay-mine-footer-sum__label {
+  font-size: 14px;
+  color: #646566;
+}
+.ppay-mine-footer-sum__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1989fa;
+  flex-shrink: 0;
+}
+.ppay-mine-footer-sum__meta {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #969799;
 }
 </style>

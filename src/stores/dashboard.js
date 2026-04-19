@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { showToast } from 'vant'
-import { getPendingSummary, getTodoItems } from '@/api/dashboard'
-import { normalizeTodoItemsResponse } from '@/utils/dashboardTodo'
+import { getPendingSummary /* , getTodoItems */ } from '@/api/dashboard'
+// import { normalizeTodoItemsResponse } from '@/utils/dashboardTodo'
 
 function num(v) {
   const x = Number(v)
@@ -99,7 +99,10 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
-  async function fetchTodoItems(params = {}) {
+  /** 已停用：不再请求 GET /dashboard/todo-items（恢复时取消注释并补回 import） */
+  async function fetchTodoItems(_params = {}) {
+    return
+    /*
     todoLoading.value = true
     try {
       const raw = await getTodoItems(params)
@@ -115,6 +118,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } finally {
       todoLoading.value = false
     }
+    */
   }
 
   return {
