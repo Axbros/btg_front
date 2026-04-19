@@ -10,10 +10,20 @@ export function submitReplenishment(data) {
  * GET /api/v1/replenishments/mine
  */
 export function fetchReplenishmentMine(params = {}) {
-  return get('/replenishments/mine', {
-    page: params.page ?? 1,
-    size: params.size ?? params.pageSize ?? 10,
-  })
+  const { page, size, pageSize, userVisibleStatus, ...rest } = params
+  const q = {
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
+  }
+  if (
+    userVisibleStatus !== undefined &&
+    userVisibleStatus !== null &&
+    userVisibleStatus !== ''
+  ) {
+    q.userVisibleStatus = userVisibleStatus
+  }
+  return get('/replenishments/mine', q)
 }
 
 /**

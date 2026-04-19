@@ -12,8 +12,8 @@
             :desc="`申请编号 #${row.id ?? '—'}`"
           >
             <template #tags>
-              <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
-                {{ formatReplenishmentStatus(row.status) }}
+              <van-tag :type="replenishmentListStatusTagType(row)" plain round>
+                {{ formatReplenishmentListStatus(row) }}
               </van-tag>
             </template>
             <van-cell-group v-if="detailMap[row.id]" :border="false" class="repl-card__cells">
@@ -114,8 +114,8 @@ import { parsePageResponse } from '@/utils/pagination'
 import {
   formatArrivalConfirmStatus,
   formatMoney,
-  formatReplenishmentStatus,
-  replenishmentStatusTagType,
+  formatReplenishmentListStatus,
+  replenishmentListStatusTagType,
 } from '@/utils/format'
 
 const router = useRouter()

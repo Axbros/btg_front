@@ -1,3 +1,7 @@
+import {
+  REPLENISHMENT_USER_VISIBLE_LABEL,
+} from '@/constants/replenishmentUserVisible.js'
+
 /**
  * 金额保留两位小数展示
  */
@@ -326,6 +330,64 @@ const REPLENISHMENT_STATUS_STR = {
   SUCCESS: '补仓成功',
   REJECTED: '已拒绝',
   CLOSED: '已关闭',
+}
+
+/**
+ * 补仓列表筛选：userVisibleStatus 五档 + 全部。
+ * value `all` 不传参；否则为字符串 "1"～"5"，请求时转为整数 userVisibleStatus。
+ */
+export const replenishmentUserVisibleFilterOptions = [
+  { text: '全部状态', value: 'all' },
+  ...[1, 2, 3, 4, 5].map((n) => ({
+    text: REPLENISHMENT_USER_VISIBLE_LABEL[n],
+    value: String(n),
+  })),
+]
+
+/** 用户可见态文案（1～5）；未知或空为「—」 */
+export function formatReplenishmentUserVisibleStatus(val) {
+  if (val === null || val === undefined || val === '') return '—'
+  const n = Number(val)
+  if (!Number.isNaN(n) && REPLENISHMENT_USER_VISIBLE_LABEL[n]) {
+    return REPLENISHMENT_USER_VISIBLE_LABEL[n]
+  }
+  return '—'
+}
+
+/** van-tag：待审核/待确认 warning，已成功 success，已拒绝 danger，已关闭 default */
+export function replenishmentUserVisibleTagType(val) {
+  const n = Number(val)
+  if (Number.isNaN(n)) return 'default'
+  if (n === 3) return 'success'
+  if (n === 4) return 'danger'
+  if (n === 5) return 'default'
+  if (n === 1 || n === 2) return 'warning'
+  return 'default'
+}
+
+/**
+ * 列表行展示：优先 userVisibleStatus；缺失（如 assigned 列表）为「—」，不展示 8 态细文案。
+ * @param {Record<string, unknown> | null | undefined} row
+ */
+export function formatReplenishmentListStatus(row) {
+  if (!row || typeof row !== 'object') return '—'
+  const u = row.userVisibleStatus ?? row.user_visible_status
+  if (u !== null && u !== undefined && u !== '') {
+    return formatReplenishmentUserVisibleStatus(u)
+  }
+  return '—'
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} row
+ */
+export function replenishmentListStatusTagType(row) {
+  if (!row || typeof row !== 'object') return 'default'
+  const u = row.userVisibleStatus ?? row.user_visible_status
+  if (u !== null && u !== undefined && u !== '') {
+    return replenishmentUserVisibleTagType(u)
+  }
+  return 'default'
 }
 
 /** 申请人到账确认：1 待确认 2 已确认到账 3 已拒绝到账 */

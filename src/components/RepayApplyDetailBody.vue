@@ -44,8 +44,8 @@
       <van-cell title="补仓单号" :value="txt(pickReplen('applyNo'))" />
       <van-cell title="补仓状态">
         <template #value>
-          <van-tag :type="replenishmentStatusTagType(pickReplen('status'))" plain round>
-            {{ formatReplenishmentStatus(pickReplen('status')) }}
+          <van-tag :type="replenishmentListStatusTagType(replenishmentApply)" plain round>
+            {{ formatReplenishmentListStatus(replenishmentApply) }}
           </van-tag>
         </template>
       </van-cell>
@@ -91,8 +91,8 @@ import {
   formatDateTime,
   formatRepayStatus,
   repayStatusTagType,
-  formatReplenishmentStatus,
-  replenishmentStatusTagType,
+  formatReplenishmentListStatus,
+  replenishmentListStatusTagType,
 } from '@/utils/format'
 
 const props = defineProps({

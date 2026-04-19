@@ -32,7 +32,7 @@ const routes = [
         path: 'todo',
         name: 'TodoHub',
         component: () => import('@/views/todo/TodoHub.vue'),
-        meta: { title: '待办', tab: 'todo' },
+        meta: { title: '待办', tab: 'todo', lockViewport: true },
       },
       {
         path: 'me/mt5',
@@ -40,14 +40,14 @@ const routes = [
         component: () => import('@/views/me/Mt5Snapshot.vue'),
         meta: { title: '账户快照', tab: 'home', hideTab: false, lockViewport: true },
       },
-      {
-        path: 'team',
-        redirect: '/team/descendants',
-      },
-      {
-        path: 'team/direct',
-        redirect: '/team/descendants',
-      },
+      // {
+      //   path: 'team',
+      //   redirect: '/team/descendants',
+      // },
+      // {
+      //   path: 'team/direct',
+      //   redirect: '/team/descendants',
+      // },
       {
         path: 'team/descendants',
         name: 'DescendantsTeam',

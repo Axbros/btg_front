@@ -1,9 +1,11 @@
 <template>
   <van-nav-bar
+    class="app-header-bar"
     :title="showLogo ? '' : title"
     :left-arrow="showBack"
     fixed
     placeholder
+    :z-index="1000"
     @click-left="onBack"
   >
     <template v-if="showLogo" #title>

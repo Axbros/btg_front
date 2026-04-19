@@ -3,8 +3,8 @@
     <van-cell title="订单单号" :value="txt(pick('applyNo'))" />
      <van-cell title="补仓状态">
       <template #value>
-        <van-tag :type="replenishmentStatusTagType(pick('status'))" plain round>
-          {{ formatReplenishmentStatus(pick('status')) }}
+        <van-tag :type="replenishmentListStatusTagType(detail)" plain round>
+          {{ formatReplenishmentListStatus(detail) }}
         </van-tag>
       </template>
     </van-cell>
@@ -57,8 +57,8 @@ import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import {
   formatMoney,
   formatDateTime,
-  formatReplenishmentStatus,
-  replenishmentStatusTagType,
+  formatReplenishmentListStatus,
+  replenishmentListStatusTagType,
 } from '@/utils/format'
 
 const props = defineProps({

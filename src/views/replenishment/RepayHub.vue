@@ -2,8 +2,8 @@
   <div>
     <AppHeader title="归仓" />
     <div v-if="current" class="hub-banner">
-      <van-tag :type="replenishmentStatusTagType(current.status)" plain round class="hub-banner__tag">
-        {{ formatReplenishmentStatus(current.status) }}
+      <van-tag :type="replenishmentListStatusTagType(current)" plain round class="hub-banner__tag">
+        {{ formatReplenishmentListStatus(current) }}
       </van-tag>
       <p class="hub-banner__text">{{ hubBannerRest }}</p>
     </div>
@@ -51,11 +51,7 @@ import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { fetchReplenishmentCurrent } from '@/api/replenishment'
-import {
-  formatMoney,
-  formatReplenishmentStatus,
-  replenishmentStatusTagType,
-} from '@/utils/format'
+import { formatMoney, formatReplenishmentListStatus, replenishmentListStatusTagType } from '@/utils/format'
 
 const router = useRouter()
 const current = ref(null)

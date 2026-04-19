@@ -22,8 +22,8 @@
               <div class="pick-card" @click="selectedId = item.id">
                 <div class="pick-card__head">
                   <span class="pick-card__no">{{ txt(item.applyNo) }}</span>
-                  <van-tag v-if="item.status != null" plain round type="primary" class="pick-card__st">
-                    {{ formatReplenishmentStatus(item.status) }}
+                  <van-tag plain round :type="replenishmentListStatusTagType(item)" class="pick-card__st">
+                    {{ formatReplenishmentListStatus(item) }}
                   </van-tag>
                 </div>
                 <div class="pick-card__grid">
@@ -122,7 +122,7 @@ import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { getRepayableReplenishments, submitRepayApply } from '@/api/replenishment'
-import { formatMoney, formatReplenishmentStatus } from '@/utils/format'
+import { formatMoney, formatReplenishmentListStatus, replenishmentListStatusTagType } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()

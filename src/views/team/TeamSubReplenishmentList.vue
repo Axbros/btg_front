@@ -14,8 +14,8 @@
               <span class="sub-repl__line">{{ formatRow(row) }}</span>
             </template>
             <template #value>
-              <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
-                {{ formatReplenishmentStatus(row.status) }}
+              <van-tag :type="replenishmentListStatusTagType(row)" plain round>
+                {{ formatReplenishmentListStatus(row) }}
               </van-tag>
             </template>
           </van-cell>
@@ -39,11 +39,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchTeamReplenishments } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import {
-  formatMoney,
-  formatReplenishmentStatus,
-  replenishmentStatusTagType,
-} from '@/utils/format'
+import { formatMoney, formatReplenishmentListStatus, replenishmentListStatusTagType } from '@/utils/format'
 
 const router = useRouter()
 const list = ref([])

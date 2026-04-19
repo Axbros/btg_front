@@ -53,7 +53,12 @@
             <div class="icon"><van-icon name="balance-list-o" /></div>
             <span class="text">归仓</span>
           </div>
-         
+
+          <div class="quick-entry-item" @click="goHomeNav({ name: 'AccountSummary' })">
+            <div class="icon"><van-icon name="balance-pay" /></div>
+            <span class="text">分润汇总</span>
+          </div>
+
           <div class="quick-entry-item" @click="goHomeNav({ name: 'Mt5Snapshot' })">
             <div class="icon"><van-icon name="exchange" /></div>
             <span class="text">MT5</span>

@@ -29,7 +29,7 @@
       <van-cell-group inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="!isRootUser"
-          title="待支付上级核算"
+          title="待支付上级结算"
           is-link
           @click="goNav('/settlement/pending-pay')"
         >
@@ -45,7 +45,11 @@
           @click="goNav('/settlement/pending-pay')"
         >
           <template #value>
-            <van-badge v-if="payableBadge" :content="payableBadge" max="99" />
+            <van-badge
+              v-if="replenishmentApplicantConfirmBadge"
+              :content="replenishmentApplicantConfirmBadge"
+              max="99"
+            />
           </template>
         </van-cell>
        
@@ -186,6 +190,9 @@ function countBadge(n) {
 
 const settlementBadge = computed(() => countBadge(pendingSummary.value?.pendingSettlementReviewCount))
 const payableBadge = computed(() => countBadge(pendingSummary.value?.pendingSettlementPayableCount))
+const replenishmentApplicantConfirmBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingReplenishmentApplicantConfirmCount),
+)
 
 function num0(v) {
   const n = Number(v)
@@ -290,21 +297,37 @@ function goNav(to) {
 
 <style scoped>
 .todo-hub {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   position: relative;
-  overflow-x: hidden;
-  background: #f5f7fa;
+  overflow: hidden;
+  overscroll-behavior: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /** 与 #app --app-page-bg 一致，避免与全局底灰、弧形蓝底衔接处出现两道色 */
+  background: var(--app-page-bg, #eef2fb);
 }
 
-/** 与首页 .home-bg-layer 一致：品牌蓝 + 底部弧形过渡 */
+/**
+ * 与首页同系品牌蓝 + 弧形；末端收到 --app-page-bg，与 .todo-hub 底色同一色，消除「蓝带与灰底」硬切色差。
+ */
 .todo-hub-bg-layer {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 260px;
-  background: linear-gradient(180deg, #1357f0 0%, #1f6fff 40%, #3d86ff 70%, #6aa8ff 100%);
+  background: linear-gradient(
+    180deg,
+    #1357f0 0%,
+    #1f6fff 38%,
+    #3d86ff 62%,
+    #8eb4ff 82%,
+    var(--app-page-bg, #eef2fb) 100%
+  );
   border-radius: 0 0 50% 50% / 12%;
   z-index: 0;
   pointer-events: none;
@@ -312,7 +335,9 @@ function goNav(to) {
 
 .todo-hub__main {
   position: relative;
-  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   padding: 0 12px 12px;
 }
 

@@ -33,7 +33,11 @@ export interface ReplenishmentApplyVO {
   id?: number
   applyNo?: string
   apply_no?: string
+  /** 细粒度流程状态（1～8），主要用于详情/埋点 */
   status?: number
+  /** 用户可见简化态（1～5）；assigned 等场景可能为 null */
+  userVisibleStatus?: number | null
+  user_visible_status?: number | null
   userId?: number
   user_id?: number
   userNickname?: string | null
@@ -71,6 +75,7 @@ export interface RepayApplyVO {
 
 export interface DashboardPendingSummary {
   pendingSettlementPayableCount?: number
+  pendingReplenishmentApplicantConfirmCount?: number
   totalPendingCount?: number
   [key: string]: unknown
 }

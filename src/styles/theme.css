@@ -48,7 +48,8 @@ body,
 }
 
 .page-with-brand-header .van-nav-bar {
-  z-index: 100;
+  /** 与 AppHeader :z-index 一致，避免被下方列表/卡片层盖住 */
+  z-index: 1000;
   background: transparent !important;
   border-bottom: none !important;
 }

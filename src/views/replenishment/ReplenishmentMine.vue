@@ -16,16 +16,24 @@
     </AppHeader>
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="repl-mine-wrap" :class="{ 'repl-mine-wrap--docked': loaded }">
+        <div class="repl-mine-filter">
+          <van-dropdown-menu>
+            <van-dropdown-item v-model="userVisibleFilter" :options="replenishmentUserVisibleFilterOptions" />
+          </van-dropdown-menu>
+        </div>
         <div v-if="currentUnsettled" class="hub-banner">
           <van-tag
-            :type="replenishmentStatusTagType(currentUnsettled.status)"
+            :type="replenishmentListStatusTagType(currentUnsettled)"
             plain
             round
             class="hub-banner__tag"
           >
-            {{ formatReplenishmentStatus(currentUnsettled.status) }}
+            {{ formatReplenishmentListStatus(currentUnsettled) }}
           </van-tag>
-          <p class="hub-banner__text">{{ hubBannerRest }}</p>
+          <div class="hub-banner__body">
+            <p class="hub-banner__text">{{ hubBannerRest }}</p>
+            <p v-if="hubBannerHint" class="hub-banner__hint">{{ hubBannerHint }}</p>
+          </div>
         </div>
         <van-cell-group v-if="currentUnsettled" inset title="当前未结清补仓" class="hub-current">
           <van-cell title="剩余待归还" :value="formatMoney(currentUnsettled.remainingAmount ?? 0)" />
@@ -40,7 +48,13 @@
 
         <p v-if="list.length || loaded" class="repl-mine-list-title">补仓记录</p>
 
-        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+        <van-list
+          :key="userVisibleFilter"
+          v-model:loading="loading"
+          :finished="finished"
+          finished-text="没有更多了"
+          @load="onLoad"
+        >
           <van-cell-group v-if="list.length" inset :border="false" class="repl-mine-list-group">
             <van-cell
               v-for="row in list"
@@ -55,8 +69,8 @@
               @keydown.enter.prevent="goDetail(row)"
             >
               <template #value>
-                <van-tag :type="replenishmentStatusTagType(row.status)" plain round>
-                  {{ formatReplenishmentStatus(row.status) }}
+                <van-tag :type="replenishmentListStatusTagType(row)" plain round>
+                  {{ formatReplenishmentListStatus(row) }}
                 </van-tag>
               </template>
             </van-cell>
@@ -84,16 +98,37 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { fetchReplenishmentCurrent, fetchReplenishmentMine } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatMoney, formatReplenishmentStatus, replenishmentStatusTagType } from '@/utils/format'
+import {
+  formatMoney,
+  formatReplenishmentListStatus,
+  replenishmentListStatusTagType,
+  replenishmentUserVisibleFilterOptions,
+} from '@/utils/format'
 
 const router = useRouter()
+
+/** `all` 不传 userVisibleStatus；否则为数字字符串 1–5 */
+const userVisibleFilter = ref('all')
+
+watch(userVisibleFilter, () => {
+  page.value = 1
+  list.value = []
+  loaded.value = false
+  finished.value = false
+})
+
+function userVisibleQueryParam() {
+  if (userVisibleFilter.value === 'all') return undefined
+  const n = Number(userVisibleFilter.value)
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? n : undefined
+}
 
 /** GET /replenishments/current，原补仓首页横幅与「当前未结清」区块 */
 const currentUnsettled = ref(null)
@@ -120,6 +155,13 @@ const transferRemarkText = computed(
 const hubBannerRest = computed(() => {
   const rem = formatMoney(currentUnsettled.value?.remainingAmount)
   return `当前补仓单；剩余待归还 ${rem} 元（含待审核归仓请留意额度）。`
+})
+
+const hubBannerHint = computed(() => {
+  const u = Number(currentUnsettled.value?.userVisibleStatus ?? currentUnsettled.value?.user_visible_status)
+  if (u === 1) return '审核 / 转派 / 打款进行中，具体操作请以详情与后台流程为准。'
+  if (u === 2) return '请在详情中确认到账或拒绝到账。'
+  return ''
 })
 
 const replenishAmountPageSum = computed(() =>
@@ -159,7 +201,12 @@ function goDetail(row) {
 }
 
 async function fetchPage(p) {
-  const raw = await fetchReplenishmentMine({ page: p, size: pageSize.value })
+  const userVisibleStatus = userVisibleQueryParam()
+  const raw = await fetchReplenishmentMine({
+    page: p,
+    size: pageSize.value,
+    ...(userVisibleStatus != null ? { userVisibleStatus } : {}),
+  })
   const parsed = parsePageResponse(raw, pageSize.value)
   list.value = parsed.list
   hasMore.value = parsed.hasMore
@@ -207,6 +254,13 @@ onMounted(() => {
 <style scoped>
 .repl-mine {
   min-width: 0;
+}
+.repl-mine-filter {
+  margin: 0 0 4px;
+  background: #fff;
+}
+.repl-mine-filter :deep(.van-dropdown-menu__bar) {
+  box-shadow: none;
 }
 .repl-mine-wrap {
   min-height: 40px;
@@ -282,13 +336,21 @@ onMounted(() => {
   flex-shrink: 0;
   margin-top: 2px;
 }
-.hub-banner__text {
-  margin: 0;
+.hub-banner__body {
   flex: 1;
   min-width: 0;
+}
+.hub-banner__text {
+  margin: 0;
   font-size: 13px;
   line-height: 1.5;
   color: #646566;
+}
+.hub-banner__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #576b95;
 }
 .repl-mine-pager {
   display: flex;
