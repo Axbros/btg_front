@@ -6,7 +6,7 @@
     <van-tabbar v-if="!hideTab" route placeholder safe-area-inset-bottom>
       <van-tabbar-item replace to="/home" icon="wap-home">首页</van-tabbar-item>
       <!-- <van-tabbar-item replace to="/team/descendants" icon="friends">团队</van-tabbar-item> -->
-      <van-tabbar-item replace to="/todo" icon="orders" :badge="todoTabBadge">待办</van-tabbar-item>
+      <van-tabbar-item replace to="/todo" icon="description" :badge="todoTabBadge">待办</van-tabbar-item>
       <van-tabbar-item replace to="/me/profile" icon="user">我的</van-tabbar-item>
     </van-tabbar>
   </div>

@@ -1,321 +1,132 @@
 <template>
-  <div>
-    <AppHeader title="我的信息" />
-    <van-loading v-if="loading" class="profile__loading" vertical>加载个人信息…</van-loading>
-    <div v-else-if="userInfo" class="profile">
-      <div v-if="auth.canShowInviteCode && inviteRegisterUrl" class="invite-qr">
-        <div class="invite-qr__title">邀请注册</div>
-        <div class="invite-qr__canvas-wrap">
-          <van-loading v-if="inviteQrLoading" type="spinner" size="28px" vertical>生成二维码…</van-loading>
-          <img
-            v-else-if="inviteQrDataUrl"
-            class="invite-qr__img"
-            :src="inviteQrDataUrl"
-            alt="邀请注册链接二维码"
-            width="220"
-            height="220"
-          />
-          <p v-else-if="inviteQrFailed" class="invite-qr__err">二维码生成失败，请点下方「邀请码」复制链接</p>
+  <div class="profile-hub">
+    <AppHeader title="我的信息" :show-back="false" />
+    <van-loading v-if="loading && !userInfo" class="profile-hub__loading" vertical>加载个人信息…</van-loading>
+    <template v-else-if="userInfo">
+      <div
+        class="profile-hub__card"
+        role="button"
+        tabindex="0"
+        @click="goAccount"
+        @keydown.enter.prevent="goAccount"
+      >
+        <div class="profile-hub__avatar" aria-hidden="true">{{ avatarLetter }}</div>
+        <div class="profile-hub__card-main">
+          <div class="profile-hub__name">{{ displayName }}</div>
+          <div class="profile-hub__sub">手机号 {{ mobileMasked }}</div>
         </div>
-        <p class="invite-qr__hint">扫码打开注册页</p>
+        <van-icon name="arrow" class="profile-hub__chevron" />
       </div>
-      <van-cell-group inset>
-        <van-cell title="手机号" :value="String(userInfo.mobile ?? '—')" />
-        <van-cell title="真实姓名" :value="String(userInfo.nickname ?? '—')" />
-        <van-cell title="账号状态">
-          <template #value>
-            <van-tag :type="userStatusTagType(userInfo.status)" plain round>
-              {{ formatUserStatus(userInfo.status) }}
-            </van-tag>
-          </template>
-        </van-cell>
-       
-        <van-cell title="上级用户" :value="referrerNick(userInfo)" />
+
+      <van-cell-group v-if="menuGroup1.length" inset class="profile-hub__group">
         <van-cell
-          v-if="auth.canShowInviteCode"
-          class="profile-invite-cell"
-          title="邀请码（点击复制）"
-          :value="String(userInfo.invitationCode ?? '—')"
+          v-for="item in menuGroup1"
+          :key="item.name"
+          :title="item.title"
           is-link
-          @click="copyInviteRegisterUrl"
-        />
-        <van-cell title="账户资金快照（MT5）" is-link :to="{ name: 'Mt5Snapshot' }" />
-      </van-cell-group>
-
-      <van-cell-group v-if="qualificationSectionVisible" inset title="资格审核" class="profile__block">
-        <van-cell title="审核状态">
-          <template #value>
-            <van-tag :type="qualificationStatusTagType(qualStatusForDisplay)" plain round>
-              {{ formatQualificationStatus(qualStatusForDisplay) }}
-            </van-tag>
+          :to="item.to"
+        >
+          <template #icon>
+            <div class="profile-hub__ico" :class="item.iconClass">
+              <van-icon :name="item.icon" />
+            </div>
           </template>
         </van-cell>
-        <van-cell title="审核时间" :value="formatDateTime(qualificationAuditTime)" />
-        <van-cell title="审核备注" :value="txtCell(qualificationAuditRemark)" />
-        <van-cell title="提交次数" :value="txtCell(qualificationSubmitCount)" />
-        <van-cell title="最近提交时间" :value="formatDateTime(qualificationLastSubmitTime)" />
       </van-cell-group>
 
-      <div v-if="showQualRejectedActions" class="profile__qual-actions profile__block">
-        <van-button block round plain type="primary" @click="goToProfileComplete">修改资料</van-button>
-        <van-button block round type="primary" class="profile__qual-actions__second" @click="resubmitDialogShow = true">
-          重新提交审核
-        </van-button>
-      </div>
-
-      <van-cell-group v-if="profileDetailRows.length" inset title="资料信息" class="profile__block">
-        <van-cell
-          v-for="(row, idx) in profileDetailRows"
-          :key="idx"
-          :title="row.title"
-          :value="row.value"
-        />
+      <van-cell-group inset class="profile-hub__group">
+        <van-cell title="更新资料" is-link :to="{ name: 'ProfileComplete' }">
+          <template #icon>
+            <div class="profile-hub__ico profile-hub__ico--teal">
+              <van-icon name="edit" />
+            </div>
+          </template>
+        </van-cell>
       </van-cell-group>
 
-      <!-- <van-cell-group inset title="分润与结算" class="profile__block">
-        <van-cell title="利润上报" is-link to="/profit-report/submit" />
-        <van-cell title="利润记录" is-link to="/profit-report/mine" />
-        <van-cell title="待支付给上级" is-link to="/settlement/pending-pay" />
-        <van-cell title="待审核下级结算" is-link to="/settlement/pending-review" />
-      </van-cell-group> -->
-
-      <div class="profile__edit profile__complete-entry">
-       
-        <van-button block round type="primary" @click="goToProfileComplete">更新资料</van-button>
-      </div>
-      <div class="profile__logout">
+      <div class="profile-hub__logout">
         <van-button block round type="danger" plain @click="onLogout">退出登录</van-button>
       </div>
-       
-    </div>
+    </template>
     <EmptyState v-else description="未获取到用户信息" />
 
-    <van-dialog
-      v-model:show="logoutDialogShow"
-      title="确认退出？"
-      show-cancel-button
-      @confirm="onLogoutConfirm"
-    />
-
-    <van-dialog
-      v-model:show="resubmitDialogShow"
-      title="重新提交资格审核"
-      show-cancel-button
-      confirm-button-text="提交"
-      :before-close="onResubmitBeforeClose"
-    >
-      <div class="profile__dialog-pad">
-        <van-field
-          v-model="resubmitRemark"
-          rows="3"
-          autosize
-          type="textarea"
-          maxlength="200"
-          show-word-limit
-          placeholder="可选：说明已补充的资料等"
-        />
-      </div>
-    </van-dialog>
+    <van-dialog v-model:show="logoutDialogShow" title="确认退出？" show-cancel-button @confirm="onLogoutConfirm" />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import QRCode from 'qrcode'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { useAuthStore } from '@/stores/auth'
-import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
-import { useDashboardStore } from '@/stores/dashboard'
-import { fetchMe } from '@/api/user'
-import { resubmitQualification } from '@/api/userQualification'
-import {
-  formatDateTime,
-  formatMoney,
-  formatQualificationStatus,
-  formatUserStatus,
-  qualificationStatusTagType,
-  userStatusTagType,
-} from '@/utils/format'
+import { useProfileCore } from '@/composables/useProfileCore'
 
-function pickProfile(u) {
-  const p = u?.profile
-  if (!p || typeof p !== 'object') return null
-  return {
-    nickname: p.nickname,
-    realName: p.realName,
-    idCardNo: p.idCardNo,
-    serverName: p.serverName,
-    tradingAccountId: p.tradingAccountId,
-    exchangeUid: p.exchangeUid,
-    principalAmount: p.principalAmount,
-    walletName: p.walletName,
-    walletAddress: p.walletAddress,
-  }
+function maskMobile(m) {
+  const s = String(m ?? '').trim()
+  if (!s) return '—'
+  if (s.length < 7) return s
+  return `${s.slice(0, 3)}****${s.slice(-4)}`
 }
 
-/** 后端 /me profile 块：有值才展示 */
-const profileDetailRows = computed(() => {
-  const p = pickProfile(userInfo.value)
-  if (!p) return []
-  const rows = []
-  const push = (title, raw) => {
-    if (raw == null) return
-    const s = String(raw).trim()
-    if (s === '') return
-    rows.push({ title, value: s })
-  }
-  // push('资料真实姓名', p.nickname)
-  // push('真实姓名', p.realName)
-  // push('身份证号', p.idCardNo)
-  push('服务器名称', p.serverName)
-  push('交易账户ID', p.tradingAccountId)
-  push('交易所UID', p.exchangeUid)
-  push('券商名称', p.walletName)
-  push('钱包地址（TRC20）', p.walletAddress)
-  if (p.principalAmount != null && String(p.principalAmount).trim() !== '') {
-    const n = Number(p.principalAmount)
-    const amount = Number.isFinite(n) ? formatMoney(n) : String(p.principalAmount).trim()
-    rows.push({
-      title: '底仓本金',
-      value: `${amount} USD`,
-    })
-  }
-  return rows
-})
-
-function referrerNick(u) {
-  const n = u?.referrerNickname
-  return n != null && String(n).trim() !== '' ? String(n) : '—'
-}
-
-const auth = useAuthStore()
-const dashboard = useDashboardStore()
-const { userInfo } = storeToRefs(auth)
 const router = useRouter()
+const {
+  auth,
+  userInfo,
+  reloadProfile,
+  qualificationSectionVisible,
+  profileDetailRows,
+} = useProfileCore()
 
 const loading = ref(true)
 const logoutDialogShow = ref(false)
-const resubmitDialogShow = ref(false)
-const resubmitRemark = ref('')
 
-const profileRaw = computed(() => {
-  const p = userInfo.value?.profile
-  if (!p || typeof p !== 'object') return null
-  return p
+const displayName = computed(() => {
+  const n = userInfo.value?.nickname
+  if (n != null && String(n).trim() !== '') return String(n).trim()
+  const m = userInfo.value?.mobile
+  if (m != null && String(m).trim() !== '') return String(m).trim()
+  return '用户'
 })
 
-const qualificationSectionVisible = computed(() => {
-  const p = profileRaw.value
-  if (!p) return false
-  if (p.canResubmitQualification === true) return true
-  const keys = [
-    'qualificationStatus',
-    'qualificationAuditTime',
-    'qualificationSubmitCount',
-    'qualificationLastSubmitTime',
-  ]
-  return keys.some((k) => p[k] != null && p[k] !== '')
+const mobileMasked = computed(() => maskMobile(userInfo.value?.mobile))
+
+const avatarLetter = computed(() => {
+  const name = displayName.value
+  const ch = name.charAt(0)
+  return ch || '?'
 })
 
-const qualStatusRaw = computed(() => profileRaw.value?.qualificationStatus)
-
-const qualStatusForDisplay = computed(() =>
-  effectiveQualificationStatusForDisplay(userInfo.value),
-)
-
-const qualificationAuditTime = computed(() => profileRaw.value?.qualificationAuditTime)
-
-const qualificationAuditRemark = computed(() => profileRaw.value?.qualificationAuditRemark)
-
-const qualificationSubmitCount = computed(() => profileRaw.value?.qualificationSubmitCount)
-
-const qualificationLastSubmitTime = computed(() => profileRaw.value?.qualificationLastSubmitTime)
-
-function txtCell(v) {
-  if (v === null || v === undefined || v === '') return '—'
-  return String(v)
-}
-
-/** 仅已拒绝时展示「重新提交审核」与资料修改引导（与已通过/待审核区分）；资料已重新提交待审（status=0）时不展示 */
-const showQualRejectedActions = computed(() => {
-  if (Number(userInfo.value?.status) === 0) return false
-  const v = qualStatusRaw.value
-  if (v === 3 || v === 'REJECTED') return true
-  const s = v != null ? String(v).trim().toUpperCase() : ''
-  return s === 'REJECTED'
-})
-
-async function reloadProfile() {
-  if (!auth.isLogin) return
-  try {
-    const me = await fetchMe()
-    auth.setUserInfo(me)
-    dashboard.fetchPendingSummary().catch(() => {})
-  } catch {
-    /* 保留本地 */
+const menuGroup1 = computed(() => {
+  const items = []
+  if (auth.canShowInviteCode) {
+    items.push({
+      name: 'invite',
+      title: '邀请注册',
+      to: { name: 'ProfileInvite' },
+      icon: 'qr',
+      iconClass: 'profile-hub__ico--green',
+    })
   }
-}
-
-async function onResubmitBeforeClose(action) {
-  if (action === 'cancel') return true
-  try {
-    await resubmitQualification({ remark: resubmitRemark.value.trim() || undefined })
-    showToast({ type: 'success', message: '已重新提交审核' })
-    resubmitRemark.value = ''
-    await reloadProfile()
-    return true
-  } catch {
-    return false
+  if (qualificationSectionVisible.value) {
+    items.push({
+      name: 'qual',
+      title: '资格审核',
+      to: { name: 'ProfileQualification' },
+      icon: 'passed',
+      iconClass: 'profile-hub__ico--orange',
+    })
   }
-}
-
-/** 带邀请码的完整注册页 URL，用于二维码与复制（仅审核通过用户展示） */
-const inviteRegisterUrl = computed(() => {
-  if (!auth.canShowInviteCode) return ''
-  const code = String(userInfo.value?.invitationCode ?? '').trim()
-  if (!code) return ''
-  const { fullPath } = router.resolve({
-    path: '/register',
-    query: { invitationCode: code },
-  })
-  return `${window.location.origin}${fullPath}`
+  if (profileDetailRows.value.length) {
+    items.push({
+      name: 'materials',
+      title: '交易资料',
+      to: { name: 'ProfileMaterials' },
+      icon: 'description',
+      iconClass: 'profile-hub__ico--blue',
+    })
+  }
+  return items
 })
-
-const inviteQrDataUrl = ref('')
-const inviteQrLoading = ref(false)
-const inviteQrFailed = ref(false)
-
-watch(
-  inviteRegisterUrl,
-  async (url) => {
-    if (!url) {
-      inviteQrDataUrl.value = ''
-      inviteQrLoading.value = false
-      inviteQrFailed.value = false
-      return
-    }
-    inviteQrLoading.value = true
-    inviteQrDataUrl.value = ''
-    inviteQrFailed.value = false
-    try {
-      inviteQrDataUrl.value = await QRCode.toDataURL(url, {
-        width: 220,
-        margin: 2,
-        errorCorrectionLevel: 'M',
-      })
-    } catch {
-      inviteQrDataUrl.value = ''
-      inviteQrFailed.value = true
-    } finally {
-      inviteQrLoading.value = false
-    }
-  },
-  { immediate: true },
-)
 
 onMounted(async () => {
   if (!auth.isLogin) {
@@ -330,32 +141,8 @@ onMounted(async () => {
   }
 })
 
-async function copyInviteRegisterUrl() {
-  const url = inviteRegisterUrl.value
-  if (!url) {
-    showToast('暂无邀请码')
-    return
-  }
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url)
-    } else {
-      const input = document.createElement('input')
-      input.value = url
-      input.setAttribute('readonly', 'readonly')
-      document.body.appendChild(input)
-      input.select()
-      document.execCommand('copy')
-      document.body.removeChild(input)
-    }
-    showToast('注册链接已复制')
-  } catch {
-    showToast('复制失败，请手动复制链接')
-  }
-}
-
-function goToProfileComplete() {
-  router.push('/me/profile-complete')
+function goAccount() {
+  router.push({ name: 'ProfileAccount' })
 }
 
 function onLogout() {
@@ -369,80 +156,87 @@ function onLogoutConfirm() {
 </script>
 
 <style scoped>
-.profile__loading {
+.profile-hub__loading {
   padding: 48px 0;
 }
-.profile {
-  margin-top: 12px;
-  padding-bottom: 24px;
-}
-.invite-qr {
-  margin: 0 16px 12px;
-  padding: 16px 14px 14px;
-  text-align: center;
+.profile-hub__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 12px 16px 10px;
+  padding: 16px 14px;
   background: #fff;
   border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
 }
-.invite-qr__title {
-  font-size: 15px;
+.profile-hub__card:active {
+  opacity: 0.92;
+}
+.profile-hub__avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #07c160 0%, #0aad74 100%);
+  color: #fff;
+  font-size: 22px;
   font-weight: 600;
-  color: #323233;
-  margin-bottom: 12px;
-}
-.invite-qr__canvas-wrap {
-  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.invite-qr__img {
-  display: block;
-  margin: 0 auto;
-  border-radius: 8px;
+.profile-hub__card-main {
+  flex: 1;
+  min-width: 0;
 }
-.invite-qr__hint {
-  margin: 12px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #969799;
-}
-.invite-qr__err {
-  margin: 0;
-  padding: 0 8px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #ee0a24;
-}
-.profile__admin,
-.profile__edit,
-.profile__block {
-  margin-top: 12px;
-}
-.profile__complete-entry {
-  margin-top: 12px;
-  padding: 0 16px;
-}
-.profile__complete-entry__title {
-  margin: 0 0 10px;
-  font-size: 15px;
+.profile-hub__name {
+  font-size: 18px;
   font-weight: 600;
   color: #323233;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.profile__logout {
-  margin: 24px 16px 0;
+.profile-hub__sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #969799;
+  line-height: 1.4;
 }
-.profile__qual-actions {
-  padding: 0 16px;
+.profile-hub__chevron {
+  flex-shrink: 0;
+  color: #c8c9cc;
+  font-size: 16px;
 }
-.profile__qual-actions__second {
+.profile-hub__group {
   margin-top: 10px;
 }
-.profile__dialog-pad {
-  padding: 12px 16px 8px;
+.profile-hub__ico {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
 }
-.profile-invite-cell :deep(.van-cell__title),
-.profile-invite-cell :deep(.van-cell__value) {
-  color: #ee0a24;
-  font-weight: 700;
+.profile-hub__ico--green {
+  background: linear-gradient(135deg, #07c160, #10ad7a);
+}
+.profile-hub__ico--orange {
+  background: linear-gradient(135deg, #ff976a, #ff6034);
+}
+.profile-hub__ico--blue {
+  background: linear-gradient(135deg, #1989fa, #0570de);
+}
+.profile-hub__ico--teal {
+  background: linear-gradient(135deg, #00c9a7, #00a896);
+}
+.profile-hub__logout {
+  margin: 24px 16px 16px;
 }
 </style>

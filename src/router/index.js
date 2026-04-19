@@ -145,6 +145,30 @@ const routes = [
         meta: { title: '我的信息', tab: 'me' },
       },
       {
+        path: 'me/profile/account',
+        name: 'ProfileAccount',
+        component: () => import('@/views/me/ProfileAccount.vue'),
+        meta: { title: '账户与身份', tab: 'me', hideTab: true },
+      },
+      {
+        path: 'me/profile/invite',
+        name: 'ProfileInvite',
+        component: () => import('@/views/me/ProfileInvite.vue'),
+        meta: { title: '邀请注册', tab: 'me', hideTab: true },
+      },
+      {
+        path: 'me/profile/qualification',
+        name: 'ProfileQualification',
+        component: () => import('@/views/me/ProfileQualification.vue'),
+        meta: { title: '资格审核', tab: 'me', hideTab: true },
+      },
+      {
+        path: 'me/profile/materials',
+        name: 'ProfileMaterials',
+        component: () => import('@/views/me/ProfileMaterials.vue'),
+        meta: { title: '交易资料', tab: 'me', hideTab: true },
+      },
+      {
         path: 'me/profile-complete',
         name: 'ProfileComplete',
         component: () => import('@/views/me/ProfileComplete.vue'),
@@ -362,8 +386,15 @@ router.beforeEach((to, from, next) => {
    * （-1 待完善仍由上方规则独占 profile-complete）
    */
   if (requiresAuth && auth.isLogin && auth.isQualificationPendingOrRejected && !auth.isProfileOnlyLocked) {
-    const allowed = new Set(['/qualification/pending', '/me/profile-complete', '/me/profile', '/user/qualification-pending'])
-    if (!allowed.has(to.path)) {
+    const path = to.path
+    const allowedProfile =
+      path === '/me/profile' || path.startsWith('/me/profile/')
+    const allowed =
+      allowedProfile ||
+      path === '/qualification/pending' ||
+      path === '/me/profile-complete' ||
+      path === '/user/qualification-pending'
+    if (!allowed) {
       next({ path: '/qualification/pending', replace: true })
       return
     }

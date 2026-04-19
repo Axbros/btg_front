@@ -1,21 +1,35 @@
 <template>
   <div class="todo-hub todo-hub--brand page-with-brand-header">
-    <div class="brand-header-gradient" aria-hidden="true" />
+    <div class="todo-hub-bg-layer" aria-hidden="true" />
 
     <AppHeader title="待办" :show-back="false" />
 
     <div class="todo-hub__main">
-      <p class="todo-hub__lead">待办与汇总 · 一眼掌握进度</p>
+      <section class="todo-hub-stats" aria-label="待办汇总">
+        <van-row v-for="(cols, ri) in summaryStatRows" :key="ri" :gutter="10">
+          <van-col v-for="cell in cols" :key="cell.label" span="12">
+            <div class="todo-hub-stats__card">
+              <div class="todo-hub-stats__label">{{ cell.label }}</div>
+              <div
+                class="todo-hub-stats__value"
+                :class="{ 'todo-hub-stats__value--hot': cell.hot }"
+              >
+                {{ cell.value }}
+              </div>
+            </div>
+          </van-col>
+        </van-row>
+      </section>
 
-      <div class="section-title-row todo-hub__section-head">
-        <h2 class="section-title">快捷入口</h2>
-        <span class="section-subtitle">高频审批</span>
+      <div class="section-title-row todo-hub__section-head ">
+        <h2 class="section-title">对上级待办</h2>
+        <!-- <span class="section-subtitle">高频审批</span> -->
       </div>
 
       <van-cell-group inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="!isRootUser"
-          title="待支付给上级"
+          title="待支付上级核算"
           is-link
           @click="goNav('/settlement/pending-pay')"
         >
@@ -23,100 +37,46 @@
             <van-badge v-if="payableBadge" :content="payableBadge" max="99" />
           </template>
         </van-cell>
-        <van-cell title="待审核下级结算" is-link @click="goNav('/settlement/pending-review')">
+
+         <van-cell
+          v-if="!isRootUser"
+          title="待确认补仓"
+          is-link
+          @click="goNav('/settlement/pending-pay')"
+        >
           <template #value>
-            <van-badge v-if="settlementBadge" :content="settlementBadge" max="99" />
+            <van-badge v-if="payableBadge" :content="payableBadge" max="99" />
           </template>
         </van-cell>
+       
+      </van-cell-group>
+
+      <div class="section-title-row todo-hub__section-head">
+        <h2 class="section-title">对下级待办</h2>
+        <!-- <span class="section-subtitle">高频审批</span> -->
+      </div>
+      <van-cell-group  inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="isRootUser"
           title="待审核资格"
           is-link
           @click="goNav({ name: 'AdminUserQualificationPending' })"
         />
+         <van-cell title="待审核下级结算" is-link @click="goNav('/settlement/pending-review')">
+          <template #value>
+            <van-badge v-if="settlementBadge" :content="settlementBadge" max="99" />
+          </template>
+        </van-cell>
+    
         <van-cell
           v-if="!isRootUser"
-          title="归仓申请"
-          is-link
-          @click="goNav({ name: 'RepayMine' })"
-        />
-        <van-cell
-          v-if="!isRootUser"
-          title="待审归仓"
+          title="待确认归仓"
           is-link
           @click="goNav({ name: 'RepayPendingReview' })"
         />
       </van-cell-group>
 
-      <div class="section-title-row todo-hub__section-head">
-        <h2 class="section-title">待办汇总</h2>
-      </div>
-
-      <van-cell-group inset class="todo-hub__block todo-summary van-cell-group--card-style">
-        <van-cell title="总待办" center>
-          <template #value>
-            <span :class="metricNumClass(totalAllPending)">{{ totalAllPending }}</span>
-          </template>
-        </van-cell>
-        <van-cell title="待审核下级结算" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.pendingSettlementReviewCount)">
-              {{ num0(pendingSummary?.pendingSettlementReviewCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell title="待支付给上级" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.pendingSettlementPayableCount)">
-              {{ num0(pendingSummary?.pendingSettlementPayableCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell v-if="!isRootUser" title="待审核利润上报" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.pendingProfitReportReviewCount)">
-              {{ num0(pendingSummary?.pendingProfitReportReviewCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell v-if="!isRootUser" title="待审核补仓" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.pendingReplenishmentReviewCount)">
-              {{ num0(pendingSummary?.pendingReplenishmentReviewCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell v-if="!isRootUser" title="待审核归仓" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.pendingReplenishmentRepayReviewCount)">
-              {{ num0(pendingSummary?.pendingReplenishmentRepayReviewCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell v-if="!isRootUser" title="退回待修改·利润" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.returnedProfitReportCount)">
-              {{ num0(pendingSummary?.returnedProfitReportCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell v-if="!isRootUser" title="退回待修改·补仓" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.returnedReplenishmentApplyCount)">
-              {{ num0(pendingSummary?.returnedReplenishmentApplyCount) }}
-            </span>
-          </template>
-        </van-cell>
-        <van-cell v-if="!isRootUser" title="退回待修改·归仓" center>
-          <template #value>
-            <span :class="metricNumClass(pendingSummary?.returnedReplenishmentRepayCount)">
-              {{ num0(pendingSummary?.returnedReplenishmentRepayCount) }}
-            </span>
-          </template>
-        </van-cell>
-      </van-cell-group>
-
-      <div class="section-title-row todo-hub__section-head">
+      <!-- <div class="section-title-row todo-hub__section-head">
         <h2 class="section-title">待办列表</h2>
         <span class="section-subtitle">需处理 / 仅查看</span>
       </div>
@@ -186,7 +146,7 @@
         <div v-else class="todo-hub__empty app-glass-card">
           <van-empty image="search" description="暂无待办事项" />
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -232,11 +192,39 @@ function num0(v) {
   return Number.isFinite(n) && n >= 0 ? n : 0
 }
 
-function metricNumClass(n) {
-  return num0(n) > 0 ? 'todo-hub__metric-num todo-hub__metric-num--hot' : 'todo-hub__metric-num'
+function summaryTile(label, raw) {
+  const value = num0(raw)
+  return { label, value, hot: value > 0 }
 }
 
-const totalAllPending = computed(() => num0(pendingSummary.value?.totalPendingCount))
+const summaryStatTiles = computed(() => {
+  const ps = pendingSummary.value
+  const tiles = [
+    summaryTile('总待办', ps?.totalPendingCount),
+    // summaryTile('待审核下级结算', ps?.pendingSettlementReviewCount),
+    // summaryTile('待支付给上级', ps?.pendingSettlementPayableCount),
+  ]
+  if (!isRootUser.value) {
+    tiles.push(
+      // summaryTile('待审核利润上报', ps?.pendingProfitReportReviewCount),
+      // summaryTile('待审核补仓', ps?.pendingReplenishmentReviewCount),
+      // summaryTile('待审核归仓', ps?.pendingReplenishmentRepayReviewCount),
+      summaryTile('退回待修改·利润', ps?.returnedProfitReportCount),
+      summaryTile('退回待修改·补仓', ps?.returnedReplenishmentApplyCount),
+      summaryTile('退回待修改·归仓', ps?.returnedReplenishmentRepayCount),
+    )
+  }
+  return tiles
+})
+
+const summaryStatRows = computed(() => {
+  const tiles = summaryStatTiles.value
+  const rows = []
+  for (let i = 0; i < tiles.length; i += 2) {
+    rows.push(tiles.slice(i, i + 2))
+  }
+  return rows
+})
 
 function rejectReasonText(row) {
   const s = row?.lastRejectReason
@@ -309,12 +297,58 @@ onMounted(() => {
   min-height: 100%;
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   position: relative;
+  overflow-x: hidden;
+  background: #f5f7fa;
+}
+
+/** 与首页 .home-bg-layer 一致：品牌蓝 + 底部弧形过渡 */
+.todo-hub-bg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 260px;
+  background: linear-gradient(180deg, #1357f0 0%, #1f6fff 40%, #3d86ff 70%, #6aa8ff 100%);
+  border-radius: 0 0 50% 50% / 12%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .todo-hub__main {
   position: relative;
   z-index: 1;
   padding: 0 12px 12px;
+}
+
+/** 与团队页 .team-stats 卡片风格一致：双列指标 */
+.todo-hub-stats {
+  padding: 12px 0 4px;
+  box-sizing: border-box;
+}
+
+.todo-hub-stats__card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.todo-hub-stats__label {
+  font-size: 13px;
+  color: #969799;
+}
+
+.todo-hub-stats__value {
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1989fa;
+}
+
+.todo-hub-stats__value--hot {
+  color: #ee4d4d;
 }
 
 .todo-hub__lead {
@@ -337,24 +371,30 @@ onMounted(() => {
   color: var(--app-text-tertiary, #969799);
 }
 
+/** 顶部蓝区上的小节标题 */
+.todo-hub__section-head--on-blue .section-title {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 30, 90, 0.18);
+}
+
+.todo-hub__section-head--on-blue .section-subtitle {
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .todo-hub__block {
   margin-top: 0;
   margin-bottom: 14px;
 }
 
+/** is-link 右侧箭头与 #value 内角标重叠：保留数值区宽度并留出箭头位 */
+.todo-quick :deep(.van-cell__value) {
+  flex-shrink: 0;
+  padding-right: 7px;
+  padding-top: 7px;
+}
+
 .todo-hub__list-scope {
   margin-top: 0;
-}
-
-.todo-hub__metric-num {
-  font-size: 17px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--app-text-primary, #323233);
-}
-
-.todo-hub__metric-num--hot {
-  color: #ee4d4d;
 }
 
 .todo-hub__loading {

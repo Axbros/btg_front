@@ -53,10 +53,7 @@
             <div class="icon"><van-icon name="balance-list-o" /></div>
             <span class="text">归仓</span>
           </div>
-          <!-- <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav({ name: 'RepayPendingReview' })">
-            <div class="icon"><van-icon name="passed" /></div>
-            <span class="text">待审归仓</span>
-          </div> -->
+         
           <div class="quick-entry-item" @click="goHomeNav({ name: 'Mt5Snapshot' })">
             <div class="icon"><van-icon name="exchange" /></div>
             <span class="text">MT5</span>
@@ -65,6 +62,8 @@
             <div class="icon"><van-icon name="friends-o" /></div>
             <span class="text">团队</span>
           </div>
+
+          
         </div>
     </section>
 

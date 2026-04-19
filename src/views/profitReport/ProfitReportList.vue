@@ -2,7 +2,7 @@
   <div class="profit-report-shell">
     <AppHeader title="利润记录" />
     <div class="profit-report-shell__scroll profit-report-shell__list profit-report-list__body">
-      <div :class="['pr-list-content', { 'pr-list-content--docked': loaded }]">
+      <div class="pr-list-content">
         <van-pull-refresh v-model="refreshing" class="profit-report-shell__pull" @refresh="onRefresh">
           <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
             <ProfitRecordCard
@@ -125,17 +125,11 @@ function next() {
 .pr-list-content {
   box-sizing: border-box;
   min-height: 0;
-  padding-top: 12px;
-}
-.pr-list-content--docked {
-  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 0 8px;
 }
 .pr-list-bottom-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 20;
+  flex-shrink: 0;
+  width: 100%;
   background: #fff;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
