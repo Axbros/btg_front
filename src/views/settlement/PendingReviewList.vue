@@ -1,16 +1,15 @@
 <template>
   <div class="prev-mine">
     <AppHeader title="下级结算" />
-    <van-tabs v-model:active="activeTab" shrink sticky>
-      <van-tab title="待审核" name="pending" />
-      <van-tab title="已通过" name="approved" />
-      <van-tab title="已拒绝" name="rejected" />
-      <van-tab title="全部" name="all" />
-    </van-tabs>
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="prev-mine-wrap" :class="{ 'prev-mine-wrap--docked': loaded }">
+        <div class="prev-mine-filter">
+          <van-dropdown-menu>
+            <van-dropdown-item v-model="reviewScope" :options="reviewScopeFilterOptions" />
+          </van-dropdown-menu>
+        </div>
         <van-list
-          :key="activeTab"
+          :key="reviewScope"
           v-model:loading="loading"
           :finished="finished"
           finished-text="没有更多了"
@@ -42,7 +41,14 @@
       </div>
     </van-pull-refresh>
 
-    <div v-show="loaded" class="prev-mine-bottom-dock" aria-label="分页">
+    <div v-show="loaded" class="prev-mine-bottom-dock" aria-label="底部汇总与分页">
+      <footer v-if="recordsTotal > 0" class="prev-mine-footer-sum" aria-label="上报利润汇总">
+        <div class="prev-mine-footer-sum__row">
+          <span class="prev-mine-footer-sum__label">{{ profitSumLabel }}</span>
+          <span class="prev-mine-footer-sum__value">{{ formatMoney(profitAmountPageSum) }}</span>
+        </div>
+        <p class="prev-mine-footer-sum__meta">共 {{ recordsTotal }} 笔</p>
+      </footer>
       <div class="prev-mine-pager" role="toolbar">
         <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
         <span class="prev-mine-pager__text">第 {{ page }} 页</span>
@@ -53,8 +59,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -68,8 +74,58 @@ import { parsePageResponse } from '@/utils/pagination'
 import { settlementListMetaRest } from '@/utils/settlementDisplay'
 import { formatMoney, formatSettlementStatus, settlementStatusTagType } from '@/utils/format'
 
-/** pending | approved | rejected | all */
-const activeTab = ref('pending')
+const REVIEW_SCOPES = ['pending', 'approved', 'rejected', 'all']
+
+/** 与 query.scope 一致，供下拉与请求分支 */
+const reviewScopeFilterOptions = [
+  { text: '待审核', value: 'pending' },
+  { text: '已通过', value: 'approved' },
+  { text: '已拒绝', value: 'rejected' },
+  { text: '全部', value: 'all' },
+]
+
+const route = useRoute()
+const router = useRouter()
+
+function reviewScopeFromQuery() {
+  const raw = route.query.scope
+  const s = Array.isArray(raw) ? String(raw[0]) : String(raw ?? '').trim()
+  if (REVIEW_SCOPES.includes(s)) return s
+  return 'pending'
+}
+
+const reviewScope = ref(reviewScopeFromQuery())
+
+function queryEquals(nextQuery) {
+  return JSON.stringify({ ...route.query }) === JSON.stringify({ ...nextQuery })
+}
+
+watch(reviewScope, (val) => {
+  page.value = 1
+  list.value = []
+  loaded.value = false
+  finished.value = false
+  const q = { ...route.query }
+  if (val === 'pending') {
+    delete q.scope
+  } else {
+    q.scope = val
+  }
+  if (!queryEquals(q)) {
+    router.replace({ name: 'PendingReviewSettlements', query: q })
+  }
+})
+
+watch(
+  () => route.query.scope,
+  () => {
+    const next = reviewScopeFromQuery()
+    if (next !== reviewScope.value) {
+      reviewScope.value = next
+    }
+  },
+)
+
 const list = ref([])
 const loading = ref(false)
 const finished = ref(false)
@@ -78,7 +134,25 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
-const router = useRouter()
+const recordsTotal = ref(0)
+
+const profitAmountPageSum = computed(() =>
+  list.value.reduce((sum, row) => {
+    const n = Number(amountField(row))
+    return sum + (Number.isFinite(n) ? n : 0)
+  }, 0),
+)
+
+const profitSumLabel = computed(() => {
+  if (
+    !hasMore.value &&
+    recordsTotal.value > 0 &&
+    list.value.length === recordsTotal.value
+  ) {
+    return '上报利润合计'
+  }
+  return '本页上报利润合计'
+})
 
 function amountField(item) {
   return item.profitAmount ?? item.payAmount ?? 0
@@ -110,20 +184,22 @@ function goDetail(row) {
 async function fetchPage(p) {
   const params = { page: p, pageSize: pageSize.value }
   let raw
-  if (activeTab.value === 'approved') {
+  if (reviewScope.value === 'approved') {
     raw = await fetchMyApprovedSettlements(params)
-  } else if (activeTab.value === 'rejected') {
+  } else if (reviewScope.value === 'rejected') {
     raw = await fetchMyRejectedSettlements(params)
-  } else if (activeTab.value === 'all') {
+  } else if (reviewScope.value === 'all') {
     raw = await fetchSettlementReviewAll(params)
   } else {
     raw = await fetchMyPendingReviewSettlements(params)
   }
-  const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
-  list.value = rows
-  hasMore.value = more
-  finished.value = !more
+  const parsed = parsePageResponse(raw, pageSize.value)
+  list.value = parsed.list ?? []
+  hasMore.value = parsed.hasMore
+  finished.value = !parsed.hasMore
   loaded.value = true
+  const t = parsed.total != null ? Number(parsed.total) : 0
+  recordsTotal.value = Number.isFinite(t) && t >= 0 ? t : 0
 }
 
 async function onLoad() {
@@ -148,13 +224,6 @@ async function onRefresh() {
   }
 }
 
-watch(activeTab, () => {
-  page.value = 1
-  list.value = []
-  loaded.value = false
-  finished.value = false
-})
-
 function prev() {
   if (page.value <= 1) return
   page.value -= 1
@@ -172,13 +241,21 @@ function next() {
 .prev-mine {
   min-width: 0;
 }
+.prev-mine-filter {
+  margin: 0 0 4px;
+  background: #fff;
+}
+.prev-mine-filter :deep(.van-dropdown-menu__bar) {
+  box-shadow: none;
+}
 .prev-mine-wrap {
   min-height: 40px;
   box-sizing: border-box;
-  margin-top: 8px;
+  margin-top:0px;
 }
 .prev-mine-wrap--docked {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  /* 汇总条 + 分页 + 安全区（与待支付列表底栏一致） */
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 .prev-mine-bottom-dock {
   position: fixed;
@@ -212,6 +289,34 @@ function next() {
 .prev-mine-list-group :deep(.van-cell__value) {
   flex-shrink: 0;
   padding-right: 22px;
+}
+.prev-mine-footer-sum {
+  margin: 0;
+  padding: 10px 16px 4px;
+  background: #f7f8fa;
+  box-sizing: border-box;
+  border: none;
+}
+.prev-mine-footer-sum__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.prev-mine-footer-sum__label {
+  font-size: 14px;
+  color: #646566;
+}
+.prev-mine-footer-sum__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1989fa;
+  flex-shrink: 0;
+}
+.prev-mine-footer-sum__meta {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #969799;
 }
 .prev-mine-pager {
   display: flex;

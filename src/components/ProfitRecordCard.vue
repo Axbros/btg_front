@@ -38,8 +38,8 @@
       is-link
       @click.stop="goProfitFlowDetail"
     /> -->
-    <template v-if="showReturnedResubmitActions">
-      <van-cell title="去修改并重提" is-link @click.stop="goProfitResubmit" />
+    <template v-if="showReturnedOrSettlementPayActions">
+      <van-cell :title="resubmitActionTitle" is-link @click.stop="goProfitResubmitOrSettlement" />
       <van-cell title="查看状态流" is-link @click.stop="goProfitFlow" />
     </template>
   </van-cell-group>
@@ -58,6 +58,9 @@ import {
   profitRecordStatusTagType,
   isProfitReportReturnedToApplicant,
 } from '@/utils/format'
+import { resolveProfitResubmitOrSettlementTransferNavigation } from '@/utils/profitReportSettlementBranch'
+import { fetchProfitReportById } from '@/api/profitReport'
+import { fetchMyPendingPaySettlements } from '@/api/settlement'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -86,8 +89,23 @@ const canShowDistributionLink = computed(() => {
   return v != null && String(v).trim() !== ''
 })
 
-const showReturnedResubmitActions = computed(() =>
-  isProfitReportReturnedToApplicant(props.item.status),
+/** 直属退回(5)：改利润三件套；链上待补划转(1/2)：去结算上传凭证（由跳转解析） */
+const showReturnedOrSettlementPayActions = computed(() => {
+  const s = props.item.status ?? props.item.statusCode
+  if (isProfitReportReturnedToApplicant(s)) return true
+  const sk = String(s ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, '_')
+  if (sk === 'PENDING_DIRECT_REVIEW' || sk === 'IN_SETTLEMENT_CHAIN') return true
+  const n = Number(s)
+  return Number.isFinite(n) && (n === 1 || n === 2)
+})
+
+const resubmitActionTitle = computed(() =>
+  isProfitReportReturnedToApplicant(props.item.status ?? props.item.statusCode)
+    ? '去修改并重提'
+    : '去上传划转凭证',
 )
 
 /** 与结算详情 GET /settlements/{rootReportId} 一致：根单 id */
@@ -169,10 +187,25 @@ function goDistribution() {
   })
 }
 
-function goProfitResubmit() {
+async function goProfitResubmitOrSettlement() {
   const id = profitReportIdForDistribution()
   if (id == null || String(id).trim() === '') return
-  router.push({ name: 'ProfitReportResubmit', params: { profitReportId: String(id) } })
+  const nav = await resolveProfitResubmitOrSettlementTransferNavigation({
+    profitReportId: id,
+    settlementOrderId: props.item.settlementOrderId ?? props.item.settlementRowId ?? props.item.settlementId,
+    currentUserId: userInfo.value?.id,
+    fetchProfitReportById,
+    fetchMyPendingPaySettlements,
+  })
+  if (nav.kind === 'profit-resubmit') {
+    router.push({ name: 'ProfitReportResubmit', params: { profitReportId: String(nav.profitReportId) } })
+    return
+  }
+  if (nav.kind === 'settlement-row') {
+    router.push({ name: 'SettlementDetailByRow', params: { rowId: String(nav.rowId) } })
+    return
+  }
+  router.push({ name: 'PendingPaySettlements', query: { status: '2' } })
 }
 
 function goProfitFlow() {

@@ -3,11 +3,22 @@
     <AppHeader title="利润·重新提交" />
     <div class="profit-report-shell__scroll">
       <van-loading v-if="pageLoading" class="pr-resubmit__loading pr-resubmit__fill" vertical>加载中…</van-loading>
+      <div v-else-if="settlementChainOnlyHint" class="pr-resubmit__fill pr-resubmit__misroute">
+        <van-empty description="当前利润单在结算链中，请重新上传给上级的划转凭证" />
+        <van-button block round type="primary" class="pr-resubmit__misroute-btn" @click="goPendingPaySettlements">
+          前往待支付结算
+        </van-button>
+      </div>
       <van-empty v-else-if="!canResubmit" class="pr-resubmit__fill" description="当前记录不可重提或不存在" />
       <template v-else>
       <van-form scroll-to-error :show-error-message="true" class="pr-resubmit__form" @submit="onSubmit">
       <van-cell-group inset>
-        <van-notice-bar left-icon="info-o" :scrollable="false" text="已退回待修改：请核对后重新提交利润金额与两张截图。" />
+        <van-notice-bar
+          left-icon="info-o"
+          :scrollable="false"
+          wrapable
+          :text="returnNoticeText"
+        />
         <van-field
           v-model="profitAmount"
           name="profitAmount"
@@ -73,16 +84,23 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { useAuthStore } from '@/stores/auth'
 import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { fetchProfitReportById, getProfitReportFlow, resubmitProfitReport } from '@/api/profitReport'
-import { isProfitReportReturnedToApplicant, formatProfitRecordStatus } from '@/utils/format'
+import { formatProfitRecordStatus } from '@/utils/format'
+import {
+  canCurrentUserUseProfitResubmitFlow,
+  isProfitInDirectReviewOrSettlementChain,
+} from '@/utils/profitReportSettlementBranch'
 import BusinessFlowTimeline from '@/components/BusinessFlowTimeline.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { userInfo } = storeToRefs(useAuthStore())
 
 const pageLoading = ref(true)
 const submitting = ref(false)
@@ -101,8 +119,20 @@ const reportId = computed(() => {
 const canResubmit = computed(() => {
   const r = raw.value
   if (!r || typeof r !== 'object') return false
-  return isProfitReportReturnedToApplicant(r.status ?? r.statusCode)
+  return canCurrentUserUseProfitResubmitFlow(r, userInfo.value?.id)
 })
+
+/** 误入 resubmit 页：链上阶段应去结算补划转，不要提示重填利润金额 */
+const settlementChainOnlyHint = computed(() => {
+  const r = raw.value
+  if (!r || typeof r !== 'object') return false
+  if (canResubmit.value) return false
+  return isProfitInDirectReviewOrSettlementChain(r.status ?? r.statusCode)
+})
+
+function goPendingPaySettlements() {
+  router.replace({ name: 'PendingPaySettlements', query: { status: '2' } })
+}
 
 function pickFlowNodes(d) {
   if (!d || typeof d !== 'object') return []
@@ -151,8 +181,40 @@ const flowRejectReason = computed(() => {
   if (!f || typeof f !== 'object') return ''
   const r = flowReport.value
   const reason =
-    f.lastRejectReason ?? r?.lastRejectReason ?? ''
+    f.lastRejectReason ??
+    f.rejectReason ??
+    f.RejectReason ??
+    r?.lastRejectReason ??
+    r?.rejectReason ??
+    r?.RejectReason ??
+    ''
   return String(reason).trim()
+})
+
+const flowLastRejectByNickname = computed(() => {
+  const f = flowPayload.value
+  if (!f || typeof f !== 'object') return ''
+  const nick = f.lastRejectByNickname ?? f.rejectByNickname
+  if (nick != null && String(nick).trim() !== '') return String(nick).trim()
+  const r = flowReport.value
+  const rn = r?.lastRejectByNickname ?? r?.rejectByNickname
+  return rn != null && String(rn).trim() !== '' ? String(rn).trim() : ''
+})
+
+/** 与 /profit-reports/:id/flow 的 lastRejectReason、lastRejectByNickname 对齐 */
+const returnNoticeText = computed(() => {
+  
+  const reason = flowRejectReason.value
+  const by = flowLastRejectByNickname.value
+  if (by && reason) return `${by}:${reason}`
+  if (reason) return `${reason}`
+  if (by) return `${by}`
+  const d = raw.value
+  if (d && typeof d === 'object') {
+    const fb = pickStr(d, 'lastRejectReason', 'rejectReason', 'auditRemark')
+    if (fb) return `${fb}`
+  }
+  return "请核对后重新提交利润金额与两张截图。"
 })
 
 function goFullFlow() {
@@ -182,8 +244,11 @@ async function load() {
   try {
     const d = await fetchProfitReportById(id)
     raw.value = d && typeof d === 'object' ? d : null
-    if (!canResubmit.value) {
-      showToast('当前状态不可重提')
+    const r = raw.value
+    const uid = userInfo.value?.id
+    if (!canCurrentUserUseProfitResubmitFlow(r, uid)) {
+      const chain = r && isProfitInDirectReviewOrSettlementChain(r.status ?? r.statusCode)
+      if (!chain) showToast('当前状态不可重提')
       return
     }
     const amt = d.profitAmount
@@ -240,6 +305,16 @@ async function onSubmit() {
   align-items: center;
   justify-content: center;
   min-height: 0;
+}
+.pr-resubmit__misroute {
+  padding: 24px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pr-resubmit__misroute-btn {
+  margin-top: 16px;
+  max-width: 320px;
+  width: 100%;
 }
 .pr-resubmit__form {
   padding-top: 12px;

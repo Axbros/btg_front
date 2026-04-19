@@ -3,7 +3,7 @@
     <AppHeader title="待审核补仓" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <van-cell-group v-if="list.length">
+        <van-cell-group v-if="list.length" inset>
           <van-cell
             v-for="(row, idx) in list"
             :key="row.id ?? idx"

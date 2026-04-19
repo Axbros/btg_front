@@ -9,11 +9,24 @@ function settlementNumericSegment(id) {
   return s
 }
 
-/** GET /api/v1/settlements/mine-payables */
+/**
+ * GET /api/v1/settlements/mine-payables
+ * 不传 status：本人为付款人且状态为 2、3 的待办；status=1～5 时按 SettlementOrderStatus 筛选。
+ */
 export function fetchMyPendingPaySettlements(params = {}) {
-  const page = params.page ?? 1
-  const size = params.size ?? params.pageSize ?? 10
-  return get('/settlements/mine-payables', { page, size })
+  const { page, size, pageSize, status, ...rest } = params
+  const q = {
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
+  }
+  if (status !== undefined && status !== null && status !== '') {
+    const sn = Number(status)
+    if (Number.isFinite(sn) && sn >= 1 && sn <= 5) {
+      q.status = sn
+    }
+  }
+  return get('/settlements/mine-payables', q)
 }
 
 /** GET /api/v1/settlements/pending-review — 本人为收款上级的待审核；Page<SettlementOrder> */

@@ -1,6 +1,6 @@
 <template>
   <div class="repl-mine">
-    <AppHeader title="补仓">
+    <AppHeader title="补仓数据">
       <template #right>
         <van-icon
           name="gold-coin-o"
@@ -46,7 +46,7 @@
           <van-cell v-if="transferRemarkText" title="资方转账备注" :value="transferRemarkText" />
         </van-cell-group>
 
-        <p v-if="list.length || loaded" class="repl-mine-list-title">补仓记录</p>
+        <!-- <p v-if="list.length || loaded" class="repl-mine-list-title">补仓记录</p> -->
 
         <van-list
           :key="userVisibleFilter"
@@ -99,7 +99,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
@@ -112,23 +112,60 @@ import {
   replenishmentUserVisibleFilterOptions,
 } from '@/utils/format'
 
+
+const route = useRoute()
 const router = useRouter()
 
-/** `all` 不传 userVisibleStatus；否则为数字字符串 1–5 */
-const userVisibleFilter = ref('all')
+/** 从 URL 解析用户可见筛选（query.uv），非法值视为全部 */
+function uvFromRouteQuery() {
+  const raw = route.query.uv
+  if (raw === undefined || raw === null || raw === '') return 'all'
+  const s = Array.isArray(raw) ? String(raw[0]) : String(raw).trim()
+  if (s === 'all') return 'all'
+  const n = Number(s)
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? String(n) : 'all'
+}
 
-watch(userVisibleFilter, () => {
-  page.value = 1
-  list.value = []
-  loaded.value = false
-  finished.value = false
-})
+/** 与路由 query `uv` 同步：`all` | `1`～`5`；列表请求用 userVisibleFilter 转整数 */
+const userVisibleFilter = ref(uvFromRouteQuery())
 
 function userVisibleQueryParam() {
   if (userVisibleFilter.value === 'all') return undefined
   const n = Number(userVisibleFilter.value)
   return Number.isFinite(n) && n >= 1 && n <= 5 ? n : undefined
 }
+
+function queryEqualsUv(nextQuery) {
+  const cur = { ...route.query }
+  const nxt = { ...nextQuery }
+  return JSON.stringify(cur) === JSON.stringify(nxt)
+}
+
+watch(userVisibleFilter, (val) => {
+  page.value = 1
+  list.value = []
+  loaded.value = false
+  finished.value = false
+  const q = { ...route.query }
+  if (val === 'all') {
+    delete q.uv
+  } else {
+    q.uv = val
+  }
+  if (!queryEqualsUv(q)) {
+    router.replace({ name: 'ReplenishmentMine', query: q })
+  }
+})
+
+watch(
+  () => route.query.uv,
+  () => {
+    const next = uvFromRouteQuery()
+    if (next !== userVisibleFilter.value) {
+      userVisibleFilter.value = next
+    }
+  },
+)
 
 /** GET /replenishments/current，原补仓首页横幅与「当前未结清」区块 */
 const currentUnsettled = ref(null)

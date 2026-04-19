@@ -16,7 +16,7 @@
     </AppHeader>
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="repay-mine-wrap" :class="{ 'repay-mine-wrap--docked': loaded }">
-        <p v-if="list.length || loaded" class="repay-mine-list-title">归仓申请记录</p>
+        <!-- <p v-if="list.length || loaded" class="repay-mine-list-title">归仓申请记录</p> -->
         <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
           <van-cell-group v-if="list.length" inset :border="false" class="repay-mine-list-group">
             <van-cell

@@ -23,7 +23,7 @@
           </van-row>
         </section>
 
-        <van-cell-group title="下级成员" v-if="tree.length" class="team-tree-cells">
+        <van-cell-group inset title="下级成员" v-if="tree.length" class="team-tree-cells">
           <TeamTreeList :nodes="tree" :depth="0" />
         </van-cell-group>
         <EmptyState v-else-if="treeLoaded" description="暂无下级成员" />

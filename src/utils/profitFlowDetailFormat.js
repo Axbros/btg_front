@@ -18,7 +18,7 @@ const DATA_SCOPE_MAP = {
 
 /** 链路顶层 / 层 settlementStatus 等与产品文案对齐（先于通用结算映射） */
 const PROFIT_FLOW_STATUS_LABEL = {
-  PENDING_SUBMIT: '待提交凭证',
+  PENDING_SUBMIT: '待支付',
   PENDING_REVIEW: '待审核',
   APPROVED: '已通过',
   REJECTED: '已拒绝',

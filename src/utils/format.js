@@ -188,11 +188,11 @@ export function formatCommissionRecordStatus(val) {
   return formatStatus(val)
 }
 
-/** btg_settlement_order.status：1 INIT；2 待提交凭证；3 待上级审核；4 通过；5 拒绝 */
+/** btg_settlement_order.status：1 INIT；2 待支付；3 待审核；4 通过；5 拒绝 */
 const SETTLEMENT_STATUS_NUM = {
   1: '未激活',
-  2: '待提交凭证',
-  3: '待上级审核',
+  2: '待支付',
+  3: '待审核',
   4: '已通过',
   5: '已拒绝',
 }
@@ -200,8 +200,8 @@ const SETTLEMENT_STATUS_NUM = {
 /** 结算单状态（兼容数字枚举与字符串） */
 const SETTLEMENT_STATUS_STR = {
   PENDING: '待审核',
-  PENDING_REVIEW: '待上级审核',
-  PENDING_SUBMIT: '待提交凭证',
+  PENDING_REVIEW: '待审核',
+  PENDING_SUBMIT: '待支付',
   INIT: '未激活',
   PENDING_PAYMENT: '待支付',
   PENDING_PAY: '待支付',

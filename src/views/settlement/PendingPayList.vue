@@ -3,13 +3,19 @@
     <AppHeader title="待支付给上级" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="ppay-mine-wrap" :class="{ 'ppay-mine-wrap--docked': loaded }">
-        <!-- <p class="ppay-mine-intro">
-          以下为需向直属上级完成划转并等待逐级结算的待办（资金流仅指向直属上级）。
-        </p> -->
+        <div class="ppay-mine-filter">
+          <van-dropdown-menu>
+            <van-dropdown-item v-model="payStatusFilter" :options="payStatusFilterOptions" />
+          </van-dropdown-menu>
+        </div>
 
-        <!-- <p v-if="list.length || loaded" class="ppay-mine-list-title">待支付记录</p> -->
-
-        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+        <van-list
+          :key="payStatusFilter"
+          v-model:loading="loading"
+          :finished="finished"
+          finished-text="没有更多了"
+          @load="onLoad"
+        >
           <van-cell-group v-if="list.length" inset :border="false" class="ppay-mine-list-group">
             <van-cell
               v-for="row in list"
@@ -54,8 +60,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -63,7 +69,74 @@ import { fetchMyPendingPaySettlements } from '@/api/settlement'
 import { parsePageResponse } from '@/utils/pagination'
 import { formatMoney, formatSettlementStatus, settlementStatusTagType } from '@/utils/format'
 
+const route = useRoute()
 const router = useRouter()
+
+/** 下拉 value：`default` 不传 status；`1`～`5` 传 status */
+const payStatusFilterOptions = [
+  { text: '全部', value: 'default' },
+  ...[1, 2, 3, 4, 5].map((n) => ({
+    text: formatSettlementStatus(n),
+    value: String(n),
+  })),
+]
+
+function isValidPayStatusQuery(v) {
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 1 && n <= 5
+}
+
+function payStatusFromQuery() {
+  const raw = route.query.status
+  if (raw === undefined || raw === null) return 'default'
+  const s = Array.isArray(raw) ? String(raw[0]) : String(raw).trim()
+  if (s === '') return 'default'
+  if (!isValidPayStatusQuery(s)) return 'default'
+  return String(Number(s))
+}
+
+const payStatusFilter = ref(payStatusFromQuery())
+
+function queryEquals(nextQuery) {
+  return JSON.stringify({ ...route.query }) === JSON.stringify({ ...nextQuery })
+}
+
+watch(payStatusFilter, (val) => {
+  page.value = 1
+  list.value = []
+  loaded.value = false
+  finished.value = false
+  const q = { ...route.query }
+  if (val === 'default') {
+    delete q.status
+  } else {
+    q.status = val
+  }
+  if (!queryEquals(q)) {
+    router.replace({ name: 'PendingPaySettlements', query: q })
+  }
+})
+
+watch(
+  () => route.query.status,
+  () => {
+    const next = payStatusFromQuery()
+    if (next !== payStatusFilter.value) {
+      payStatusFilter.value = next
+    }
+  },
+)
+
+onMounted(() => {
+  const raw = route.query.status
+  if (raw !== undefined && raw !== null && String(Array.isArray(raw) ? raw[0] : raw).trim() !== '') {
+    if (!isValidPayStatusQuery(Array.isArray(raw) ? raw[0] : raw)) {
+      const q = { ...route.query }
+      delete q.status
+      router.replace({ name: 'PendingPaySettlements', query: q })
+    }
+  }
+})
 
 const list = ref([])
 const loading = ref(false)
@@ -117,8 +190,19 @@ function goDetail(row) {
   }
 }
 
+function payStatusApiParam() {
+  if (payStatusFilter.value === 'default') return undefined
+  const n = Number(payStatusFilter.value)
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? n : undefined
+}
+
 async function fetchPage(p) {
-  const raw = await fetchMyPendingPaySettlements({ page: p, pageSize: pageSize.value })
+  const status = payStatusApiParam()
+  const raw = await fetchMyPendingPaySettlements({
+    page: p,
+    pageSize: pageSize.value,
+    ...(status != null ? { status } : {}),
+  })
   const parsed = parsePageResponse(raw, pageSize.value)
   list.value = parsed.list
   hasMore.value = parsed.hasMore
@@ -166,6 +250,13 @@ function next() {
 <style scoped>
 .ppay-mine {
   min-width: 0;
+}
+.ppay-mine-filter {
+  margin: 0 0 4px;
+  background: #fff;
+}
+.ppay-mine-filter :deep(.van-dropdown-menu__bar) {
+  box-shadow: none;
 }
 .ppay-mine-wrap {
   min-height: 40px;

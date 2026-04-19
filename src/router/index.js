@@ -212,6 +212,14 @@ const routes = [
         component: () => import('@/views/replenishment/ReplenishmentMine.vue'),
         meta: { title: '补仓', tab: 'home', hideTab: true },
       },
+      /** 旧链接 /mine/1～5 与「仅一位数字」筛选态：重定向到 query.uv，避免与详情 id 冲突 */
+      {
+        path: 'replenishment/mine/:uvOnly(1|2|3|4|5)',
+        redirect: (to) => ({
+          name: 'ReplenishmentMine',
+          query: { ...to.query, uv: String(to.params.uvOnly) },
+        }),
+      },
       {
         path: 'replenishment/mine/:id/resubmit',
         name: 'ReplenishmentResubmit',

@@ -1,5 +1,8 @@
 /**
  * 首页待办 / 流转展示：todoType、节点状态文案与跳转路径（与后端约定一致）。
+ *
+ * PROFIT_REPORT_RETURNED：勿再默认进 `/profit-report/:id/resubmit`；无 settlementOrderId 时同步进待支付列表，
+ * 卡片/按钮侧用 `src/utils/profitReportSettlementBranch.js` 的 resolveProfitResubmitOrSettlementTransferNavigation 按 status + 身份分支。
  */
 import {
   formatProfitFlowCombinedState,
@@ -137,12 +140,15 @@ export function resolveTodoNavigation(item) {
     item.rootReportId ?? item.reportId,
   )
   const businessId = numId(item.businessId)
+  /** 待办 payload 显式带结算行主键时，优先走结算详情（上传划转 → POST /settlements/{id}/submit） */
+  const settlementRowFromPayload = numId(
+    item.settlementOrderId ?? item.settlementRowId ?? item.settlementBusinessId,
+  )
 
   /** 利润分润链路详情：须为数字根单 id；结算类仅使用显式 root 字段，避免误把结算行 id 当根单 */
   const profitFlowTypes = new Set([
     DASHBOARD_TODO_TYPES.PROFIT_REPORT_PENDING_REVIEW,
     DASHBOARD_TODO_TYPES.PROFIT_REPORT_CHAIN_WATCH,
-    DASHBOARD_TODO_TYPES.PROFIT_REPORT_RETURNED,
     DASHBOARD_TODO_TYPES.SETTLEMENT_PENDING_PAY,
     DASHBOARD_TODO_TYPES.SETTLEMENT_PENDING_REVIEW,
   ])
@@ -150,8 +156,7 @@ export function resolveTodoNavigation(item) {
     const rootId =
       rootFromFields ||
       (type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_PENDING_REVIEW ||
-      type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_CHAIN_WATCH ||
-      type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_RETURNED
+      type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_CHAIN_WATCH
         ? businessId
         : '')
     if (rootId) return { path: `/flow/profit/${rootId}` }
@@ -201,6 +206,15 @@ export function resolveTodoNavigation(item) {
     return { path: '/replenishment/repay-mine' }
   }
 
+  if (
+    settlementRowFromPayload &&
+    (type === DASHBOARD_TODO_TYPES.SETTLEMENT_PENDING_PAY ||
+      type === DASHBOARD_TODO_TYPES.SETTLEMENT_PENDING_REVIEW ||
+      type === DASHBOARD_TODO_TYPES.PROFIT_REPORT_RETURNED)
+  ) {
+    return { path: `/settlement/row/${settlementRowFromPayload}` }
+  }
+
   const id = businessId
   if (!id) return null
 
@@ -211,8 +225,9 @@ export function resolveTodoNavigation(item) {
       return { path: '/settlement/pending-review' }
     case DASHBOARD_TODO_TYPES.PROFIT_REPORT_PENDING_REVIEW:
       return { path: `/profit-report/${id}/distribution` }
+    /** 同步兜底：仅 businessId 时无法区分直属退回(5)与链上待补划转，统一进待支付列表（卡片/异步解析会走正确分支） */
     case DASHBOARD_TODO_TYPES.PROFIT_REPORT_RETURNED:
-      return { path: `/profit-report/${id}/resubmit` }
+      return { path: '/settlement/pending-pay', query: { status: '2' } }
     case DASHBOARD_TODO_TYPES.REPLENISHMENT_PENDING_REVIEW:
       return { path: `/replenishment/mine/${id}` }
     case DASHBOARD_TODO_TYPES.REPLENISHMENT_RETURNED:

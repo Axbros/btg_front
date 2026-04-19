@@ -16,7 +16,7 @@
                 {{ formatRepayStatus(row.status) }}
               </van-tag>
             </template>
-            <van-cell-group :border="false" class="repay-pr-card__cells">
+            <van-cell-group inset :border="false" class="repay-pr-card__cells">
               <van-cell title="关联补仓单号" :value="txt(row.replenishApplyNo)" />
               <van-cell title="归仓金额" :value="formatMoney(num(row.repayAmount))" />
               <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" />

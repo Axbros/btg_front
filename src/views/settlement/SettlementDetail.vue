@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <div :class="{ 'settlement-detail--pad-bottom': needSubmitTransferProof }">
     <AppHeader title="结算详情" />
     <van-loading v-if="loading" class="pad" vertical>加载中…</van-loading>
     <template v-else-if="detail">
-      <van-cell-group  title="上报发起人信息" class="settlement-report-section">
+      <van-cell-group inset title="上报发起人信息" class="settlement-report-section">
         <van-cell title="订单单号" :value="txt(reportNoText)" />
         <van-cell title="上报人姓名" :value="txt(settlementReportUserNicknameDisplay)" />
         <van-cell title="上报人手机" :value="txt(settlementReportUserMobileDisplay)" />
@@ -15,7 +15,7 @@
         <van-cell title="上报人分润比例" :value="settlementParentToChildRatioDisplay" />
       </van-cell-group>
 
-      <van-cell-group  title="结算信息">
+      <van-cell-group inset title="结算信息">
         <van-cell title="审核状态">
           <template #value>
             <van-tag :type="settlementTagType" plain round>
@@ -40,7 +40,7 @@
         </van-cell>
         <van-cell v-if="needSubmitTransferProof" title="" class="hint-cell">
           <template #title>
-            <span class="transfer-hint">请向收款人完成打款后，上传划转凭证提交上级审核。</span>
+            <span class="transfer-hint">请重新上传给上级的划转凭证；确认已向收款人完成打款后再提交上级审核。</span>
           </template>
         </van-cell>
          <van-cell title="利润截图">
@@ -62,29 +62,14 @@
               alt="划转凭证"
               size="large"
             />
-            <van-button
-              v-else-if="needSubmitTransferProof"
-              type="primary"
-              size="small"
-              :loading="submittingTransfer"
-              @click="onPickTransferProof"
-            >
-              上传划转凭证
-            </van-button>
+            <span v-else-if="needSubmitTransferProof" class="transfer-cell-placeholder">请在页面底部上传</span>
             <span v-else>—</span>
           </template>
         </van-cell>
-        <input
-          ref="transferFileRef"
-          type="file"
-          class="visually-hidden"
-          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf"
-          @change="onTransferFileChange"
-        />
-       
+
         <van-cell title="提交时间" :value="formatDateTime(detail.submitTime ?? detail.createdAt)" />
         <van-cell v-if="detail.auditTime" title="审核时间" :value="formatDateTime(detail.auditTime)" />
-        <van-cell v-if="detail.auditRemark" title="审核备注" :label="detail.auditRemark" />
+        <van-cell v-if="detail.auditRemark" title="审核备注" :value="detail.auditRemark" />
       </van-cell-group>
 
       <div v-if="showProfitDistributionLink" class="link-row">
@@ -92,11 +77,49 @@
       </div>
 
       <div v-if="showReviewActions" class="actions">
-        <van-button type="primary" block plain @click="openApproveDialog">通过</van-button>
-        <van-button type="danger" block plain @click="openReject">拒绝</van-button>
+        <van-button type="primary" block @click="openApproveDialog">通过</van-button>
+        <van-button type="danger" block @click="openReject">拒绝</van-button>
+      </div>
+
+      <div v-if="showResubmitProfitButton" class="link-row link-row--footer">
+        <van-button block round type="primary" @click="goResubmitProfit">利润重新提交</van-button>
       </div>
     </template>
     <EmptyState v-else description="无法加载该结算单" />
+
+    <div v-if="needSubmitTransferProof" class="settlement-transfer-bar">
+      <van-button block round type="primary" @click="openTransferSheet">上传划转凭证</van-button>
+    </div>
+
+    <van-popup
+      v-model:show="transferSheetShow"
+      position="bottom"
+      round
+      teleport="body"
+      safe-area-inset-bottom
+    >
+      <div class="transfer-sheet">
+        <div class="transfer-sheet__head">上传划转凭证</div>
+        <p class="transfer-sheet__tip">请重新上传给上级的划转凭证。请确认打款到账、凭证真实；提交前需二次确认。</p>
+        <div class="transfer-sheet__upload">
+          <ImageUploadField
+            v-model="transferPendingUrl"
+            upload-type="TRANSFER"
+            hint="拍照或相册，自动上传"
+          />
+        </div>
+        <van-button
+          block
+          round
+          type="primary"
+          :loading="submittingTransfer"
+          :disabled="!transferPendingUrl.trim()"
+          @click="onConfirmTransferSubmit"
+        >
+          提交审核
+        </van-button>
+      </div>
+    </van-popup>
 
     <van-dialog
       v-model:show="approveDialogShow"
@@ -133,12 +156,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import ImageUploadField from '@/components/ImageUploadField.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import { useAuthStore } from '@/stores/auth'
-import { uploadFile, FILE_UPLOAD_TYPES } from '@/api/files'
+import { fetchProfitReportById } from '@/api/profitReport'
 import {
   fetchSettlementByRootReportId,
   fetchSettlementRowById,
@@ -146,6 +170,7 @@ import {
   rejectSettlement,
   submitSettlementTransfer,
 } from '@/api/settlement'
+import { canCurrentUserUseProfitResubmitFlow } from '@/utils/profitReportSettlementBranch'
 import {
   formatMoney,
   formatRate,
@@ -162,8 +187,11 @@ const detail = ref(null)
 const approveDialogShow = ref(false)
 const rejectShow = ref(false)
 const rejectRemark = ref('')
-const transferFileRef = ref(null)
 const submittingTransfer = ref(false)
+const transferSheetShow = ref(false)
+const transferPendingUrl = ref('')
+/** 结算「已拒绝」时拉取根利润单，用于区分直属退回(可走 resubmit)与链上场景 */
+const profitHeadForResubmitGate = ref(null)
 
 /** 结算单主键：来自接口详情，用于提交/审核/上传（勿用路由 id，付款人详情路由里 id 为 root_report_id） */
 const detailSettlementPk = computed(() => {
@@ -193,6 +221,16 @@ function isPendingSubmitStatus(s) {
   if (v === 'PENDING_SUBMIT') return true
   const n = Number(v)
   return n === 2
+}
+
+function isSettlementRejectedStatus(val) {
+  if (val == null || val === '') return false
+  if (typeof val === 'string') {
+    const sk = val.trim().toUpperCase().replace(/-/g, '_')
+    if (sk === 'REJECTED' || sk === 'SETTLEMENT_REJECTED') return true
+  }
+  const n = Number(val)
+  return n === 5
 }
 
 const meId = computed(() => {
@@ -266,6 +304,21 @@ const showReviewActions = computed(() => {
   if (!isPendingReview(detail.value)) return false
   if (isMeAsSubordinatePayer.value) return false
   return isMeAsReviewingSuperior.value
+})
+
+/**
+ * 结算已拒绝且本人为付款方：仅当根利润单为 RETURNED_TO_APPLICANT 且本人为申报人时，才引导利润 resubmit；
+ * 链上被拒（利润单多为 1/2）不应出现该入口。
+ */
+const showResubmitProfitButton = computed(() => {
+  const d = detail.value
+  if (!d) return false
+  if (!isSettlementRejectedStatus(d.status)) return false
+  if (profitReportIdForLink.value == null) return false
+  if (!isMeAsSubordinatePayer.value) return false
+  const head = profitHeadForResubmitGate.value
+  if (!head || typeof head !== 'object') return false
+  return canCurrentUserUseProfitResubmitFlow(head, meId.value)
 })
 
 const reportNoText = computed(() => {
@@ -342,7 +395,7 @@ const transferShotUrl = computed(() => {
   return pickStr(d.transferScreenshotUrl, d.transferToParentScreenshotUrl)
 })
 
-/** 待提交凭证、尚无划转图、且当前用户为付款人 → 需向上级打款并上传凭证 */
+/** 待支付、尚无划转图、且当前用户为付款人 → 需向上级打款并上传凭证 */
 const needSubmitTransferProof = computed(() => {
   const d = detail.value
   if (!d || !isPendingSubmitStatus(d)) return false
@@ -395,6 +448,15 @@ function goDistribution() {
   })
 }
 
+function goResubmitProfit() {
+  const id = profitReportIdForLink.value
+  if (id == null) return
+  router.push({
+    name: 'ProfitReportResubmit',
+    params: { profitReportId: String(id) },
+  })
+}
+
 function txt(v) {
   if (v === null || v === undefined || v === '') return '—'
   return String(v)
@@ -404,25 +466,38 @@ function img(u) {
   return u ? String(u) : ''
 }
 
-function onPickTransferProof() {
-  transferFileRef.value?.click()
+function openTransferSheet() {
+  transferPendingUrl.value = ''
+  transferSheetShow.value = true
 }
 
-async function onTransferFileChange(ev) {
-  const input = ev.target
-  const file = input.files?.[0]
-  if (input) input.value = ''
-  if (!file || detailSettlementPk.value == null) return
+async function onConfirmTransferSubmit() {
+  const url = transferPendingUrl.value?.trim()
+  if (!url) {
+    showToast('请先上传划转凭证')
+    return
+  }
+  const id = detailSettlementPk.value
+  if (id == null) {
+    showToast('无效单据')
+    return
+  }
+  try {
+    await showConfirmDialog({
+      title: '确认提交',
+      message: '提交后上级将审核您的划转凭证，是否确认？',
+      confirmButtonText: '确认提交',
+      cancelButtonText: '再检查一下',
+    })
+  } catch {
+    return
+  }
   submittingTransfer.value = true
   try {
-    const vo = await uploadFile(file, FILE_UPLOAD_TYPES.TRANSFER)
-    const url = vo?.url ?? vo?.data?.url
-    if (!url || String(url).trim() === '') {
-      showToast('上传未返回地址')
-      return
-    }
-    await submitSettlementTransfer(detailSettlementPk.value, { transferScreenshotUrl: String(url).trim() })
-    showToast('已提交，待上级审核')
+    await submitSettlementTransfer(id, { transferScreenshotUrl: url })
+    showToast('已提交，待审核')
+    transferSheetShow.value = false
+    transferPendingUrl.value = ''
     await load()
   } catch {
     /* 错误已由请求层 Toast */
@@ -439,8 +514,11 @@ async function load() {
   if (fetchId == null) {
     detail.value = null
     loading.value = false
+    transferSheetShow.value = false
     return
   }
+  transferSheetShow.value = false
+  profitHeadForResubmitGate.value = null
   loading.value = true
   try {
     detail.value = useRow
@@ -452,6 +530,28 @@ async function load() {
     loading.value = false
   }
 }
+
+watch(
+  () => [
+    detail.value?.id,
+    detail.value?.status,
+    isMeAsSubordinatePayer.value,
+    profitReportIdForLink.value,
+  ],
+  async () => {
+    profitHeadForResubmitGate.value = null
+    const d = detail.value
+    const rid = profitReportIdForLink.value
+    if (!d || rid == null || !isSettlementRejectedStatus(d.status) || !isMeAsSubordinatePayer.value) return
+    try {
+      const pr = await fetchProfitReportById(rid)
+      profitHeadForResubmitGate.value = pr && typeof pr === 'object' ? pr : null
+    } catch {
+      profitHeadForResubmitGate.value = null
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(load)
 watch(
@@ -512,6 +612,9 @@ async function onRejectDialogBeforeClose(action) {
 .link-row {
   padding: 12px 16px 0;
 }
+.link-row--footer {
+  padding: 16px 16px 24px;
+}
 .actions {
   display: flex;
   flex-direction: column;
@@ -534,15 +637,39 @@ async function onRejectDialogBeforeClose(action) {
   flex: 1;
   max-width: 100%;
 }
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.transfer-cell-placeholder {
+  font-size: 13px;
+  color: #969799;
+}
+.settlement-detail--pad-bottom {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+}
+.settlement-transfer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--van-background-2, #fff);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+.transfer-sheet {
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+}
+.transfer-sheet__head {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.transfer-sheet__tip {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+.transfer-sheet__upload {
+  margin-bottom: 20px;
 }
 </style>

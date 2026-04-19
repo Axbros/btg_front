@@ -18,7 +18,7 @@
               </div>
             </template>
             <template #desc>
-              <van-cell-group :border="false" class="qual-pending__cells">
+              <van-cell-group inset :border="false" class="qual-pending__cells">
                 <van-cell title="手机" :value="txt(row.mobile)" />
                 <van-cell title="昵称" :value="txt(row.nickname)" />
                 <van-cell title="真实姓名" :value="txt(row.realName)" />

@@ -16,7 +16,7 @@
                 {{ formatReplenishmentListStatus(row) }}
               </van-tag>
             </template>
-            <van-cell-group v-if="detailMap[row.id]" :border="false" class="repl-card__cells">
+            <van-cell-group v-if="detailMap[row.id]" inset :border="false" class="repl-card__cells">
               <van-cell title="申请人" :value="applicantLabel(detailMap[row.id])" />
               <van-cell title="补仓额度" :value="formatMoney(detailMap[row.id].replenishAmount ?? 0)" />
               <van-cell v-if="assignLabel(detailMap[row.id])" title="转派信息" :value="assignLabel(detailMap[row.id])" />

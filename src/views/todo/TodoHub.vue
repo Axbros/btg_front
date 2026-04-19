@@ -31,7 +31,7 @@
           v-if="!isRootUser"
           title="待支付上级结算"
           is-link
-          @click="goNav('/settlement/pending-pay')"
+          @click="goNav({ name: 'PendingPaySettlements', query: { status: '2' } })"
         >
           <template #value>
             <van-badge v-if="payableBadge" :content="payableBadge" max="99" />
@@ -42,7 +42,7 @@
           v-if="!isRootUser"
           title="待确认补仓"
           is-link
-          @click="goNav('/settlement/pending-pay')"
+          @click="goNav({ name: 'ReplenishmentMine', query: { uv: '2' } })"
         >
           <template #value>
             <van-badge
@@ -59,16 +59,16 @@
         <h2 class="section-title">对下级待办</h2>
         <!-- <span class="section-subtitle">高频审批</span> -->
       </div>
-      <van-cell-group  inset class="todo-hub__block todo-quick van-cell-group--card-style">
+      <van-cell-group inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="isRootUser"
           title="待审核资格"
           is-link
           @click="goNav({ name: 'AdminUserQualificationPending' })"
         />
-         <van-cell title="待审核下级结算" is-link @click="goNav('/settlement/pending-review')">
+         <van-cell title="待审核下级结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
           <template #value>
-            <van-badge v-if="settlementBadge" :content="settlementBadge" max="99" />
+            <van-badge v-if="settlementReviewBadge" :content="settlementReviewBadge" max="99" />
           </template>
         </van-cell>
     
@@ -188,7 +188,9 @@ function countBadge(n) {
   return v > 0 ? (v > 99 ? '99+' : v) : undefined
 }
 
-const settlementBadge = computed(() => countBadge(pendingSummary.value?.pendingSettlementReviewCount))
+const settlementReviewBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingProfitReportReviewCount),
+)
 const payableBadge = computed(() => countBadge(pendingSummary.value?.pendingSettlementPayableCount))
 const replenishmentApplicantConfirmBadge = computed(() =>
   countBadge(pendingSummary.value?.pendingReplenishmentApplicantConfirmCount),
