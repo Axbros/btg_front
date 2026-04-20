@@ -13,7 +13,7 @@
             </van-tag>
           </template>
         </van-cell>
-        <van-cell title="所属上级" :value="referrerNick(userInfo)" />
+        <van-cell title="所属团队长" :value="referrerNick(userInfo)" />
         <!-- <van-cell
           v-if="auth.canShowInviteCode"
           class="profile-invite-cell"

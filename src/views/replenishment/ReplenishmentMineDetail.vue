@@ -4,8 +4,14 @@
     <van-loading v-if="loading" class="repl-mine-detail__loading" vertical>加载中…</van-loading>
     <template v-else>
       <ReplenishmentApplyDetailBody v-if="replenishment" :detail="replenishment" />
-     
-      <van-cell-group v-if="replenishment" inset title="资方与到账确认" class="repl-mine-detail__capital">
+      <ReplenishmentSubmitMt5SnapshotGroup :snapshot="replenishment?.submitMt5Snapshot" />
+
+      <van-cell-group
+        v-if="replenishment && approvedRepays.length"
+        inset
+        title="资方与到账确认"
+        class="repl-mine-detail__capital"
+      >
         <van-cell title="资方执行用户" :value="capitalExecutorText" />
         <!-- <van-cell title="资方收款 UID" :value="txt(replenishment.capitalReceiverUid)" /> -->
         <van-cell v-if="transferShotUrl" title="资方转账凭证">
@@ -190,6 +196,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import ReplenishmentApplyDetailBody from '@/components/ReplenishmentApplyDetailBody.vue'
+import ReplenishmentSubmitMt5SnapshotGroup from '@/components/ReplenishmentSubmitMt5SnapshotGroup.vue'
 import { useAuthStore } from '@/stores/auth'
 import {
   fetchReplenishmentMineDetail,

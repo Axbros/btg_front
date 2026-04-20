@@ -9,7 +9,7 @@
             <van-cell title="玩家ID" :value="String(row.userId ?? '—')" />
             <van-cell title="推荐人ID" :value="String(row.referrerUserId ?? '—')" />
             <van-cell title="盈利金额" :value="formatMoney(row.profitAmount)" />
-            <van-cell title="子级利润比例" :value="formatRate(row.commissionRate)" />
+            <van-cell title="用户利润比例" :value="formatRate(row.commissionRate)" />
             <van-cell title="分润金额" :value="formatMoney(row.commissionAmount)" />
             <van-cell title="收益截图">
               <template #value>

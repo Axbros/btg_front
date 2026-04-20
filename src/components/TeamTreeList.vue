@@ -58,7 +58,7 @@ defineOptions({ name: 'TeamTreeList' })
 const props = defineProps({
   nodes: { type: Array, default: () => [] },
   depth: { type: Number, default: 0 },
-  /** 上级序号，如 `"1"`；根级留空则本层为 `1`、`2`… */
+  /** 团队长序号，如 `"1"`；根级留空则本层为 `1`、`2`… */
   pathPrefix: { type: String, default: '' },
 })
 

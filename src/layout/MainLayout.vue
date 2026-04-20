@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -38,6 +38,11 @@ const todoTabBadge = computed(() => {
 onMounted(() => {
   if (auth.isLogin) {
     dashboard.fetchPendingSummary().catch(() => {})
+    dashboard.startPendingSummaryPolling()
   }
+})
+
+onUnmounted(() => {
+  dashboard.stopPendingSummaryPolling()
 })
 </script>

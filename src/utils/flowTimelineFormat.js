@@ -1,7 +1,7 @@
 /** 流转时间线：节点角色（与后端枚举对齐） */
 export const NODE_ROLE_LABELS = {
   APPLICANT: '申报人',
-  UPLINE: '上级',
+  UPLINE: '团队长',
   ROOT: '根用户',
   ADMIN: '管理员',
 }

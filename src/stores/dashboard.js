@@ -13,7 +13,7 @@ function num(v) {
 export function normalizePendingSummary(raw) {
   const d = raw != null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
   const pendingSettlementReviewCount = num(d.pendingSettlementReviewCount)
-  /** 待支付给上级（本人应付给上级的结算单） */
+  /** 待支付给团队长（本人应付给团队长的结算单） */
   const pendingSettlementPayableCount = num(d.pendingSettlementPayableCount)
   const pendingProfitReportReviewCount = num(d.pendingProfitReportReviewCount)
   const pendingReplenishmentReviewCount = num(d.pendingReplenishmentReviewCount)
@@ -66,6 +66,9 @@ const emptySummary = () => ({
   totalPendingCount: 0,
 })
 
+/** 与后端待办角标同步；静默轮询不驱动 loading，避免界面闪烁 */
+const PENDING_SUMMARY_POLL_MS = 5000
+
 export const useDashboardStore = defineStore('dashboard', () => {
   const pendingSummary = ref(emptySummary())
   const todoItems = ref([])
@@ -73,10 +76,27 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const todoLoading = ref(false)
   let fetchFailedToastShown = false
   let todoFetchFailedToastShown = false
+  /** @type {ReturnType<typeof setInterval> | null} */
+  let pendingSummaryPollTimer = null
 
   const totalPendingCount = computed(() => num(pendingSummary.value.totalPendingCount))
 
+  function stopPendingSummaryPolling() {
+    if (pendingSummaryPollTimer != null) {
+      clearInterval(pendingSummaryPollTimer)
+      pendingSummaryPollTimer = null
+    }
+  }
+
+  function startPendingSummaryPolling() {
+    stopPendingSummaryPolling()
+    pendingSummaryPollTimer = setInterval(() => {
+      void fetchPendingSummary({ silent: true })
+    }, PENDING_SUMMARY_POLL_MS)
+  }
+
   function clearPendingSummary() {
+    stopPendingSummaryPolling()
     pendingSummary.value = emptySummary()
     todoItems.value = []
     loading.value = false
@@ -85,8 +105,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     todoFetchFailedToastShown = false
   }
 
-  async function fetchPendingSummary() {
-    loading.value = true
+  /**
+   * @param {{ silent?: boolean }} [options] silent=true：后台轮询，不修改 loading、失败 Toast 仍受 fetchFailedToastShown 限制
+   */
+  async function fetchPendingSummary(options = {}) {
+    const silent = Boolean(options?.silent)
+    if (!silent) loading.value = true
     try {
       const data = await getPendingSummary()
       pendingSummary.value = normalizePendingSummary(data)
@@ -99,7 +123,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         showToast({ type: 'text', message: '待办汇总加载失败', duration: 2000 })
       }
     } finally {
-      loading.value = false
+      if (!silent) loading.value = false
     }
   }
 
@@ -135,5 +159,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     fetchTodoItems,
     clearPendingSummary,
     normalizePendingSummary,
+    startPendingSummaryPolling,
+    stopPendingSummaryPolling,
   }
 })

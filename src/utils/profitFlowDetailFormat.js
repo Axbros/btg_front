@@ -13,7 +13,7 @@ const DATA_SCOPE_MAP = {
   REPORTER_SUBCHAIN: '申报人视角',
   CHAIN_PARTICIPANT_SUBCHAIN: '参与链路视角',
   REPORTER_AMOUNTS_MASKED: '申报人视图（部分金额隐藏）',
-  MIDDLE_AMOUNTS_MASKED: '中间层视图（上级金额隐藏）',
+  MIDDLE_AMOUNTS_MASKED: '中间层视图（团队长金额隐藏）',
 }
 
 /** 链路顶层 / 层 settlementStatus 等与产品文案对齐（先于通用结算映射） */

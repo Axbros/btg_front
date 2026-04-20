@@ -48,10 +48,10 @@ const STATUS_MAP = {
 
 /**
  * btg_profit_report.status：
- * 1 待直属上级审核 2 已进入结算链 3 历史终局拒绝 4 全链路完成 5 已退回申报人修改
+ * 1 待直属团队长审核 2 已进入结算链 3 历史终局拒绝 4 全链路完成 5 已退回申报人修改
  */
 const PROFIT_REPORT_STATUS_NUM = {
-  1: '待直属上级审核',
+  1: '待直属团队长审核',
   2: '已进入结算链',
   3: '历史终局拒绝',
   4: '全链路完成',
@@ -97,7 +97,7 @@ export function formatStatus(val) {
 }
 
 const PROFIT_REPORT_STATUS_STR = {
-  PENDING_DIRECT_REVIEW: '待直属上级审核',
+  PENDING_DIRECT_REVIEW: '待直属团队长审核',
   PENDING_REVIEW: '待审核',
   IN_SETTLEMENT_CHAIN: '已进入结算链',
   REJECTED: '已拒绝',
@@ -109,13 +109,13 @@ const PROFIT_REPORT_STATUS_STR = {
 
 /** profit-flow layers / 与后端 ProfitFlowLayerState 等对齐（先于 formatProfitRecordStatus 定义） */
 const PROFIT_FLOW_COMBINED_STATE_STR = {
-  PENDING_DIRECT_REVIEW: '待直属上级审核',
+  PENDING_DIRECT_REVIEW: '待直属团队长审核',
   RETURNED_TO_APPLICANT: '已退回申报人修改',
   PROFIT_REJECTED: '历史终局拒绝',
   DIRECT_REVIEW_PASSED: '已进入结算链（直属已通过）',
   SETTLEMENT_NOT_STARTED: '尚未轮到该层',
   SETTLEMENT_PENDING_SUBMIT: '付款人待提交转账凭证',
-  SETTLEMENT_PENDING_REVIEW: '待收款上级审核',
+  SETTLEMENT_PENDING_REVIEW: '待收款团队长审核',
   SETTLEMENT_APPROVED: '已通过',
   SETTLEMENT_REJECTED: '已拒绝',
   RETURNED_FOR_EDIT: '已退回待修改',
@@ -211,7 +211,7 @@ const SETTLEMENT_STATUS_STR = {
   /** profit-flow 结算层枚举 */
   SETTLEMENT_NOT_STARTED: '尚未轮到该层',
   SETTLEMENT_PENDING_SUBMIT: '付款人待提交转账凭证',
-  SETTLEMENT_PENDING_REVIEW: '待收款上级审核',
+  SETTLEMENT_PENDING_REVIEW: '待收款团队长审核',
   SETTLEMENT_APPROVED: '已通过',
   SETTLEMENT_REJECTED: '已拒绝',
   /** 分润链路层 / 顶层状态 */

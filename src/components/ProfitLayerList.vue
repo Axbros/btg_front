@@ -212,7 +212,7 @@ function layerParentName(layer) {
   return v != null && String(v).trim() !== '' ? String(v).trim() : ''
 }
 
-/** 有上级用户主键则非终局审核层 */
+/** 有团队长用户主键则非终局审核层 */
 function hasParentUserId(layer) {
   if (!layer || typeof layer !== 'object') return false
   const raw = layer.parentUserId

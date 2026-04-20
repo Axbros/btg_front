@@ -1,6 +1,6 @@
 <template>
   <div class="ppay-mine">
-    <AppHeader title="待支付给上级" />
+    <AppHeader title="待支付给团队长" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="ppay-mine-wrap" :class="{ 'ppay-mine-wrap--docked': loaded }">
         <div class="ppay-mine-filter">

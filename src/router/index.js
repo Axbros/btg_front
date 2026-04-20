@@ -70,7 +70,7 @@ const routes = [
         path: 'team/member/:memberId/profit-ratio',
         name: 'ChildProfitRatioEdit',
         component: () => import('@/views/team/ChildProfitRatioEdit.vue'),
-        meta: { title: '调整子级利润比例', tab: 'team', hideTab: true },
+        meta: { title: '调整用户利润比例', tab: 'team', hideTab: true },
       },
       {
         path: 'team/member/:memberId',
@@ -118,7 +118,7 @@ const routes = [
         path: 'settlement/pending-pay',
         name: 'PendingPaySettlements',
         component: () => import('@/views/settlement/PendingPayList.vue'),
-        meta: { title: '待支付给上级', hideTab: true },
+        meta: { title: '待支付给团队长', hideTab: true },
       },
       {
         path: 'settlement/pending-review',
@@ -290,6 +290,12 @@ const routes = [
         name: 'AdminUserQualificationPending',
         component: () => import('@/views/admin/UserQualificationPending.vue'),
         meta: { title: '待审核资格', requiresRoot: true, hideTab: true },
+      },
+      {
+        path: 'admin/profit-report-window',
+        name: 'AdminProfitReportWindowToday',
+        component: () => import('@/views/admin/ProfitReportWindowToday.vue'),
+        meta: { title: '今日结算', requiresRoot: true, hideTab: true },
       },
       {
         path: 'admin/replenishments/pending',

@@ -7,6 +7,11 @@
         <van-cell title="底仓本金" :value="formatMoney(principalNum)" />
         <van-cell title="券商名称" :value="displayTxt(walletName)" />
         <van-cell title="钱包地址（TRC20）" :value="displayTxt(walletAddress)" />
+        <van-cell title="交易所UID">
+          <template #value>
+            <span class="repl-submit__uid">{{ displayTxt(exchangeUid) }}</span>
+          </template>
+        </van-cell>
         <van-field
           v-model="balanceAmount"
           name="balanceAmount"
@@ -59,6 +64,7 @@ const profileLoading = ref(true)
 const principalNum = ref(0)
 const walletName = ref('')
 const walletAddress = ref('')
+const exchangeUid = ref('')
 const balanceAmount = ref('')
 const balanceScreenshotUrl = ref('')
 const loading = ref(false)
@@ -97,10 +103,12 @@ onMounted(async () => {
     if (Number.isNaN(principalNum.value)) principalNum.value = 0
     walletName.value = pickStr(prof, 'walletName')
     walletAddress.value = pickStr(prof, 'walletAddress')
+    exchangeUid.value = pickStr(prof, 'exchangeUid')
   } catch {
     principalNum.value = 0
     walletName.value = ''
     walletAddress.value = ''
+    exchangeUid.value = ''
   } finally {
     profileLoading.value = false
   }
@@ -124,6 +132,10 @@ async function onSubmit() {
 </script>
 
 <style scoped>
+.repl-submit__uid {
+  color: #ee0a24;
+  font-weight: 700;
+}
 .actions {
   padding: 16px 12px 24px;
 }

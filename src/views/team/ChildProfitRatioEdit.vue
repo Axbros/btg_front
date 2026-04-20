@@ -102,7 +102,7 @@ const currentRatio = computed(() => {
 
 const ratioInput = ref('')
 
-/** 接口返回：当前直属下级可设置的子级利润比例上限（小数 0～1） */
+/** 接口返回：当前直属下级可设置的用户利润比例上限（小数 0～1） */
 const maxAssignableRatio = computed(() => {
   const d = userDetail.value
   if (!d || typeof d !== 'object') return null

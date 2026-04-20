@@ -9,7 +9,7 @@
         <!-- <van-cell title="用户ID" :value="txt(user.id)" /> -->
         <van-cell title="手机号码" :value="txt(user.mobile)" />
         <van-cell title="用户姓名" :value="txt(user.nickname)" />
-        <van-cell title="所属上级" :value="referrerNicknameText" />
+        <van-cell title="所属团队长" :value="referrerNicknameText" />
         <van-cell title="注册时间" :value="formatDateTime(user.createdAt)" />
         <!-- <van-cell title="账号状态">
           <template #value>
@@ -118,7 +118,7 @@ function hasTextField(v) {
   return v != null && String(v).trim() !== ''
 }
 
-/** 后端对非根「上级看下级」返回资料切片时无钱包字段；不展示空券商/交易区块，避免误显敏感结构 */
+/** 后端对非根「团队长看下级」返回资料切片时无钱包字段；不展示空券商/交易区块，避免误显敏感结构 */
 const showBrokerSection = computed(() => {
   const p = profile.value
   if (!p || typeof p !== 'object') return false
@@ -187,7 +187,7 @@ const maxAssignableChildProfitRatio = computed(() => {
   return Number.isFinite(n) ? n : null
 })
 
-/** 分润比例：仅非根、直属上级、下级已激活；从「全部下级」打开非直属详情时为 false */
+/** 分润比例：仅非根、直属团队长、下级已激活；从「全部下级」打开非直属详情时为 false */
 const canAdjustChildProfitRatio = computed(() =>
   canAdjustChildProfitRatioOnFrontend(userInfo.value, user.value),
 )

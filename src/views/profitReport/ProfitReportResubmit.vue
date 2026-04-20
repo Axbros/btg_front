@@ -4,7 +4,7 @@
     <div class="profit-report-shell__scroll">
       <van-loading v-if="pageLoading" class="pr-resubmit__loading pr-resubmit__fill" vertical>加载中…</van-loading>
       <div v-else-if="settlementChainOnlyHint" class="pr-resubmit__fill pr-resubmit__misroute">
-        <van-empty description="当前利润单在结算链中，请重新上传给上级的划转凭证" />
+        <van-empty description="当前利润单在结算链中，请重新上传给团队长的划转凭证" />
         <van-button block round type="primary" class="pr-resubmit__misroute-btn" @click="goPendingPaySettlements">
           前往待支付结算
         </van-button>
@@ -55,7 +55,7 @@
             <ImageUploadField
               v-model="transferScreenshotUrl"
               upload-type="TRANSFER"
-              hint="仅向直属上级划转，拍照或相册上传"
+              hint="仅向直属团队长划转，拍照或相册上传"
             />
           </template>
         </van-field>

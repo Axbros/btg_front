@@ -4,6 +4,7 @@
     <van-loading v-if="loading" class="detail-loading" vertical>加载中…</van-loading>
     <template v-else-if="detail">
       <ReplenishmentApplyDetailBody :detail="detail" />
+      <ReplenishmentSubmitMt5SnapshotGroup :snapshot="detail?.submitMt5Snapshot" />
       <van-cell-group v-if="showActionBar" inset class="detail-actions">
         <van-cell>
           <div class="card__actions">
@@ -113,6 +114,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import ReplenishmentApplyDetailBody from '@/components/ReplenishmentApplyDetailBody.vue'
+import ReplenishmentSubmitMt5SnapshotGroup from '@/components/ReplenishmentSubmitMt5SnapshotGroup.vue'
 import { fetchAdminReplenishmentDetail, approveReplenishmentAdmin, rejectReplenishmentAdmin } from '@/api/adminReplenishment'
 import { assignReplenishment } from '@/api/replenishment'
 

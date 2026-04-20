@@ -16,7 +16,7 @@
       <van-cell-group
         v-if="directParentSectionVisible"
         inset
-        title="直属上级处理情况"
+        title="直属团队长处理情况"
         class="profit-flow-detail__block"
       >
         <van-cell v-if="directParentStatusDisplay" title="状态" :value="directParentStatusDisplay" />

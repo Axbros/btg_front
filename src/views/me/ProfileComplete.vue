@@ -10,7 +10,7 @@
         background="#fff7e6"
         :scrollable="false"
         wrapable
-        text="您的账户当前为待完善状态，请补全资料并提交，待直属上级审核通过后方可使用其它功能。"
+        text="您的账户当前为待完善状态，请补全资料并提交，待直属团队长审核通过后方可使用其它功能。"
       />
       <van-notice-bar
         v-else-if="auth.isProfilePendingReview"

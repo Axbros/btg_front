@@ -40,7 +40,7 @@
         </van-cell>
         <van-cell v-if="needSubmitTransferProof" title="" class="hint-cell">
           <template #title>
-            <span class="transfer-hint">请重新上传给上级的划转凭证；确认已向收款人完成打款后再提交上级审核。</span>
+            <span class="transfer-hint">请重新上传给团队长的划转凭证；确认已向收款人完成打款后再提交团队长审核。</span>
           </template>
         </van-cell>
          <van-cell title="利润截图">
@@ -100,7 +100,7 @@
     >
       <div class="transfer-sheet">
         <div class="transfer-sheet__head">上传划转凭证</div>
-        <p class="transfer-sheet__tip">请重新上传给上级的划转凭证。请确认打款到账、凭证真实；提交前需二次确认。</p>
+        <p class="transfer-sheet__tip">请重新上传给团队长的划转凭证。请确认打款到账、凭证真实；提交前需二次确认。</p>
         <div class="transfer-sheet__upload">
           <ImageUploadField
             v-model="transferPendingUrl"
@@ -257,7 +257,7 @@ function pickToUserId(d) {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-/** 当前用户是否为直属上级（收款方），可审核本条结算 */
+/** 当前用户是否为直属团队长（收款方），可审核本条结算 */
 const isMeAsReviewingSuperior = computed(() => {
   const d = detail.value
   const mid = meId.value
@@ -299,7 +299,7 @@ const showProfitDistributionLink = computed(() => {
   return profitReportIdForLink.value != null
 })
 
-/** 仅待审核且当前用户为应审核的上级时显示通过/拒绝（本人作为上报人打开详情不显示） */
+/** 仅待审核且当前用户为应审核的团队长时显示通过/拒绝（本人作为上报人打开详情不显示） */
 const showReviewActions = computed(() => {
   if (!isPendingReview(detail.value)) return false
   if (isMeAsSubordinatePayer.value) return false
@@ -395,7 +395,7 @@ const transferShotUrl = computed(() => {
   return pickStr(d.transferScreenshotUrl, d.transferToParentScreenshotUrl)
 })
 
-/** 待支付、尚无划转图、且当前用户为付款人 → 需向上级打款并上传凭证 */
+/** 待支付、尚无划转图、且当前用户为付款人 → 需向团队长打款并上传凭证 */
 const needSubmitTransferProof = computed(() => {
   const d = detail.value
   if (!d || !isPendingSubmitStatus(d)) return false
@@ -485,7 +485,7 @@ async function onConfirmTransferSubmit() {
   try {
     await showConfirmDialog({
       title: '确认提交',
-      message: '提交后上级将审核您的划转凭证，是否确认？',
+      message: '提交后团队长将审核您的划转凭证，是否确认？',
       confirmButtonText: '确认提交',
       cancelButtonText: '再检查一下',
     })

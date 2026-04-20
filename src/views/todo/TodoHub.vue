@@ -22,14 +22,14 @@
       </section>
 
       <div class="section-title-row todo-hub__section-head ">
-        <h2 class="section-title">对上级待办</h2>
+        <h2 class="section-title">对团队长待办</h2>
         <!-- <span class="section-subtitle">高频审批</span> -->
       </div>
 
       <van-cell-group inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="!isRootUser"
-          title="待支付上级结算"
+          title="待支付团队长结算"
           is-link
           @click="goNav({ name: 'PendingPaySettlements', query: { status: '2' } })"
         >
@@ -211,7 +211,7 @@ const summaryStatTiles = computed(() => {
   const tiles = [
     summaryTile('总待办', ps?.totalPendingCount),
     // summaryTile('待审核下级结算', ps?.pendingSettlementReviewCount),
-    // summaryTile('待支付给上级', ps?.pendingSettlementPayableCount),
+    // summaryTile('待支付给团队长', ps?.pendingSettlementPayableCount),
   ]
   if (!isRootUser.value) {
     tiles.push(

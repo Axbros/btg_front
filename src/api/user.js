@@ -1,13 +1,13 @@
 import { get, put } from './request'
 
-/** GET /api/v1/me — UserMeVo（含直属上级展示名 referrerNickname） */
+/** GET /api/v1/me — UserMeVo（含直属团队长展示名 referrerNickname） */
 export function fetchMe() {
   return get('/me')
 }
 
 /**
  * GET /api/user/{id}，需登录（查看下级详情等场景）
- * UserDetailVo：user、profile；分润相关常见字段：childProfitRatio（子级利润比例）等
+ * UserDetailVo：user、profile；分润相关常见字段：childProfitRatio（用户利润比例）等
  */
 export function fetchUserDetail(id) {
   return get(`/user/${id}`)

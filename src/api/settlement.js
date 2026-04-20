@@ -29,7 +29,7 @@ export function fetchMyPendingPaySettlements(params = {}) {
   return get('/settlements/mine-payables', q)
 }
 
-/** GET /api/v1/settlements/pending-review — 本人为收款上级的待审核；Page<SettlementOrder> */
+/** GET /api/v1/settlements/pending-review — 本人为收款团队长的待审核；Page<SettlementOrder> */
 export function fetchMyPendingReviewSettlements(params = {}) {
   const page = params.page ?? 1
   const size = params.size ?? params.pageSize ?? 10

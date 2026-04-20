@@ -13,7 +13,7 @@
           <template #description>
             <p class="state-page__lead">{{ parentConfigBlockText }}</p>
             <p class="state-page__hint">
-              暂时无法进行利润上报。请主动联系直属上级，请其在系统中为您配置「子级总利润占比」后再返回本页操作。
+              暂时无法进行利润上报。请主动联系直属团队长，请其在系统中为您配置「用户总利润占比」后再返回本页操作。
             </p>
           </template>
         </van-empty>
@@ -23,7 +23,7 @@
       </div>
       <div v-else-if="contextUnavailable" class="hint-block hint-block--warn">
         <p class="hint-block__text">
-          无法获取您在上级处的分润比例配置，暂时不能提交上报（需已加入团队且上级已为您配置子级利润比例）。
+          无法获取您在团队长处的分润比例配置，暂时不能提交上报（需已加入团队且团队长已为您配置用户利润比例）。
         </p>
         <van-button size="small" type="primary" plain @click="loadContext">重新加载</van-button>
       </div>
@@ -35,7 +35,7 @@
         class="profit-report-submit__form"
       >
       <van-cell-group inset>
-        <van-cell v-if="contextSummaryText" title="当前分润上下文" :label="contextSummaryText" />
+        <van-cell v-if="contextSummaryText" title="当前分润信息" :label="contextSummaryText" />
         <van-field
           v-model="profitAmount"
           name="profitAmount"
@@ -76,12 +76,12 @@
             <ImageUploadField
               v-model="transferScreenshotUrl"
               upload-type="TRANSFER"
-              hint="仅向直属上级划转，拍照或相册上传"
+              hint="仅向直属团队长划转，拍照或相册上传"
             />
           </template>
         </van-field>
         <div v-if="transferHintAmount" class="transfer-hint">  
-          <span class="transfer-hint__plain">按当前配置，需向直属上级</span>
+          <span class="transfer-hint__plain">按当前配置，需向直属团队长</span>
           <template v-if="parentExchangeUid">
             <span class="transfer-hint__plain">（交易所 UID：</span>
             <span class="transfer-hint__emph">{{ parentExchangeUid }}</span>
@@ -121,7 +121,7 @@ const loading = ref(false)
 const context = ref(null)
 const contextLoading = ref(true)
 const contextUnavailable = ref(false)
-/** 上级未配置子级总利润占比（接口业务码或 HTTP 409） */
+/** 团队长未配置用户总利润占比（接口业务码或 HTTP 409） */
 const needsParentProfitConfig = ref(false)
 const parentConfigBlockText = ref('')
 
@@ -144,7 +144,7 @@ function pickNum(...candidates) {
   return null
 }
 
-/** 需转给直属上级的比例：优先用后端字段，否则按「1 − 子级利润比例」估算 */
+/** 需转给直属团队长的比例：优先用后端字段，否则按「1 − 用户利润比例」估算 */
 function payableRatioFromContext(c) {
   if (!c) return null
   const tr = pickNum(c.transferRatio, c.payableToSuperiorRatio)
@@ -156,7 +156,7 @@ function payableRatioFromContext(c) {
 
 const payableRatio = computed(() => payableRatioFromContext(context.value))
 
-/** 直属上级交易所 UID，用于划转提示 */
+/** 直属团队长交易所 UID，用于划转提示 */
 const parentExchangeUid = computed(() => {
   const c = context.value
   if (!c) return ''
@@ -171,11 +171,11 @@ const contextSummaryText = computed(() => {
   if (!c) return ''
   const parts = []
   const child = pickNum(c.childProfitRatio)
-  if (child != null) parts.push(`子级利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
+  if (child != null) parts.push(`用户利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
   const pr = payableRatio.value
-  if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属上级划转 ${formatRate(pr)} 的利润部分`)
+  if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属团队长划转 ${formatRate(pr)} 的利润部分`)
   // if (parentExchangeUid.value) {
-  //   parts.push(`直属上级交易所 UID：${parentExchangeUid.value}`)
+  //   parts.push(`直属团队长交易所 UID：${parentExchangeUid.value}`)
   // }
   return parts.join('；')
 })
@@ -211,7 +211,7 @@ async function loadContext() {
       needsParentProfitConfig.value = true
       const m = typeof e?.message === 'string' ? e.message.trim() : ''
       parentConfigBlockText.value =
-        m.length > 0 ? m : '直属上级尚未为您配置分润比例'
+        m.length > 0 ? m : '直属团队长尚未为您配置分润比例'
     } else {
       contextUnavailable.value = true
       const m = typeof e?.message === 'string' ? e.message.trim() : ''

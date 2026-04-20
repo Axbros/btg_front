@@ -93,7 +93,7 @@ export function pickProfitFlowLayers(payload) {
 const PAY_TO_PARENT_KEYS = ['payAmountToParent', 'PayAmountToParent']
 
 /**
- * 读取「向上级划转金额」；levelNo=0 等顶层常不带该字段 → undefined（与 0 区分）。
+ * 读取「向团队长划转金额」；levelNo=0 等顶层常不带该字段 → undefined（与 0 区分）。
  * @param {Record<string, unknown>|null|undefined} layer
  * @returns {unknown}
  */
@@ -107,7 +107,7 @@ export function pickLayerPayAmountToParent(layer) {
   return undefined
 }
 
-/** 有「向上级」语义的一层：含上级姓名，或非零 payAmountToParent（排除仅顶层切片、无 parent 的层） */
+/** 有「向团队长」语义的一层：含团队长姓名，或非零 payAmountToParent（排除仅顶层切片、无 parent 的层） */
 export function isPayToParentProfitFlowLayer(layer) {
   if (!layer || typeof layer !== 'object') return false
   const parent = layer.parentUserName
@@ -358,7 +358,7 @@ export function formatProfitFlowLayerDetailLabel(layer) {
     return `第${layer.levelNo ?? ''}层`
   }
   if (isDirectProfitReviewLayer(layer)) {
-    return '申报人 → 直属上级'
+    return '申报人 → 直属团队长'
   }
   const from = pickNick(layer, 'from')
   const to = pickNick(layer, 'to')

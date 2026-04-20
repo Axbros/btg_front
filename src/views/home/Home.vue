@@ -9,7 +9,7 @@
               <img class="home__brand-logo" :src="logoSrc" alt="" width="28" height="28" />
               <span class="home__brand-name">{{ siteTitle }}</span>
             </div>
-            <van-icon
+            <!-- <van-icon
               name="service-o"
               class="home__cs-icon"
               aria-label="联系客服"
@@ -18,7 +18,7 @@
               @click="openCustomerService"
               @keydown.enter.prevent="openCustomerService"
               @keydown.space.prevent="openCustomerService"
-            />
+            /> -->
           </div>
           <div class="home__search-row">
             <div class="home__search-pill" role="search">
@@ -47,11 +47,11 @@
           </div>
           <div v-if="!isRootUser" class="quick-entry-item quick-entry-item--accent" @click="goHomeNav({ name: 'ReplenishmentMine' })">
             <div class="icon"><van-icon name="gold-coin-o" /></div>
-            <span class="text">补仓</span>
+            <span class="text">补仓记录</span>
           </div>
           <div v-if="!isRootUser" class="quick-entry-item" @click="goHomeNav({ name: 'RepayMine' })">
             <div class="icon"><van-icon name="balance-list-o" /></div>
-            <span class="text">归仓</span>
+            <span class="text">归仓记录</span>
           </div>
 
           <div class="quick-entry-item" @click="goHomeNav({ name: 'AccountSummary' })">
@@ -68,7 +68,14 @@
             <span class="text">团队</span>
           </div>
 
-          
+          <div
+            v-if="isRootUser"
+            class="quick-entry-item quick-entry-item--accent"
+            @click="goHomeNav({ name: 'AdminProfitReportWindowToday' })"
+          >
+            <div class="icon"><van-icon name="underway" /></div>
+            <span class="text">今日结算</span>
+          </div>
         </div>
     </section>
 
