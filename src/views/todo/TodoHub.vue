@@ -21,7 +21,7 @@
         </van-row>
       </section>
 
-      <div class="section-title-row todo-hub__section-head ">
+      <div class="section-title-row todo-hub__section-head " v-if="!isRootUser">
         <h2 class="section-title">对团队长待办</h2>
         <!-- <span class="section-subtitle">高频审批</span> -->
       </div>
@@ -56,22 +56,55 @@
       </van-cell-group>
 
       <div class="section-title-row todo-hub__section-head">
-        <h2 class="section-title">对下级待办</h2>
+       
+         <h2 v-if="isRootUser" class="section-title">我的待办</h2>
+          <h2 v-else class="section-title">对下级待办</h2>
         <!-- <span class="section-subtitle">高频审批</span> -->
       </div>
       <van-cell-group inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="isRootUser"
-          title="待审核资格"
+          title="待审核用户"
           is-link
           @click="goNav({ name: 'AdminUserQualificationPending' })"
         />
-         <van-cell title="待审核下级结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
+         <van-cell  v-if="settlementReviewCount && isRootUser" title="待审核结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
           <template #value>
-            <van-badge v-if="settlementReviewBadge" :content="settlementReviewBadge" max="99" />
+            <van-badge :content="settlementReviewCount" max="99" />
           </template>
         </van-cell>
-    
+
+            <van-cell  v-else title="待审核用户结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
+          <template #value>
+            <van-badge :content="profitReportReview" max="99" />
+          </template>
+        </van-cell>
+
+        <van-cell
+          v-if="isAdminUser"
+          title="待审核补仓"
+          is-link
+          @click="goNav({ name: 'AdminPendingReplenishments', query: { status: '1' } })"
+        >
+          <template #value>
+            <van-badge v-if="replenishmentReviewBadge" :content="replenishmentReviewBadge" max="99" />
+          </template>
+        </van-cell>
+        <van-cell
+          v-if="isAdminUser"
+          title="待审核归仓"
+          is-link
+          @click="goNav({ name: 'AdminPendingRepays', query: { status: '1' } })"
+        >
+          <template #value>
+            <van-badge
+              v-if="replenishmentRepayReviewBadge"
+              :content="replenishmentRepayReviewBadge"
+              max="99"
+            />
+          </template>
+        </van-cell>
+
         <van-cell
           v-if="!isRootUser"
           title="待确认归仓"
@@ -162,7 +195,7 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
-import { isUserRoot } from '@/utils/permission'
+import { isUserRoot, isUserAdmin } from '@/utils/permission'
 // import { formatDateTime } from '@/utils/format'
 // import {
 //   formatDashboardTodoType,
@@ -182,18 +215,29 @@ const { pendingSummary /* , todoItems, todoLoading */ } = storeToRefs(dashboard)
 // const readonlyTodoItems = computed(() => todoItems.value.filter((r) => isDashboardTodoReadOnly(r)))
 
 const isRootUser = computed(() => isUserRoot(userInfo.value))
+const isAdminUser = computed(() => isUserAdmin(userInfo.value))
 
 function countBadge(n) {
   const v = Number(n) || 0
   return v > 0 ? (v > 99 ? '99+' : v) : undefined
 }
 
-const settlementReviewBadge = computed(() =>
+const profitReportReview = computed(() =>
   countBadge(pendingSummary.value?.pendingProfitReportReviewCount),
+)
+
+const settlementReviewCount = computed(() =>
+  countBadge(pendingSummary.value?.pendingSettlementReviewCount),
 )
 const payableBadge = computed(() => countBadge(pendingSummary.value?.pendingSettlementPayableCount))
 const replenishmentApplicantConfirmBadge = computed(() =>
   countBadge(pendingSummary.value?.pendingReplenishmentApplicantConfirmCount),
+)
+const replenishmentReviewBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingReplenishmentReviewCount),
+)
+const replenishmentRepayReviewBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingReplenishmentRepayReviewCount),
 )
 
 function num0(v) {

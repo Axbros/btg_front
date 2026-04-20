@@ -7,7 +7,7 @@
       <ReplenishmentSubmitMt5SnapshotGroup :snapshot="replenishment?.submitMt5Snapshot" />
 
       <van-cell-group
-        v-if="replenishment && approvedRepays.length"
+        v-if="showCapitalArrivalSection"
         inset
         title="资方与到账确认"
         class="repl-mine-detail__capital"
@@ -50,42 +50,33 @@
           </template>
         </van-cell>
       </van-cell-group> -->
-      <van-cell-group v-if="showApplicantArrivalActions" inset class="repl-mine-detail__actions">
-        <van-cell title="到账确认">
-          <template #label>
-            <div class="repl-mine-detail__btn-row repl-mine-detail__btn-row--inline">
-              <van-button type="primary" size="small" round plain :loading="arrivalSubmitting" @click="openArrivalPopup('confirm')">
-                确认到账
-              </van-button>
-              <van-button type="danger" size="small" round plain :loading="arrivalSubmitting" @click="openArrivalPopup('reject')">
-                拒绝到账
-              </van-button>
-            </div>
-          </template>
-        </van-cell>
-      </van-cell-group>
-      <van-cell-group v-if="showCapitalExecutorActions" inset class="repl-mine-detail__actions">
-        <van-cell title="资方处理">
-          <template #label>
-            <div class="repl-mine-detail__btn-row repl-mine-detail__btn-row--inline">
-              <van-button type="primary" size="small" round plain :loading="capitalAgreeSubmitting" @click="openCapitalAgree">
-                同意
-              </van-button>
-              <van-button type="danger" size="small" round plain @click="openCapitalReject">拒绝</van-button>
-            </div>
-          </template>
-        </van-cell>
-      </van-cell-group>
-      <van-cell-group v-if="showReturnedActions" inset class="repl-mine-detail__actions">
-        <van-cell title="已退回待修改">
-          <template #label>
-            <div class="repl-mine-detail__btn-row">
-              <van-button type="primary" size="small" block round @click="goResubmit">去修改并重提</van-button>
-              <van-button type="default" size="small" block round plain @click="goFlow">查看状态流</van-button>
-            </div>
-          </template>
-        </van-cell>
-      </van-cell-group>
+      <div v-if="showApplicantArrivalActions" class="repl-mine-detail__action-block">
+        <p class="repl-mine-detail__action-title">到账确认</p>
+        <div class="repl-mine-detail__btn-stack">
+          <van-button type="primary" block round :loading="arrivalSubmitting" @click="openArrivalPopup('confirm')">
+            确认到账
+          </van-button>
+          <van-button type="danger" block round :loading="arrivalSubmitting" @click="openArrivalPopup('reject')">
+            拒绝到账
+          </van-button>
+        </div>
+      </div>
+      <div v-if="showCapitalExecutorActions" class="repl-mine-detail__action-block">
+        <p class="repl-mine-detail__action-title">资方处理</p>
+        <div class="repl-mine-detail__btn-stack">
+          <van-button type="primary" block round :loading="capitalAgreeSubmitting" @click="openCapitalAgree">
+            同意
+          </van-button>
+          <van-button type="danger" block round @click="openCapitalReject">拒绝</van-button>
+        </div>
+      </div>
+      <div v-if="showReturnedActions" class="repl-mine-detail__action-block">
+        <p class="repl-mine-detail__action-title">已退回待修改</p>
+        <div class="repl-mine-detail__btn-stack">
+          <van-button type="primary" block round @click="goResubmit">去修改并重提</van-button>
+          <van-button type="default" block round @click="goFlow">查看状态流</van-button>
+        </div>
+      </div>
       <van-cell-group inset v-if="approvedRepays.length"  title="对应归仓" class="repl-mine-detail__repays">
         <van-cell
           v-for="(row, idx) in approvedRepays"
@@ -335,11 +326,15 @@ const walletAddressText = computed(() => {
   return t || '—'
 })
 
-const capitalExecutorText = computed(() => {
+/** 已有归仓记录，或待确认到账（status=4）时展示资方打款凭证与备注等 */
+const showCapitalArrivalSection = computed(() => {
   const r = replenishment.value
-  
-  return r.assignedCapitalNickname
+  if (!r) return false
+  if (approvedRepays.value.length > 0) return true
+  return Number(r.status) === 4
 })
+
+const capitalExecutorText = computed(() => txt(replenishment.value?.assignedCapitalNickname))
 
 const transferShotUrl = computed(() => {
   const u = replenishment.value?.transferScreenshotUrl
@@ -610,18 +605,23 @@ async function submitArrivalPopup() {
   color: #646566;
   line-height: 1.55;
 }
-.repl-mine-detail__actions {
-  margin-top: 12px;
+.repl-mine-detail__action-block {
+  margin: 14px 16px 0;
+  box-sizing: border-box;
 }
-.repl-mine-detail__btn-row {
+.repl-mine-detail__action-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
+}
+.repl-mine-detail__btn-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 12px;
 }
-.repl-mine-detail__btn-row--inline {
-  flex-direction: row;
-  flex-wrap: wrap;
+.repl-mine-detail__btn-stack :deep(.van-button) {
+  margin: 0;
 }
 .capital-popup {
   padding: 12px 0 20px;

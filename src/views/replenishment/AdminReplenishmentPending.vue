@@ -2,82 +2,77 @@
   <div class="admin-pending">
     <AppHeader title="补仓审核" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-      <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <template v-if="listSections.length">
-          <template v-for="section in listSections" :key="section.key">
-            <div v-if="section.title" class="section-title">{{ section.title }}</div>
-            <van-cell-group
-              v-for="(row, idx) in section.rows"
-              :key="`${section.key}-${row.id ?? idx}`"
-              inset
-              class="repl-block"
-            >
-              <van-cell
-                :title="summaryTitle(row)"
-              
-                is-link
-                center
-                @click="goDetail(row)"
+      <div class="admin-pending__wrap" :class="{ 'admin-pending__wrap--docked': loaded }">
+        <div class="admin-pending__filter">
+          <van-dropdown-menu>
+            <van-dropdown-item v-model="statusFilter" :options="statusFilterOptions" />
+          </van-dropdown-menu>
+        </div>
+
+        <van-list
+          :key="statusFilter"
+          v-model:loading="loading"
+          :finished="finished"
+          finished-text="没有更多了"
+          @load="onLoad"
+        >
+          <template v-if="listSections.length">
+            <template v-for="section in listSections" :key="section.key">
+              <!-- <div v-if="section.title" class="section-title">{{ section.title }}</div> -->
+              <van-cell-group
+                v-if="section.rows.length"
+                inset
+                :border="false"
+                class="prev-mine-list-group"
               >
-                <template #value>
-                  <div class="repl-block__right">
-                    <div class="repl-block__amt">{{ formatMoney(row.replenishAmount ?? 0) }}</div>
-                   
-                  </div>
-                </template>
-              </van-cell>
-              <van-cell title="补仓单号" :value="applyNoText(row)" />
-              <van-cell title="当前余额" :value="displayBalance(row)" />
-              <van-cell title="补仓额度" :value="formatMoney(row.replenishAmount ?? 0)" />
-              <van-cell title="提交时间" :value="formatDateTime(row.submitTime)" />
-              <van-cell v-if="hasAuditRemark(row)" title="审核备注" :label="txt(row.auditRemark)" />
-              <van-cell title="操作">
-                <template #value>
-                  <div class="repl-block__actions">
-                    <van-button
-                      v-if="isPendingAdminReview(row)"
-                      size="small"
-                      type="primary"
+                <van-cell
+                  v-for="(row, idx) in section.rows"
+                  :key="`${section.key}-${row.id ?? idx}`"
+                  :title="row.applyNo"
+                  :label="replenishmentReviewLabel(row)"
+                  :border="false"
+                  is-link
+                  @click="goDetail(row)"
+                >
+                  <template #value>
+                    <van-tag
+                      :type="replenishmentStatusTagType(row.status)"
                       plain
-                      :loading="rowActionId === row.id && actionKind === 'approve'"
-                      @click.stop="openApprove(row)"
+                      round
                     >
-                      通过
-                    </van-button>
-                    <van-button
-                      v-if="isPendingAdminReview(row)"
-                      size="small"
-                      type="danger"
-                      plain
-                      :loading="rowActionId === row.id && actionKind === 'reject'"
-                      @click.stop="openReject(row)"
-                    >
-                      拒绝
-                    </van-button>
-                    <van-button
-                      v-if="isAwaitingCapitalAssign(row)"
-                      size="small"
-                      type="warning"
-                      plain
-                      :loading="assignSubmitting && currentRow?.id === row.id"
-                      @click.stop="openAssign(row)"
-                    >
-                      转派
-                    </van-button>
-                    <van-button size="small" plain type="primary" @click.stop="goDetail(row)">查看详情</van-button>
-                  </div>
-                </template>
-              </van-cell>
-            </van-cell-group>
+                      {{ formatAdminReplenishmentStatus(row.status) }}
+                    </van-tag>
+                  </template>
+                </van-cell>
+              </van-cell-group>
+            </template>
           </template>
-        </template>
-        <van-empty v-if="!loading && !listSections.length && loaded" description="暂无待处理补仓" />
-      </van-list>
+          <van-empty v-if="!loading && !listSections.length && loaded" description="暂无待处理补仓" />
+        </van-list>
+      </div>
     </van-pull-refresh>
-    <div class="pager">
-      <van-button size="small" :disabled="page <= 1" @click="changePage(-1)">上一页</van-button>
-      <span class="pager__text">第 {{ page }} 页</span>
-      <van-button size="small" :disabled="!hasMore" @click="changePage(1)">下一页</van-button>
+
+    <div v-show="loaded" class="admin-pending__dock" aria-label="底部统计与分页">
+      <footer
+        v-if="recordsTotal > 0 || list.length || awaitAssignCount > 0"
+        class="admin-pending__sum"
+        aria-label="列表汇总"
+      >
+        <div class="admin-pending__sum-row">
+          <span class="admin-pending__sum-label">{{ replenishSumLabel }}</span>
+          <span class="admin-pending__sum-value">{{ formatMoney(replenishAmountDisplaySum) }}</span>
+        </div>
+        <div v-if="statusFilter === '1' && awaitAssignCount > 0" class="admin-pending__sum-row admin-pending__sum-row--sub">
+          <span class="admin-pending__sum-label">待转派资方执行用户</span>
+          <span class="admin-pending__sum-value admin-pending__sum-value--warn">{{ awaitAssignCount }} 条</span>
+        </div>
+        <p v-if="recordsTotal > 0" class="admin-pending__sum-meta">共 {{ recordsTotal }} 条{{ recordsMetaHint }}</p>
+      </footer>
+      <div class="admin-pending__pager" role="toolbar" aria-label="分页">
+        <van-button size="small" :disabled="page <= 1" @click="changePage(-1)">上一页</van-button>
+        <span class="admin-pending__pager-text">第 {{ page }} 页</span>
+        <van-button size="small" :disabled="!hasMore" @click="changePage(1)">下一页</van-button>
+      </div>
     </div>
 
     <van-popup v-model:show="approveShow" position="bottom" round :style="{ maxHeight: '88%' }">
@@ -148,21 +143,34 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import {
-  getPendingReplenishments,
   getAllAdminReplenishments,
   approveReplenishment,
   rejectReplenishment,
   assignReplenishment,
 } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatMoney, formatDateTime } from '@/utils/format'
+import { formatMoney, replenishmentStatusTagType } from '@/utils/format'
 
+/** 与后端补仓状态枚举一致（筛选用 value 为字符串） */
+const STATUS_FILTER_OPTIONS = [
+  { text: '待审核', value: '1' },
+  { text: '待转派', value: '2' },
+  { text: '待提交', value: '3' },
+  { text: '待确认', value: '4' },
+  { text: '已退回', value: '5' },
+  { text: '补仓成功', value: '6' },
+  { text: '已拒绝', value: '7' },
+  { text: '已关闭', value: '8' },
+  { text: '全部', value: 'all' },
+]
+
+const route = useRoute()
 const router = useRouter()
 
 const list = ref([])
@@ -179,16 +187,141 @@ const loaded = ref(false)
 const AWAIT_SCAN_PAGE_SIZE = 50
 const AWAIT_SCAN_MAX_PAGES = 25
 
+const statusFilterOptions = STATUS_FILTER_OPTIONS
+
+function isValidStatusQuery(v) {
+  if (v === 'all') return true
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 1 && n <= 8
+}
+
+function statusFromQuery() {
+  const raw = route.query.status
+  if (raw === undefined || raw === null) return '1'
+  const s = Array.isArray(raw) ? String(raw[0]) : String(raw).trim()
+  if (s === '') return '1'
+  if (s === 'all') return 'all'
+  if (!isValidStatusQuery(s)) return '1'
+  return String(Number(s))
+}
+
+const statusFilter = ref(statusFromQuery())
+
+function queryEquals(nextQuery) {
+  return JSON.stringify({ ...route.query }) === JSON.stringify({ ...nextQuery })
+}
+
+watch(statusFilter, (val) => {
+  page.value = 1
+  list.value = []
+  awaitAssignList.value = []
+  loaded.value = false
+  finished.value = false
+  const q = { ...route.query }
+  if (val === 'all') {
+    q.status = 'all'
+  } else {
+    q.status = val
+  }
+  if (!queryEquals(q)) {
+    router.replace({ name: 'AdminPendingReplenishments', query: q })
+  }
+})
+
+watch(
+  () => route.query.status,
+  () => {
+    const next = statusFromQuery()
+    if (next === statusFilter.value) return
+    page.value = 1
+    list.value = []
+    awaitAssignList.value = []
+    loaded.value = false
+    finished.value = false
+    statusFilter.value = next
+  },
+)
+
+onMounted(() => {
+  const raw = route.query.status
+  if (raw === undefined || raw === null) return
+  const s = Array.isArray(raw) ? String(raw[0]) : String(raw).trim()
+  if (s !== '' && !isValidStatusQuery(s)) {
+    const q = { ...route.query }
+    delete q.status
+    router.replace({ name: 'AdminPendingReplenishments', query: q })
+  }
+})
+
+const currentListSectionTitle = computed(() => {
+  const opt = STATUS_FILTER_OPTIONS.find((o) => o.value === statusFilter.value)
+  return opt?.text ?? '补仓单'
+})
+
 const listSections = computed(() => {
   const out = []
-  if (list.value.length) {
-    out.push({ key: 'pending', title: '待管理员审核', rows: list.value })
+  if (statusFilter.value === '1') {
+    if (list.value.length) {
+      out.push({ key: 'pending', title: '待管理员审核', rows: list.value })
+    }
+    if (awaitAssignList.value.length) {
+      out.push({ key: 'awaitAssign', title: '待转派资方执行用户', rows: awaitAssignList.value })
+    }
+    return out
   }
-  if (awaitAssignList.value.length) {
-    out.push({ key: 'awaitAssign', title: '待转派资方执行用户', rows: awaitAssignList.value })
+  if (list.value.length) {
+    out.push({ key: 'main', title: currentListSectionTitle.value, rows: list.value })
   }
   return out
 })
+
+const awaitAssignCount = computed(() => awaitAssignList.value.length)
+
+const recordsTotal = ref(0)
+
+const replenishAmountPageSum = computed(() =>
+  list.value.reduce((sum, row) => {
+    const n = Number(row.replenishAmount ?? 0)
+    return sum + (Number.isFinite(n) ? n : 0)
+  }, 0),
+)
+
+const replenishAmountAwaitAssignSum = computed(() => {
+  if (statusFilter.value !== '1') return 0
+  return awaitAssignList.value.reduce((sum, row) => {
+    const n = Number(row.replenishAmount ?? 0)
+    return sum + (Number.isFinite(n) ? n : 0)
+  }, 0)
+})
+
+const replenishAmountDisplaySum = computed(
+  () => replenishAmountPageSum.value + replenishAmountAwaitAssignSum.value,
+)
+
+const replenishSumLabel = computed(() => {
+  const onOnePage =
+    !hasMore.value &&
+    recordsTotal.value > 0 &&
+    list.value.length === recordsTotal.value &&
+    (statusFilter.value !== '1' || awaitAssignList.value.length === 0)
+  if (onOnePage) {
+    return '补仓额度合计'
+  }
+  return '本页补仓额度合计'
+})
+
+const recordsMetaHint = computed(() => {
+  if (statusFilter.value === 'all') return ''
+  const opt = STATUS_FILTER_OPTIONS.find((o) => o.value === statusFilter.value)
+  return opt ? `（${opt.text}）` : ''
+})
+
+function formatAdminReplenishmentStatus(s) {
+  const n = Number(s)
+  if (!Number.isFinite(n) || n < 1 || n > 8) return '—'
+  const opt = STATUS_FILTER_OPTIONS.find((o) => o.value === String(n))
+  return opt?.text ?? '—'
+}
 
 const rowActionId = ref(null)
 const actionKind = ref('')
@@ -257,6 +390,13 @@ function applyNoText(row) {
   return row?.id != null ? `（暂无单号）#${row.id}` : '—'
 }
 
+/** 与 PendingReviewList 的 reviewLabel 同理：副文一行展示关键字段 */
+function replenishmentReviewLabel(row) {
+  // const no = applyNoText(row)
+  const amt = formatMoney(row.replenishAmount ?? 0)
+  return `补仓额度：${amt}`
+}
+
 function displayBalance(row) {
   const b = row?.balanceAmount
   if (b === null || b === undefined || b === '') return '—'
@@ -300,13 +440,32 @@ async function loadAwaitAssignList() {
 }
 
 async function fetchPage(p) {
-  const raw = await getPendingReplenishments({ page: p, size: pageSize.value })
-  const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
-  list.value = Array.isArray(rows) ? rows : []
-  hasMore.value = more
-  finished.value = !more
+  const st = statusFilter.value
+  let raw
+  if (st === '1') {
+    raw = await getAllAdminReplenishments({ page: p, size: pageSize.value, status: 1 })
+  } else if (st === 'all') {
+    raw = await getAllAdminReplenishments({ page: p, size: pageSize.value })
+  } else {
+    const n = Number(st)
+    raw = await getAllAdminReplenishments({
+      page: p,
+      size: pageSize.value,
+      status: Number.isFinite(n) ? n : undefined,
+    })
+  }
+  const parsed = parsePageResponse(raw, pageSize.value)
+  list.value = Array.isArray(parsed.list) ? parsed.list : []
+  hasMore.value = parsed.hasMore
+  finished.value = !parsed.hasMore
   loaded.value = true
-  await loadAwaitAssignList()
+  const t = parsed.total != null ? Number(parsed.total) : 0
+  recordsTotal.value = Number.isFinite(t) && t >= 0 ? t : 0
+  if (st === '1') {
+    await loadAwaitAssignList()
+  } else {
+    awaitAssignList.value = []
+  }
 }
 
 async function onLoad() {
@@ -330,12 +489,16 @@ async function onRefresh() {
   }
 }
 
-function changePage(delta) {
+async function changePage(delta) {
   const next = page.value + delta
   if (next < 1) return
   if (delta > 0 && !hasMore.value) return
   page.value = next
-  fetchPage(page.value)
+  try {
+    await fetchPage(page.value)
+  } catch {
+    /* 拦截器 Toast */
+  }
 }
 
 function openApprove(row) {
@@ -438,7 +601,79 @@ async function submitAssign() {
 
 <style scoped>
 .admin-pending {
+  min-width: 0;
   padding-bottom: 8px;
+}
+.admin-pending__filter {
+  margin: 0 0 4px;
+  background: #fff;
+}
+.admin-pending__filter :deep(.van-dropdown-menu__bar) {
+  box-shadow: none;
+}
+.admin-pending__wrap {
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.admin-pending__wrap--docked {
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+.admin-pending__dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.admin-pending__sum {
+  margin: 0;
+  padding: 10px 16px 4px;
+  background: #f7f8fa;
+  box-sizing: border-box;
+}
+.admin-pending__sum-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-pending__sum-row--sub {
+  margin-top: 8px;
+}
+.admin-pending__sum-label {
+  font-size: 14px;
+  color: #646566;
+}
+.admin-pending__sum-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1989fa;
+  flex-shrink: 0;
+}
+.admin-pending__sum-value--warn {
+  color: #ff976a;
+}
+.admin-pending__sum-meta {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #969799;
+}
+.admin-pending__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid #ebedf0;
+  box-sizing: border-box;
+}
+.admin-pending__pager-text {
+  font-size: 13px;
+  color: #646566;
 }
 .section-title {
   font-size: 14px;
@@ -446,37 +681,28 @@ async function submitAssign() {
   color: #646566;
   padding: 12px 16px 4px;
 }
-.repl-block {
-  margin-top: 12px;
+/** 与下级结算 pending-review 列表同款扁平 cell */
+.prev-mine-list-group {
+  margin-top: 4px;
+  background: transparent;
 }
-.repl-block__right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  min-width: 88px;
+.prev-mine-list-group :deep(.van-cell) {
+  margin: 0 0 8px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
 }
-.repl-block__amt {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ee0a24;
+.prev-mine-list-group :deep(.van-cell:last-of-type) {
+  margin-bottom: 0;
 }
-.repl-block__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
+.prev-mine-list-group :deep(.van-cell__title) {
+  flex: 1.2;
+  min-width: 0;
+  font-weight: 500;
 }
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 12px 0 24px;
-}
-.pager__text {
-  font-size: 13px;
-  color: #646566;
+.prev-mine-list-group :deep(.van-cell__value) {
+  flex-shrink: 0;
+  padding-right: 22px;
 }
 .assign-popup {
   padding: 12px 0 20px;

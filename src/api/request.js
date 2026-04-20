@@ -260,12 +260,13 @@ instance.interceptors.response.use(
     const body = res.data
     const skipGlobalToast = Boolean(res.config?.skipGlobalToast)
 
-    if (status === 401 ) {
+    if (status === 401 || status === 403) {
       redirectToLogin()
       const msg =
-        toastMessageFromErrorBody(status, body) || '登录已失效，请重新登录'
+        toastMessageFromErrorBody(status, body) ||
+        (status === 401 ? '登录已失效，请重新登录' : '无访问权限，请重新登录')
       toastApiMessage(msg)
-      return Promise.reject(new Error('unauthorized'))
+      return Promise.reject(new Error(status === 401 ? 'unauthorized' : 'forbidden'))
     }
 
     if (status < 200 || status >= 400) {

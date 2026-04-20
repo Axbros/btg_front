@@ -46,17 +46,24 @@ export function submitCapitalVoucherForAdmin(id, data) {
 export const submitReplenishmentCapitalVoucherAdmin = submitCapitalVoucherForAdmin
 
 /**
- * 待审核归仓列表（分页项仅含 id、repayNo 等简要字段）。
+ * 待审核归仓列表（分页；可选 status 筛选归仓状态 1～4）。
  * GET /api/v1/admin/replenishments/repays/pending
  *
- * @typedef {{ id: number, repayNo?: string }} RepayPendingBrief
- * @param {{ page?: number, size?: number, pageSize?: number }} [params]
+ * @typedef {{ id: number, repayNo?: string, status?: number, replenishPendingRepayAmount?: number, applicantNickname?: string }} RepayPendingBrief
+ * @param {{ page?: number, size?: number, pageSize?: number, status?: number | string }} [params]
  */
 export function fetchAdminRepaysPending(params = {}) {
-  return getAdmin('/admin/replenishments/repays/pending', {
-    page: params.page ?? 1,
-    size: params.size ?? params.pageSize ?? 10,
-  })
+  const { page, size, pageSize, status, ...rest } = params
+  const q = {
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
+  }
+  if (status !== undefined && status !== null && status !== '' && status !== 'all') {
+    const n = Number(status)
+    if (Number.isFinite(n) && n >= 1 && n <= 4) q.status = n
+  }
+  return getAdmin('/admin/replenishments/repays/pending', q)
 }
 
 /** @deprecated 请使用 {@link fetchAdminRepaysPending} */

@@ -22,8 +22,8 @@
             <van-cell
               v-for="(row, idx) in list"
               :key="rowKey(row, idx)"
-              :title="txt(row.replenishApplyNo)"
-              :label="approvedMoneyLabel(row)"
+              :title="repayNoTitle(row)"
+              :label="repayAmountLabel(row)"
               :border="false"
               is-link
               role="button"
@@ -44,10 +44,10 @@
     </van-pull-refresh>
 
     <div v-show="loaded" class="repay-mine-bottom-dock" aria-label="底部汇总与分页">
-      <footer v-if="recordsTotal > 0" class="repay-mine-footer-sum" aria-label="归仓申请金额汇总">
+      <footer v-if="recordsTotal > 0" class="repay-mine-footer-sum" aria-label="归仓金额汇总">
         <div class="repay-mine-footer-sum__row">
           <span class="repay-mine-footer-sum__label">{{ amountSumLabel }}</span>
-          <span class="repay-mine-footer-sum__value">{{ formatMoney(approvedPageSum) }}</span>
+          <span class="repay-mine-footer-sum__value">{{ formatMoney(repayPageSum) }}</span>
         </div>
         <p class="repay-mine-footer-sum__meta">共 {{ recordsTotal }} 笔</p>
       </footer>
@@ -81,18 +81,19 @@ const hasMore = ref(false)
 const loaded = ref(false)
 const recordsTotal = ref(0)
 
-const approvedPageSum = computed(() =>
-  list.value.reduce((sum, row) => {
-    const n = Number(row.approvedAmount)
-    return sum + (Number.isFinite(n) ? n : 0)
-  }, 0),
-)
+/** 接口 brief：repayAmount；兼容旧字段 approvedAmount */
+function repayAmountNum(row) {
+  const n = Number(row?.repayAmount ?? row?.approvedAmount ?? 0)
+  return Number.isFinite(n) ? n : 0
+}
+
+const repayPageSum = computed(() => list.value.reduce((sum, row) => sum + repayAmountNum(row), 0))
 
 const amountSumLabel = computed(() => {
   if (!hasMore.value && recordsTotal.value > 0 && list.value.length === recordsTotal.value) {
-    return '补仓申请金额合计'
+    return '归仓金额合计'
   }
-  return '本页补仓申请金额合计'
+  return '本页归仓金额合计'
 })
 
 function goSubmitRepay() {
@@ -103,17 +104,20 @@ function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'
 }
 
-function num(v, d = 0) {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : d
-}
-
 function rowKey(row, idx) {
   return String(row.id ?? row.replenishApplyId ?? `row-${idx}`)
 }
 
-function approvedMoneyLabel(row) {
-  return `补仓申请金额：${formatMoney(num(row.approvedAmount))}`
+/** 列表项标题：归仓单号；兼容旧 replenishApplyNo */
+function repayNoTitle(row) {
+  const no = row?.repayNo ?? row?.replenishApplyNo
+  if (no != null && String(no).trim() !== '') return String(no).trim()
+  if (row?.id != null) return `申请 #${row.id}`
+  return '—'
+}
+
+function repayAmountLabel(row) {
+  return `归仓金额：${formatMoney(repayAmountNum(row))}`
 }
 
 function goDetail(row) {

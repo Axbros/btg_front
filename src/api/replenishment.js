@@ -178,14 +178,19 @@ export function getPendingReplenishments(params = {}) {
   })
 }
 
-/** GET /api/admin/replenishments/all */
+/** GET /api/admin/replenishments/all（可选 status：1～8 筛选） */
 export function getAllAdminReplenishments(params = {}) {
-  const { page, size, pageSize, ...rest } = params
-  return getAdmin('/admin/replenishments/all', {
+  const { page, size, pageSize, status, ...rest } = params
+  const q = {
     page: page ?? 1,
     size: size ?? pageSize ?? 10,
     ...rest,
-  })
+  }
+  if (status !== undefined && status !== null && status !== '') {
+    const n = Number(status)
+    if (Number.isFinite(n) && n >= 1 && n <= 8) q.status = n
+  }
+  return getAdmin('/admin/replenishments/all', q)
 }
 
 /** POST /api/admin/replenishments/{id}/approve — body 可选 { remark } */

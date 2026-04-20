@@ -174,7 +174,7 @@ export function resolveTodoNavigation(item) {
 
   /** 补仓扩展待办：部分类型无需 businessId */
   if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_ADMIN_REVIEW) {
-    return { path: '/admin/replenishments/pending' }
+    return { path: '/admin/replenishments/pending', query: { status: '1' } }
   }
   if (type === DASHBOARD_TODO_TYPES.REPLENISHMENT_CAPITAL_SUBMIT) {
     return { path: '/replenishment/assigned' }

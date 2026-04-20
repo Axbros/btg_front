@@ -20,12 +20,12 @@
           >
             <template #title>
               <div class="pick-card" @click="selectedId = item.id">
-                <div class="pick-card__head">
+                <!-- <div class="pick-card__head">
                   <span class="pick-card__no">{{ txt(item.applyNo) }}</span>
                   <van-tag plain round :type="replenishmentListStatusTagType(item)" class="pick-card__st">
                     {{ formatReplenishmentListStatus(item) }}
                   </van-tag>
-                </div>
+                </div> -->
                 <div class="pick-card__grid">
                   <span>补仓申请金额</span><span>{{ formatMoney(num(item.approvedAmount)) }}</span>
                   <span>完成归仓金额</span><span>{{ formatMoney(num(item.repaidAmount)) }}</span>

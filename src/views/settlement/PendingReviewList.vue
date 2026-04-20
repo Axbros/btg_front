@@ -196,7 +196,8 @@ async function fetchPage(p) {
   const parsed = parsePageResponse(raw, pageSize.value)
   list.value = parsed.list ?? []
   hasMore.value = parsed.hasMore
-  finished.value = !parsed.hasMore
+  // 翻页仅由底部按钮驱动；若 finished 随 hasMore 为 false，van-list 会反复 @load 且始终请求同一 page
+  finished.value = true
   loaded.value = true
   const t = parsed.total != null ? Number(parsed.total) : 0
   recordsTotal.value = Number.isFinite(t) && t >= 0 ? t : 0

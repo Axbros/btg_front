@@ -6,17 +6,17 @@
       <ReplenishmentApplyDetailBody :detail="detail" />
       <ReplenishmentSubmitMt5SnapshotGroup :snapshot="detail?.submitMt5Snapshot" />
       <van-cell-group v-if="showActionBar" inset class="detail-actions">
-        <van-cell>
+        <div class="detail-actions__pad">
           <div class="card__actions">
-            <van-button v-if="canAgree" size="small" type="primary" plain :loading="agreeSubmitting" @click="openAgree">
+            <van-button v-if="canAgree" block round type="primary" :loading="agreeSubmitting" @click="openAgree">
               同意
             </van-button>
-            <van-button v-if="canAssign" size="small" type="warning" plain :loading="assignSubmitting" @click="openAssign">
+            <van-button v-if="canAssign" block round type="warning" :loading="assignSubmitting" @click="openAssign">
               转派
             </van-button>
-            <van-button v-if="canReject" size="small" type="danger" plain @click="openReject">拒绝</van-button>
+            <van-button v-if="canReject" block round type="danger" @click="openReject">拒绝</van-button>
           </div>
-        </van-cell>
+        </div>
       </van-cell-group>
     </template>
     <EmptyState v-else description="未获取到补仓信息" />
@@ -301,11 +301,18 @@ async function onRejectBeforeClose(action) {
 .detail-actions {
   margin-top: 8px;
 }
+.detail-actions__pad {
+  padding: 12px 16px 14px;
+  box-sizing: border-box;
+}
 .card__actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.card__actions :deep(.van-button) {
+  margin: 0;
 }
 .dialog-field-wrap {
   padding: 0 8px 8px;

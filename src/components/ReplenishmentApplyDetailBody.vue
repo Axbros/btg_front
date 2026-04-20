@@ -1,13 +1,13 @@
 <template>
   <van-cell-group title="补仓详情" inset v-if="detail">
     <van-cell title="订单单号" :value="txt(pick('applyNo'))" />
-     <van-cell title="补仓状态">
+     <!-- <van-cell title="补仓状态">
       <template #value>
         <van-tag :type="replenishmentListStatusTagType(detail)" plain round>
           {{ formatReplenishmentListStatus(detail) }}
         </van-tag>
       </template>
-    </van-cell>
+    </van-cell> -->
     <van-cell title="申请人姓名" :value="txt(pick('nickname'))" />
     <van-cell title="申请人电话" :value="txt(pick('mobile'))" />
    
