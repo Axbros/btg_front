@@ -23,7 +23,7 @@
     <!-- <van-cell title="用户利润比例" :value="formatRate(ratioField)" /> -->
     <!-- <van-cell title="自留分润" :value="formatMoney(netField)" /> -->
     <!-- <van-cell title="链路团队长计提" :value="formatMoney(shareUpField)" /> -->
-    <van-cell title="提交时间" :value="formatDateTime(item.submitTime)" />
+    <!-- <van-cell title="提交时间" :value="formatDateTime(item.submitTime)" /> -->
     <van-cell v-if="item.auditTime" title="审核时间" :value="formatDateTime(item.auditTime)" />
     <van-cell v-if="item.auditRemark" title="审核备注" :label="item.auditRemark" />
     <van-cell
@@ -38,10 +38,10 @@
       is-link
       @click.stop="goProfitFlowDetail"
     /> -->
-    <template v-if="showReturnedOrSettlementPayActions">
+    <!-- <template v-if="showReturnedOrSettlementPayActions">
       <van-cell :title="resubmitActionTitle" is-link @click.stop="goProfitResubmitOrSettlement" />
       <van-cell title="查看状态流" is-link @click.stop="goProfitFlow" />
-    </template>
+    </template> -->
   </van-cell-group>
 </template>
 

@@ -78,7 +78,7 @@
           </template>
         </van-cell>
 
-            <van-cell  v-else title="待审核用户结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
+            <van-cell  v-else title="待审核结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
           <template #value>
             <van-badge :content="profitReportReview" max="99" />
           </template>
