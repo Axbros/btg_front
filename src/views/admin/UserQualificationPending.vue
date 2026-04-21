@@ -4,39 +4,27 @@
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="qual-pending-wrap" :class="{ 'qual-pending-wrap--docked': loaded }">
         <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-          <template v-if="list.length">
-            <van-card
+          <van-cell-group v-if="list.length" inset :border="false" class="prev-mine-list-group">
+            <van-cell
               v-for="(row, idx) in list"
               :key="rowKey(row, idx)"
-              class="qual-pending__card"
+              :title="cellTitle(row)"
+              :label="listRowLabel(row)"
+              :border="false"
+              is-link
+              role="button"
+              tabindex="0"
+              @click="goMemberDetail(row)"
+              @keydown.enter.prevent="goMemberDetail(row)"
+              @keydown.space.prevent="goMemberDetail(row)"
             >
-              <template #title>
-                <div class="qual-pending__card-head">
-                  <span class="qual-pending__title">#{{ rowKey(row, idx) }}</span>
-                  <van-tag :type="qualificationStatusTagType(rowQualDisplay(row))" plain round>
-                    {{ formatQualificationStatus(rowQualDisplay(row)) }}
-                  </van-tag>
-                </div>
-              </template>
-              <template #desc>
-                <van-cell-group inset :border="false" class="qual-pending__cells">
-                  <van-cell title="手机" :value="txt(row.mobile)" />
-                  <van-cell title="昵称" :value="txt(row.nickname)" />
-                  <van-cell title="真实姓名" :value="txt(row.realName)" />
-                  <van-cell title="服务器" :value="txt(row.serverName)" />
-                  <van-cell title="交易账户" :value="txt(row.tradingAccountId)" />
-                  <van-cell title="交易所 UID" :value="txt(row.exchangeUid)" />
-                  <van-cell title="底仓本金" :value="moneyTxt(row.principalAmount)" />
-                  <van-cell title="注册时间" :value="formatDateTime(row.createdAt)" />
-                </van-cell-group>
-                <div class="qual-pending__btns">
-                  <van-button size="small" type="success" plain @click="openApprove(row)">通过</van-button>
-                  <van-button size="small" type="danger" plain @click="openReject(row)">拒绝</van-button>
-                  <van-button size="small" type="primary" plain @click="openDetail(row)">查看资料</van-button>
-                </div>
-              </template>
-            </van-card>
-          </template>
+              <!-- <template #value>
+                <van-tag :type="qualificationStatusTagType(rowQualDisplay(row))" plain round>
+                  {{ formatQualificationStatus(rowQualDisplay(row)) }}
+                </van-tag>
+              </template> -->
+            </van-cell>
+          </van-cell-group>
           <van-empty v-if="!loading && !list.length && loaded" description="暂无待审核用户" />
         </van-list>
       </div>
@@ -88,50 +76,24 @@
         />
       </div>
     </van-dialog>
-
-    <van-popup v-model:show="detailShow" position="bottom" round :style="{ height: '78%' }" closeable>
-      <div v-if="detailRow" class="qual-detail">
-        <h3 class="qual-detail__h">用户资料</h3>
-        <van-cell-group inset>
-          <van-cell title="用户 ID" :value="txt(userIdOf(detailRow))" />
-          <van-cell title="手机" :value="txt(detailRow.mobile)" />
-          <van-cell title="昵称" :value="txt(detailRow.nickname)" />
-          <van-cell title="真实姓名" :value="txt(detailRow.realName)" />
-          <van-cell title="身份证号" :value="txt(detailRow.idCardNo)" />
-          <van-cell title="服务器" :value="txt(detailRow.serverName)" />
-          <van-cell title="交易账户" :value="txt(detailRow.tradingAccountId)" />
-          <van-cell title="交易所 UID" :value="txt(detailRow.exchangeUid)" />
-          <van-cell title="底仓本金" :value="moneyTxt(detailRow.principalAmount)" />
-        </van-cell-group>
-        <div v-if="detailImages.length" class="qual-detail__imgs">
-          <div v-for="(im, i) in detailImages" :key="i" class="qual-detail__img-block">
-            <p class="qual-detail__img-label">{{ im.label }}</p>
-            <PreviewableRemoteImage :url="im.url" :alt="im.label" size="large" />
-          </div>
-        </div>
-      </div>
-    </van-popup>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
-import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
 import {
   approveQualification,
   getPendingQualificationUsers,
   rejectQualification,
 } from '@/api/userQualification'
 import { parsePageResponse } from '@/utils/pagination'
-import {
-  formatDateTime,
-  formatMoney,
-  formatQualificationStatus,
-  qualificationStatusTagType,
-} from '@/utils/format'
+import { formatDateTime, formatQualificationStatus, qualificationStatusTagType } from '@/utils/format'
 import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
+
+const router = useRouter()
 
 const list = ref([])
 const loading = ref(false)
@@ -156,17 +118,8 @@ const approveRemark = ref('')
 const rejectRemark = ref('')
 const actionRow = ref(null)
 
-const detailShow = ref(false)
-const detailRow = ref(null)
-
 function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'
-}
-
-function moneyTxt(v) {
-  if (v === null || v === undefined || v === '') return '—'
-  const n = Number(v)
-  return Number.isFinite(n) ? `${formatMoney(n)} USD` : String(v)
 }
 
 function rowKey(row, idx) {
@@ -187,25 +140,44 @@ function rowQualDisplay(row) {
   return effectiveQualificationStatusForDisplay(row)
 }
 
-const detailImages = computed(() => {
-  const r = detailRow.value
-  if (!r) return []
-  const out = []
-  const push = (label, url) => {
-    const u = url != null && String(url).trim() !== '' ? String(url).trim() : ''
-    if (u) out.push({ label, url: u })
+/** 与 PendingReviewList 首行 title 类似：优先昵称 */
+function cellTitle(row) {
+  const nick = String(row?.nickname ?? '').trim()
+  if (nick) return nick
+  
+}
+
+/** 与 PendingReviewList 的 label 行：副文案一行 */
+function listRowLabel(row) {
+  const parts = []
+  const mob = txt(row?.mobile)
+  if (mob !== '—') parts.push(`${mob}`)
+  const name = String(row?.realName ?? '').trim()
+  const nick = String(row?.nickname ?? '').trim()
+  if (name && name !== nick) parts.push(`真实姓名：${name}`)
+  const uid = userIdOf(row)
+  // if (uid != null && String(uid).trim() !== '') parts.push(`用户 ID：${uid}`)
+  const t = row?.submitTime ?? row?.createdAt ?? row?.updatedAt
+  if (t) parts.push(`提交时间：${formatDateTime(t)}`)
+  return parts.length ? parts.join(' · ') : '点击查看资料'
+}
+
+function goMemberDetail(row) {
+  const id = userIdOf(row)
+  const n = Number(id)
+  if (id == null || String(id).trim() === '' || !Number.isFinite(n) || n <= 0) {
+    showToast('无法打开：缺少用户 ID')
+    return
   }
-  push('身份证正面', r.idCardFrontUrl ?? r.idCardFront)
-  push('身份证反面', r.idCardBackUrl ?? r.idCardBack)
-  push('人脸照片', r.faceImageUrl ?? r.facePhotoUrl ?? r.faceUrl)
-  return out
-})
+  router.push({ name: 'TeamMemberDetail', params: { memberId: String(n) } })
+}
 
 async function applyListFromRaw(raw) {
   const parsed = parsePageResponse(raw, pageSize.value)
   list.value = (parsed.list || []).map(mergeRow)
   hasMore.value = parsed.hasMore
-  finished.value = !parsed.hasMore
+  // 翻页由底部按钮驱动，勿让 van-list 在 hasMore 时反复 @load 同一页
+  finished.value = true
   loaded.value = true
   const t = parsed.total != null ? Number(parsed.total) : 0
   recordsTotal.value = Number.isFinite(t) && t >= 0 ? t : 0
@@ -257,11 +229,6 @@ function openReject(row) {
   actionRow.value = row
   rejectRemark.value = ''
   rejectShow.value = true
-}
-
-function openDetail(row) {
-  detailRow.value = mergeRow(row)
-  detailShow.value = true
 }
 
 async function onApproveBeforeClose(action) {
@@ -373,6 +340,29 @@ async function onRejectBeforeClose(action) {
   font-size: 13px;
   color: #646566;
 }
+/** 与 settlement/pending-review 列表同款扁平 cell */
+.prev-mine-list-group {
+  margin-top: 4px;
+  background: transparent;
+}
+.prev-mine-list-group :deep(.van-cell) {
+  margin: 0 0 8px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.prev-mine-list-group :deep(.van-cell:last-of-type) {
+  margin-bottom: 0;
+}
+.prev-mine-list-group :deep(.van-cell__title) {
+  flex: 1.2;
+  min-width: 0;
+  font-weight: 500;
+}
+.prev-mine-list-group :deep(.van-cell__value) {
+  flex-shrink: 0;
+  padding-right: 22px;
+}
 .qual-pending__card {
   margin: 10px 12px 0;
   overflow: hidden;
@@ -400,29 +390,5 @@ async function onRejectBeforeClose(action) {
 }
 .qual-pending__dialog-pad {
   padding: 12px 16px 8px;
-}
-.qual-detail {
-  padding: 16px 0 24px;
-  overflow-y: auto;
-  max-height: 100%;
-  box-sizing: border-box;
-}
-.qual-detail__h {
-  margin: 0 16px 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #323233;
-}
-.qual-detail__imgs {
-  margin-top: 16px;
-  padding: 0 16px;
-}
-.qual-detail__img-block {
-  margin-bottom: 16px;
-}
-.qual-detail__img-label {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: #646566;
 }
 </style>

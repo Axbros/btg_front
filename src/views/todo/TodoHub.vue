@@ -67,7 +67,11 @@
           title="待审核用户"
           is-link
           @click="goNav({ name: 'AdminUserQualificationPending' })"
-        />
+        >
+          <template #value>
+            <van-badge v-if="userQualificationPendingBadge" :content="userQualificationPendingBadge" max="99" />
+          </template>
+        </van-cell>
          <van-cell  v-if="settlementReviewCount && isRootUser" title="待审核结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
           <template #value>
             <van-badge :content="settlementReviewCount" max="99" />
@@ -106,11 +110,19 @@
         </van-cell>
 
         <van-cell
-          v-if="!isRootUser"
-          title="待确认归仓"
+          v-if="!isRootUser && !isAdminUser"
+          title="待审核归仓"
           is-link
           @click="goNav({ name: 'RepayPendingReview' })"
-        />
+        >
+          <template #value>
+            <van-badge
+              v-if="replenishmentRepayReviewBadge"
+              :content="replenishmentRepayReviewBadge"
+              max="99"
+            />
+          </template>
+        </van-cell>
       </van-cell-group>
 
       <!-- <div class="section-title-row todo-hub__section-head">
@@ -228,6 +240,9 @@ const profitReportReview = computed(() =>
 
 const settlementReviewCount = computed(() =>
   countBadge(pendingSummary.value?.pendingSettlementReviewCount),
+)
+const userQualificationPendingBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingQualificationReviewCount),
 )
 const payableBadge = computed(() => countBadge(pendingSummary.value?.pendingSettlementPayableCount))
 const replenishmentApplicantConfirmBadge = computed(() =>

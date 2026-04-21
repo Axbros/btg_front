@@ -72,13 +72,13 @@ import { formatMoney, formatSettlementStatus, settlementStatusTagType } from '@/
 const route = useRoute()
 const router = useRouter()
 
-/** 下拉 value：`default` 不传 status；`1`～`5` 传 status */
+/** 下拉 value：`default` 不传 status；`1`～`5` 传 status；「全部」固定最后一项 */
 const payStatusFilterOptions = [
-  { text: '全部', value: 'default' },
   ...[1, 2, 3, 4, 5].map((n) => ({
     text: formatSettlementStatus(n),
     value: String(n),
   })),
+  { text: '全部', value: 'default' },
 ]
 
 function isValidPayStatusQuery(v) {

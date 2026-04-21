@@ -76,6 +76,7 @@ export interface RepayApplyVO {
 export interface DashboardPendingSummary {
   pendingSettlementPayableCount?: number
   pendingReplenishmentApplicantConfirmCount?: number
+  pendingQualificationReviewCount?: number
   totalPendingCount?: number
   [key: string]: unknown
 }

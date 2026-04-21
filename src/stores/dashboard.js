@@ -19,6 +19,7 @@ export function normalizePendingSummary(raw) {
   const pendingReplenishmentReviewCount = num(d.pendingReplenishmentReviewCount)
   const pendingReplenishmentApplicantConfirmCount = num(d.pendingReplenishmentApplicantConfirmCount)
   const pendingReplenishmentRepayReviewCount = num(d.pendingReplenishmentRepayReviewCount)
+  const pendingQualificationReviewCount = num(d.pendingQualificationReviewCount)
   const returnedProfitReportCount = num(d.returnedProfitReportCount)
   const returnedReplenishmentApplyCount = num(d.returnedReplenishmentApplyCount)
   const returnedReplenishmentRepayCount = num(d.returnedReplenishmentRepayCount)
@@ -30,6 +31,7 @@ export function normalizePendingSummary(raw) {
     pendingReplenishmentReviewCount +
     pendingReplenishmentApplicantConfirmCount +
     pendingReplenishmentRepayReviewCount +
+    pendingQualificationReviewCount +
     returnedProfitReportCount +
     returnedReplenishmentApplyCount +
     returnedReplenishmentRepayCount
@@ -45,6 +47,7 @@ export function normalizePendingSummary(raw) {
     pendingReplenishmentReviewCount,
     pendingReplenishmentApplicantConfirmCount,
     pendingReplenishmentRepayReviewCount,
+    pendingQualificationReviewCount,
     returnedProfitReportCount,
     returnedReplenishmentApplyCount,
     returnedReplenishmentRepayCount,
@@ -60,6 +63,7 @@ const emptySummary = () => ({
   pendingReplenishmentReviewCount: 0,
   pendingReplenishmentApplicantConfirmCount: 0,
   pendingReplenishmentRepayReviewCount: 0,
+  pendingQualificationReviewCount: 0,
   returnedProfitReportCount: 0,
   returnedReplenishmentApplyCount: 0,
   returnedReplenishmentRepayCount: 0,

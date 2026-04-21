@@ -67,6 +67,10 @@
             <div class="icon"><van-icon name="friends-o" /></div>
             <span class="text">团队</span>
           </div>
+          <div class="quick-entry-item" @click="goHomeNav({ name: 'AssignedReplenishmentList' })">
+            <div class="icon"><van-icon name="todo-list-o" /></div>
+            <span class="text">资方补仓</span>
+          </div>
 
           <div
             v-if="isRootUser"

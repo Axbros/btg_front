@@ -1,126 +1,60 @@
 <template>
   <div class="repay-pending-review">
     <AppHeader title="待审归仓申请" />
-
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-      <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <template v-if="list.length">
-          <van-card
-            v-for="(row, idx) in list"
-            :key="rowKey(row, idx)"
-            class="repay-pr-card"
-            :title="applicantTitle(row)"
-          >
-            <template #tags>
-              <van-tag :type="repayStatusTagType(row.status)" plain round>
-                {{ formatRepayStatus(row.status) }}
-              </van-tag>
-            </template>
-            <van-cell-group inset :border="false" class="repay-pr-card__cells">
-              <van-cell title="关联补仓单号" :value="txt(row.replenishApplyNo)" />
-              <van-cell title="归仓金额" :value="formatMoney(num(row.repayAmount))" />
-              <van-cell title="资方收款 UID" :value="txt(row.capitalReceiverUid)" />
-              <van-cell title="提交次数" :value="submitVersionText(row.submitVersion)" />
-              <van-cell title="最新提交时间" :value="formatDateTime(latestSubmitTime(row))" />
-              <van-cell v-if="hasReject(row)" title="拒绝原因" :label="txt(row.lastRejectReason)" />
-            </van-cell-group>
-            <template #footer>
-              <div class="repay-pr-card__footer">
-                <van-button size="small" plain type="primary" @click.stop="goDetail(row)">查看详情</van-button>
-                <van-button size="small" plain type="primary" @click.stop="goFlow(row)">查看状态流</van-button>
-                <template v-if="canReviewRow(row)">
-                  <van-button size="small" type="success" plain @click.stop="openApprove(row)">通过</van-button>
-                  <van-button size="small" type="danger" plain @click.stop="openReject(row)">拒绝</van-button>
-                </template>
-              </div>
-            </template>
-          </van-card>
-        </template>
-        <van-empty v-if="!loading && !list.length && loaded" description="暂无待审核归仓申请" />
-      </van-list>
+      <div class="repay-pending-review__wrap" :class="{ 'repay-pending-review__wrap--docked': loaded }">
+        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+          <van-cell-group v-if="list.length" inset :border="false" class="prev-mine-list-group">
+            <van-cell
+              v-for="(row, idx) in list"
+              :key="row.id ?? idx"
+              :title="repayNoText(row)"
+              :label="repayPendingLabel(row)"
+              :border="false"
+              is-link
+              @click="goDetail(row)"
+            >
+              <template #value>
+                <van-tag :type="repayStatusTagType(PENDING_REPAY_STATUS)" plain round>
+                  {{ formatRepayStatus(PENDING_REPAY_STATUS) }}
+                </van-tag>
+              </template>
+            </van-cell>
+          </van-cell-group>
+          <van-empty v-if="!loading && !list.length && loaded" description="暂无待审核归仓申请" />
+        </van-list>
+      </div>
     </van-pull-refresh>
 
-    <div class="pager">
-      <van-button size="small" :disabled="page <= 1" @click="prev">上一页</van-button>
-      <span class="pager__text">第 {{ page }} 页</span>
-      <van-button size="small" :disabled="!hasMore" @click="next">下一页</van-button>
+    <div v-show="loaded" class="repay-pending-review__dock" aria-label="底部汇总与分页">
+      <footer v-if="recordsTotal > 0 || list.length" class="repay-pending-review__sum" aria-label="列表汇总">
+        <div class="repay-pending-review__sum-row">
+          <span class="repay-pending-review__sum-label">{{ amountSumLabel }}</span>
+          <span class="repay-pending-review__sum-value">{{ formatMoney(pendingAmountPageSum) }}</span>
+        </div>
+        <p v-if="recordsTotal > 0" class="repay-pending-review__sum-meta">共 {{ recordsTotal }} 条</p>
+      </footer>
+      <div class="repay-pending-review__pager" role="toolbar" aria-label="分页">
+        <van-button size="small" :disabled="page <= 1" @click="changePage(-1)">上一页</van-button>
+        <span class="repay-pending-review__pager-text">第 {{ page }} 页</span>
+        <van-button size="small" :disabled="!hasMore" @click="changePage(1)">下一页</van-button>
+      </div>
     </div>
-
-    <van-dialog
-      v-model:show="approveShow"
-      title="审核通过"
-      :show-confirm-button="false"
-      :show-cancel-button="false"
-      close-on-click-overlay
-    >
-      <div class="dlg-body">
-        <van-field
-          v-model="approveRemark"
-          label="备注"
-          type="textarea"
-          rows="2"
-          autosize
-          maxlength="200"
-          show-word-limit
-          placeholder="可选，如：已确认到账"
-        />
-        <div class="dlg-actions">
-          <van-button size="small" @click="approveShow = false">取消</van-button>
-          <van-button size="small" type="primary" :loading="approveSubmitting" @click="confirmApprove">
-            确认通过
-          </van-button>
-        </div>
-      </div>
-    </van-dialog>
-
-    <van-dialog
-      v-model:show="rejectShow"
-      title="审核拒绝"
-      :show-confirm-button="false"
-      :show-cancel-button="false"
-      close-on-click-overlay
-    >
-      <div class="dlg-body">
-        <van-field
-          v-model="rejectRemark"
-          label="拒绝说明"
-          type="textarea"
-          rows="3"
-          autosize
-          required
-          maxlength="500"
-          show-word-limit
-          placeholder="必填，如：金额不符，请重新提交"
-        />
-        <div class="dlg-actions">
-          <van-button size="small" @click="rejectShow = false">取消</van-button>
-          <van-button size="small" type="danger" :loading="rejectSubmitting" @click="confirmReject">
-            确认拒绝
-          </van-button>
-        </div>
-      </div>
-    </van-dialog>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
-import { useAuthStore } from '@/stores/auth'
-import {
-  getPendingRepayReviewList,
-  approveRepayApply,
-  rejectRepayApply,
-} from '@/api/replenishment'
+import { getPendingRepayReviewList } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
-import { formatDateTime, formatMoney, formatRepayStatus, repayStatusTagType } from '@/utils/format'
+import { formatMoney, formatRepayStatus, repayStatusTagType } from '@/utils/format'
+
+/** 列表项无 status 时，与归仓「待资方审核」态一致 */
+const PENDING_REPAY_STATUS = 1
 
 const router = useRouter()
-const auth = useAuthStore()
-const { userInfo } = storeToRefs(auth)
 
 const list = ref([])
 const loading = ref(false)
@@ -130,63 +64,34 @@ const page = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(false)
 const loaded = ref(false)
+const recordsTotal = ref(0)
 
-const approveShow = ref(false)
-const rejectShow = ref(false)
-const approveRemark = ref('')
-const rejectRemark = ref('')
-const activeRow = ref(null)
-const approveSubmitting = ref(false)
-const rejectSubmitting = ref(false)
+const pendingAmountPageSum = computed(() =>
+  list.value.reduce((sum, row) => {
+    const raw = row?.pendingRepayAmount ?? row?.repayAmount
+    const n = Number(raw ?? 0)
+    return sum + (Number.isFinite(n) ? n : 0)
+  }, 0),
+)
 
-const myUserId = computed(() => {
-  const u = userInfo.value
-  if (!u) return null
-  const n = Number(u.id)
-  return Number.isFinite(n) ? n : null
+const amountSumLabel = computed(() => {
+  const onOnePage =
+    !hasMore.value && recordsTotal.value > 0 && list.value.length === recordsTotal.value
+  if (onOnePage) return '归仓金额合计'
+  return '本页归仓金额合计'
 })
 
-function txt(v) {
-  return v != null && String(v).trim() !== '' ? String(v) : '—'
+function repayNoText(row) {
+  const no = row?.repayNo
+  if (no != null && String(no).trim() !== '') return String(no).trim()
+  return row?.id != null ? `（暂无单号）#${row.id}` : '—'
 }
 
-function num(v, d = 0) {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : d
-}
-
-function rowKey(row, idx) {
-  return String(row.id ?? `row-${idx}`)
-}
-
-function submitVersionText(v) {
-  if (v == null || v === '') return '—'
-  return String(v)
-}
-
-function applicantTitle(row) {
-  const name = row?.applicantName
-  if (name != null && String(name).trim() !== '') return `申请人：${String(name).trim()}`
-  const uid = row?.userId
-  if (uid != null && String(uid).trim() !== '') return `申请人 ID：${String(uid).trim()}`
-  return '申请人'
-}
-
-function latestSubmitTime(row) {
-  return row?.submitTime ?? row?.createdAt ?? row?.updatedAt ?? row?.latestOperateTime ?? null
-}
-
-function hasReject(row) {
-  const r = row?.lastRejectReason
-  return r != null && String(r).trim() !== ''
-}
-
-function canReviewRow(row) {
-  const me = myUserId.value
-  if (me == null) return false
-  const cap = Number(row?.capitalUserId)
-  if (!Number.isFinite(cap)) return false
-  return cap === me
+/** 与待审核补仓列表 replenishmentReviewLabel 同款：副文一行金额 */
+function repayPendingLabel(row) {
+  const raw = row?.pendingRepayAmount ?? row?.repayAmount
+  const amt = formatMoney(Number(raw ?? 0))
+  return `归仓金额：${amt}`
 }
 
 function goDetail(row) {
@@ -195,81 +100,14 @@ function goDetail(row) {
   router.push({ name: 'RepayMineDetail', params: { id: String(id) } })
 }
 
-function goFlow(row) {
-  const id = row?.id
-  if (id == null) return
-  router.push({ name: 'RepayFlowDetail', params: { id: String(id) } })
-}
-
-function openApprove(row) {
-  if (!canReviewRow(row)) return
-  activeRow.value = row
-  approveRemark.value = ''
-  approveShow.value = true
-}
-
-function openReject(row) {
-  if (!canReviewRow(row)) return
-  activeRow.value = row
-  rejectRemark.value = ''
-  rejectShow.value = true
-}
-
-async function confirmApprove() {
-  const row = activeRow.value
-  const id = row?.id
-  if (id == null) return
-  approveSubmitting.value = true
-  try {
-    const remark = approveRemark.value.trim()
-    await approveRepayApply(id, remark ? { remark } : {})
-    showToast({ type: 'success', message: '已通过' })
-    approveShow.value = false
-    await reloadCurrentPage()
-  } catch {
-    /* request toast */
-  } finally {
-    approveSubmitting.value = false
-  }
-}
-
-async function confirmReject() {
-  const row = activeRow.value
-  const id = row?.id
-  if (id == null) return
-  const remark = rejectRemark.value.trim()
-  if (!remark) {
-    showToast('请填写拒绝说明')
-    return
-  }
-  rejectSubmitting.value = true
-  try {
-    await rejectRepayApply(id, { remark })
-    showToast({ type: 'success', message: '已拒绝' })
-    rejectShow.value = false
-    await reloadCurrentPage()
-  } catch {
-    /* */
-  } finally {
-    rejectSubmitting.value = false
-  }
-}
-
 async function fetchPage(p) {
   const raw = await getPendingRepayReviewList({ page: p, size: pageSize.value })
-  const { list: rows, hasMore: more } = parsePageResponse(raw, pageSize.value)
-  list.value = rows
-  hasMore.value = more
-  finished.value = !more
+  const parsed = parsePageResponse(raw, pageSize.value)
+  list.value = parsed.list ?? []
+  hasMore.value = parsed.hasMore
+  finished.value = !parsed.hasMore
   loaded.value = true
-}
-
-async function reloadCurrentPage() {
-  try {
-    await fetchPage(page.value)
-  } catch {
-    /* */
-  }
+  recordsTotal.value = Number(parsed.total) || 0
 }
 
 async function onLoad() {
@@ -293,54 +131,98 @@ async function onRefresh() {
   }
 }
 
-function prev() {
-  if (page.value <= 1) return
-  page.value -= 1
-  fetchPage(page.value)
-}
-
-function next() {
-  if (!hasMore.value) return
-  page.value += 1
+function changePage(delta) {
+  const next = page.value + delta
+  if (next < 1) return
+  if (delta > 0 && !hasMore.value) return
+  page.value = next
   fetchPage(page.value)
 }
 </script>
 
 <style scoped>
 .repay-pending-review {
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  min-width: 0;
+  padding-bottom: 8px;
 }
-.repay-pr-card {
-  margin: 12px 12px 0;
+.repay-pending-review__wrap {
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.repay-pending-review__wrap--docked {
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+.repay-pending-review__dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
   background: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.repay-pr-card__cells {
-  margin-top: 0;
+.repay-pending-review__sum {
+  margin: 0;
+  padding: 10px 16px 4px;
+  background: #f7f8fa;
+  box-sizing: border-box;
 }
-.repay-pr-card__footer {
+.repay-pending-review__sum-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-.dlg-body {
-  padding: 12px 16px 16px;
+.repay-pending-review__sum-label {
+  font-size: 14px;
+  color: #646566;
 }
-.dlg-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+.repay-pending-review__sum-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1989fa;
+  flex-shrink: 0;
 }
-.pager {
+.repay-pending-review__sum-meta {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #969799;
+}
+.repay-pending-review__pager {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 12px 0 20px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid #ebedf0;
+  box-sizing: border-box;
 }
-.pager__text {
+.repay-pending-review__pager-text {
   font-size: 13px;
   color: #646566;
+}
+.prev-mine-list-group {
+  margin-top: 4px;
+  background: transparent;
+}
+.prev-mine-list-group :deep(.van-cell) {
+  margin: 0 0 8px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.prev-mine-list-group :deep(.van-cell:last-of-type) {
+  margin-bottom: 0;
+}
+.prev-mine-list-group :deep(.van-cell__title) {
+  flex: 1.2;
+  min-width: 0;
+  font-weight: 500;
+}
+.prev-mine-list-group :deep(.van-cell__value) {
+  flex-shrink: 0;
+  padding-right: 22px;
 }
 </style>

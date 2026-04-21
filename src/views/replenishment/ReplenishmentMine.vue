@@ -21,32 +21,6 @@
             <van-dropdown-item v-model="userVisibleFilter" :options="replenishmentUserVisibleFilterOptions" />
           </van-dropdown-menu>
         </div>
-        <div v-if="currentUnsettled" class="hub-banner">
-          <van-tag
-            :type="replenishmentListStatusTagType(currentUnsettled)"
-            plain
-            round
-            class="hub-banner__tag"
-          >
-            {{ formatReplenishmentListStatus(currentUnsettled) }}
-          </van-tag>
-          <div class="hub-banner__body">
-            <p class="hub-banner__text">{{ hubBannerRest }}</p>
-            <p v-if="hubBannerHint" class="hub-banner__hint">{{ hubBannerHint }}</p>
-          </div>
-        </div>
-        <van-cell-group v-if="currentUnsettled" inset title="当前未结清补仓" class="hub-current">
-          <van-cell title="剩余待归还" :value="formatMoney(currentUnsettled.remainingAmount ?? 0)" />
-          <van-cell title="资方转账凭证">
-            <template #value>
-              <PreviewableRemoteImage v-if="transferProofUrl" :url="transferProofUrl" alt="资方转账凭证" />
-              <span v-else>—</span>
-            </template>
-          </van-cell>
-          <van-cell v-if="transferRemarkText" title="资方转账备注" :value="transferRemarkText" />
-        </van-cell-group>
-
-        <!-- <p v-if="list.length || loaded" class="repl-mine-list-title">补仓记录</p> -->
 
         <van-list
           :key="userVisibleFilter"
@@ -98,12 +72,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import PreviewableRemoteImage from '@/components/PreviewableRemoteImage.vue'
-import { fetchReplenishmentCurrent, fetchReplenishmentMine } from '@/api/replenishment'
+import { fetchReplenishmentMine } from '@/api/replenishment'
 import { parsePageResponse } from '@/utils/pagination'
 import {
   formatMoney,
@@ -167,9 +140,6 @@ watch(
   },
 )
 
-/** GET /replenishments/current，原补仓首页横幅与「当前未结清」区块 */
-const currentUnsettled = ref(null)
-
 const list = ref([])
 const loading = ref(false)
 const finished = ref(false)
@@ -180,26 +150,6 @@ const hasMore = ref(false)
 const loaded = ref(false)
 /** 列表总条数（分页 total，与当前页 list 长度可对照） */
 const recordsTotal = ref(0)
-
-const transferProofUrl = computed(
-  () => String(currentUnsettled.value?.transferScreenshotUrl ?? '').trim(),
-)
-
-const transferRemarkText = computed(
-  () => String(currentUnsettled.value?.transferRemark ?? '').trim(),
-)
-
-const hubBannerRest = computed(() => {
-  const rem = formatMoney(currentUnsettled.value?.remainingAmount)
-  return `当前补仓单；剩余待归还 ${rem} 元（含待审核归仓请留意额度）。`
-})
-
-const hubBannerHint = computed(() => {
-  const u = Number(currentUnsettled.value?.userVisibleStatus ?? currentUnsettled.value?.user_visible_status)
-  if (u === 1) return '审核 / 转派 / 打款进行中，具体操作请以详情与后台流程为准。'
-  if (u === 2) return '请在详情中确认到账或拒绝到账。'
-  return ''
-})
 
 const replenishAmountPageSum = computed(() =>
   list.value.reduce((sum, row) => sum + Number(row.replenishAmount), 0),
@@ -215,10 +165,6 @@ const replenishSumLabel = computed(() => {
   }
   return '本页补仓金额合计'
 })
-
-async function loadCurrentUnsettled() {
-  currentUnsettled.value = await fetchReplenishmentCurrent()
-}
 
 function goSubmitReplenishment() {
   router.push({ name: 'ReplenishmentSubmit' })
@@ -265,7 +211,7 @@ async function onLoad() {
 async function onRefresh() {
   page.value = 1
   try {
-    await Promise.all([fetchPage(1), loadCurrentUnsettled()])
+    await fetchPage(1)
   } finally {
     refreshing.value = false
   }
@@ -283,9 +229,6 @@ function next() {
   fetchPage(page.value)
 }
 
-onMounted(() => {
-  void loadCurrentUnsettled()
-})
 </script>
 
 <style scoped>
@@ -354,40 +297,6 @@ onMounted(() => {
 }
 .repl-mine-list-group :deep(.van-cell__value) {
   flex-shrink: 0;
-}
-.hub-current {
-  margin-bottom: 4px;
-}
-.hub-banner {
-  margin: 10px 16px 0;
-  padding: 10px 12px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 8px 10px;
-  background: #f7f8fa;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-.hub-banner__tag {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.hub-banner__body {
-  flex: 1;
-  min-width: 0;
-}
-.hub-banner__text {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #646566;
-}
-.hub-banner__hint {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #576b95;
 }
 .repl-mine-pager {
   display: flex;

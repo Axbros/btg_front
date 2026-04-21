@@ -46,28 +46,30 @@ export function submitCapitalVoucherForAdmin(id, data) {
 export const submitReplenishmentCapitalVoucherAdmin = submitCapitalVoucherForAdmin
 
 /**
- * 待审核归仓列表（分页；可选 status 筛选归仓状态 1～4）。
- * GET /api/v1/admin/replenishments/repays/pending
+ * 管理端归仓申请列表（分页；可选 status 按 RepayStatusEnum 1～4 筛选，不传则不过滤）。
+ * GET {admin}/admin/replenishments/repays — query：`page`（默认 1）、`size`（默认 10）、`status`（可选 1～4）。
  *
  * @typedef {{ id: number, repayNo?: string, status?: number, replenishPendingRepayAmount?: number, applicantNickname?: string }} RepayPendingBrief
  * @param {{ page?: number, size?: number, pageSize?: number, status?: number | string }} [params]
  */
-export function fetchAdminRepaysPending(params = {}) {
-  const { page, size, pageSize, status, ...rest } = params
+export function fetchAdminRepays(params = {}) {
+  const { page, size, pageSize, status } = params
   const q = {
     page: page ?? 1,
     size: size ?? pageSize ?? 10,
-    ...rest,
   }
   if (status !== undefined && status !== null && status !== '' && status !== 'all') {
     const n = Number(status)
     if (Number.isFinite(n) && n >= 1 && n <= 4) q.status = n
   }
-  return getAdmin('/admin/replenishments/repays/pending', q)
+  return getAdmin('/admin/replenishments/repays', q)
 }
 
-/** @deprecated 请使用 {@link fetchAdminRepaysPending} */
-export const fetchAdminPendingRepays = fetchAdminRepaysPending
+/** @deprecated 使用 {@link fetchAdminRepays}；路径已改为 GET /admin/replenishments/repays */
+export const fetchAdminRepaysPending = fetchAdminRepays
+
+/** @deprecated 使用 {@link fetchAdminRepays} */
+export const fetchAdminPendingRepays = fetchAdminRepays
 
 /**
  * 归仓申请详情（完整 RepayApplyVO）。

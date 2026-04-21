@@ -1,5 +1,6 @@
 <template>
-  <van-cell-group title="补仓详情" inset v-if="detail">
+  <template v-if="detail">
+  <van-cell-group title="补仓详情" inset>
     <van-cell title="订单单号" :value="txt(pick('applyNo'))" />
      <!-- <van-cell title="补仓状态">
       <template #value>
@@ -49,6 +50,17 @@
     <van-cell v-if="txt(pick('auditTime')) !== '—'" title="申请审核时间" :value="formatDateTime(pick('auditTime'))" />
     <!-- <van-cell v-if="txt(pick('auditBy')) !== '—'" title="审核人 ID" :value="txt(pick('auditBy'))" /> -->
   </van-cell-group>
+
+  <van-cell-group v-if="hasAssignInfo" title="转派信息" inset class="repl-apply-detail__assign-group">
+    <van-cell
+      v-if="assignCapitalNicknameDisplay !== '—'"
+      title="转派给谁"
+      :value="assignCapitalNicknameDisplay"
+    />
+    <van-cell v-if="assignTimeDisplay" title="转派时间" :value="assignTimeDisplay" />
+    <van-cell v-if="assignRemarkDisplay !== '—'" title="转派备注" :value="assignRemarkDisplay" />
+  </van-cell-group>
+  </template>
 </template>
 
 <script setup>
@@ -95,11 +107,31 @@ const walletAddressDisplay = computed(() => txt(pick('walletAddress')))
 const hasWalletInfo = computed(
   () => walletNameDisplay.value !== '—' || walletAddressDisplay.value !== '—',
 )
+
+const assignCapitalNicknameDisplay = computed(() => txt(pick('assignedCapitalNickname')))
+
+const assignTimeDisplay = computed(() => {
+  const t = pick('assignedTime')
+  if (t == null || String(t).trim() === '') return ''
+  return formatDateTime(t)
+})
+
+const assignRemarkDisplay = computed(() => txt(pick('assignRemark')))
+
+const hasAssignInfo = computed(
+  () =>
+    assignCapitalNicknameDisplay.value !== '—' ||
+    assignTimeDisplay.value !== '' ||
+    assignRemarkDisplay.value !== '—',
+)
 </script>
 
 <style scoped>
 .repl-apply-detail__amount {
   color: #ee0a24;
   font-weight: 700;
+}
+.repl-apply-detail__assign-group {
+  margin-top: 8px;
 }
 </style>

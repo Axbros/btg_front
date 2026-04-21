@@ -75,8 +75,46 @@
         <van-button round block type="primary" @click="onRatioConfigClick">调整分润比例</van-button>
         <p class="actions__hint">仅可为直属下级设置</p>
       </div>
+
+      <div v-if="showQualificationReviewActions" class="actions">
+        <van-button round block type="primary" :loading="qualApproveSubmitting" @click="onQualApproveClick">
+          通过
+        </van-button>
+        <van-button
+          round
+          block
+          type="danger"
+          class="actions__btn-spaced"
+          :loading="qualRejectSubmitting"
+          @click="openQualRejectDialog"
+        >
+          拒绝
+        </van-button>
+      </div>
     </template>
     <EmptyState v-else description="未找到该用户或无权查看" />
+
+    <van-dialog
+      v-model:show="qualRejectDialogShow"
+      title="拒绝资格审核"
+      show-cancel-button
+      confirm-button-text="确认拒绝"
+      confirm-button-color="#ee0a24"
+      :before-close="onQualRejectBeforeClose"
+    >
+      <div class="qual-reject-dialog-pad">
+        <van-field
+          v-model="qualRejectRemark"
+          rows="3"
+          autosize
+          type="textarea"
+          maxlength="200"
+          placeholder="请填写拒绝原因"
+          show-word-limit
+          :border="false"
+        />
+      </div>
+    </van-dialog>
   </div>
 </template>
 
@@ -84,10 +122,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
+import { showConfirmDialog, showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchUserDetail } from '@/api/user'
+import { approveQualification, fetchUserDetail, rejectQualification } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
 import { canAdjustChildProfitRatioOnFrontend } from '@/utils/teamDirectRelation'
 import { isUserRoot } from '@/utils/permission'
 import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
@@ -103,16 +143,37 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const { userInfo } = storeToRefs(useAuthStore())
+const authStore = useAuthStore()
+const dashboardStore = useDashboardStore()
+const { userInfo } = storeToRefs(authStore)
 
 const detail = ref(null)
 const loading = ref(true)
+
+const qualRejectDialogShow = ref(false)
+const qualRejectRemark = ref('')
+const qualApproveSubmitting = ref(false)
+const qualRejectSubmitting = ref(false)
 
 const user = computed(() => detail.value?.user ?? {})
 const profile = computed(() => detail.value?.profile ?? null)
 
 /** 与后端一致：仅根用户接口会返回 tradingAccountPassword */
 const isViewerRoot = computed(() => isUserRoot(userInfo.value))
+
+/** 原始 profile.qualificationStatus（与后端一致；用于根用户待审核操作入口） */
+const rawQualificationStatus = computed(() => {
+  const p = profile.value
+  if (!p || typeof p !== 'object') return null
+  return p.qualificationStatus
+})
+
+/** 根用户且资格为待审核（1）时可在此页通过 / 拒绝 */
+const showQualificationReviewActions = computed(() => {
+  if (!isViewerRoot.value) return false
+  const q = rawQualificationStatus.value
+  return q === 1 || q === '1'
+})
 
 function hasTextField(v) {
   return v != null && String(v).trim() !== ''
@@ -227,6 +288,56 @@ async function loadMemberDetail() {
   detail.value = await fetchUserDetail(id)
 }
 
+async function onQualApproveClick() {
+  const id = memberIdNum()
+  if (id == null) return
+  try {
+    await showConfirmDialog({ title: '确认通过该用户的资格审核？' })
+  } catch {
+    return
+  }
+  qualApproveSubmitting.value = true
+  try {
+    await approveQualification(String(id), {})
+    showToast({ type: 'success', message: '已通过' })
+    await loadMemberDetail()
+    void dashboardStore.fetchPendingSummary({ silent: true })
+  } catch {
+    /* 拦截器 Toast */
+  } finally {
+    qualApproveSubmitting.value = false
+  }
+}
+
+function openQualRejectDialog() {
+  qualRejectRemark.value = ''
+  qualRejectDialogShow.value = true
+}
+
+async function onQualRejectBeforeClose(action) {
+  if (action === 'cancel') return true
+  const id = memberIdNum()
+  if (id == null) return false
+  const remark = qualRejectRemark.value.trim()
+  if (!remark) {
+    showToast('请填写拒绝原因')
+    return false
+  }
+  qualRejectSubmitting.value = true
+  try {
+    await rejectQualification(String(id), { remark })
+    showToast({ type: 'success', message: '已拒绝' })
+    qualRejectRemark.value = ''
+    await loadMemberDetail()
+    void dashboardStore.fetchPendingSummary({ silent: true })
+    return true
+  } catch {
+    return false
+  } finally {
+    qualRejectSubmitting.value = false
+  }
+}
+
 onMounted(async () => {
   const id = memberIdNum()
   if (id == null) {
@@ -268,5 +379,8 @@ onMounted(async () => {
   color: #969799;
   line-height: 1.45;
   text-align: right;
+}
+.qual-reject-dialog-pad {
+  padding: 0 12px 12px;
 }
 </style>

@@ -333,15 +333,15 @@ const REPLENISHMENT_STATUS_STR = {
 }
 
 /**
- * 补仓列表筛选：userVisibleStatus 五档 + 全部。
+ * 补仓列表筛选：userVisibleStatus 五档 + 全部（最后一项，文案「全部」）。
  * value `all` 不传参；否则为字符串 "1"～"5"，请求时转为整数 userVisibleStatus。
  */
 export const replenishmentUserVisibleFilterOptions = [
-  { text: '全部状态', value: 'all' },
   ...[1, 2, 3, 4, 5].map((n) => ({
     text: REPLENISHMENT_USER_VISIBLE_LABEL[n],
     value: String(n),
   })),
+  { text: '全部', value: 'all' },
 ]
 
 /** 用户可见态文案（1～5）；未知或空为「—」 */
@@ -366,7 +366,7 @@ export function replenishmentUserVisibleTagType(val) {
 }
 
 /**
- * 列表行展示：优先 userVisibleStatus；缺失（如 assigned 列表）为「—」，不展示 8 态细文案。
+ * 列表行展示：优先 userVisibleStatus；否则用业务 status（如 assigned-to-me 列表无五档可见态时）。
  * @param {Record<string, unknown> | null | undefined} row
  */
 export function formatReplenishmentListStatus(row) {
@@ -374,6 +374,10 @@ export function formatReplenishmentListStatus(row) {
   const u = row.userVisibleStatus ?? row.user_visible_status
   if (u !== null && u !== undefined && u !== '') {
     return formatReplenishmentUserVisibleStatus(u)
+  }
+  const st = row.status ?? row.replenishmentStatus
+  if (st !== null && st !== undefined && st !== '') {
+    return formatReplenishmentStatus(st)
   }
   return '—'
 }
@@ -386,6 +390,10 @@ export function replenishmentListStatusTagType(row) {
   const u = row.userVisibleStatus ?? row.user_visible_status
   if (u !== null && u !== undefined && u !== '') {
     return replenishmentUserVisibleTagType(u)
+  }
+  const st = row.status ?? row.replenishmentStatus
+  if (st !== null && st !== undefined && st !== '') {
+    return replenishmentStatusTagType(st)
   }
   return 'default'
 }

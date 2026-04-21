@@ -311,7 +311,7 @@ const routes = [
         path: 'replenishment/assigned',
         name: 'AssignedReplenishmentList',
         component: () => import('@/views/replenishment/AssignedReplenishmentList.vue'),
-        meta: { title: '待处理补仓（资方）', hideTab: true },
+        meta: { title: '资方补仓', hideTab: true },
       },
       {
         path: 'admin/replenishments/repays/pending',

@@ -6,8 +6,8 @@
     <EmptyState v-else description="未获取到归仓信息" />
 
     <div v-if="detail && isPendingAudit" class="detail__actions">
-      <van-button block round type="primary" plain @click="openApprove">通过</van-button>
-      <van-button block round type="danger" plain @click="openReject">拒绝</van-button>
+      <van-button block round type="primary" @click="openApprove">通过</van-button>
+      <van-button block round type="danger" @click="openReject">拒绝</van-button>
     </div>
 
     <van-dialog

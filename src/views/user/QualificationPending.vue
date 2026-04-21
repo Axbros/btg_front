@@ -23,6 +23,7 @@
 
       <div class="qual-pending__actions">
         <van-button round block type="primary" @click="goEditProfile">编辑资料</van-button>
+        <van-button round block plain type="danger" @click="onLogout">退出登录</van-button>
       </div>
     </template>
   </div>
@@ -32,6 +33,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { showConfirmDialog } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
@@ -66,6 +68,16 @@ const remarkPresent = computed(() => remarkText.value !== '')
 
 function goEditProfile() {
   router.push({ name: 'ProfileComplete' })
+}
+
+async function onLogout() {
+  try {
+    await showConfirmDialog({ title: '确认退出登录？' })
+    auth.logout()
+    router.replace('/login')
+  } catch {
+    /* 取消 */
+  }
 }
 
 onMounted(async () => {
@@ -111,5 +123,8 @@ onMounted(async () => {
 }
 .qual-pending__actions {
   margin: 24px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 </style>

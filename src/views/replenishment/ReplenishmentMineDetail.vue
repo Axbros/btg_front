@@ -65,9 +65,9 @@
         <p class="repl-mine-detail__action-title">资方处理</p>
         <div class="repl-mine-detail__btn-stack">
           <van-button type="primary" block round :loading="capitalAgreeSubmitting" @click="openCapitalAgree">
-            同意
+            提交凭证
           </van-button>
-          <van-button type="danger" block round @click="openCapitalReject">拒绝</van-button>
+          <van-button type="danger" block round @click="openCapitalReject">拒绝执行</van-button>
         </div>
       </div>
       <div v-if="showReturnedActions" class="repl-mine-detail__action-block">
@@ -102,8 +102,8 @@
 
     <van-popup v-model:show="capitalAgreeShow" position="bottom" round :style="{ maxHeight: '88%' }">
       <div class="capital-popup">
-        <div class="capital-popup__title">同意补仓</div>
-        <p class="capital-popup__hint">请上传转账凭证并填写备注，确认后将提交同意。</p>
+        <div class="capital-popup__title">提交转账凭证</div>
+        <p class="capital-popup__hint">请上传转账截图，提交后将进入平台审核。</p>
         <van-cell-group inset>
           <van-field label="转账凭证" readonly>
             <template #input>
@@ -120,23 +120,23 @@
             placeholder="选填"
             show-word-limit
           />
-          <van-field
+          <!-- <van-field
             v-model="capitalAgreeForm.capitalReceiverUid"
             label="收款 UID"
             maxlength="100"
             placeholder="资方收款 UID（必填）"
-          />
+          /> -->
         </van-cell-group>
         <div class="capital-popup__actions">
           <van-button block round @click="capitalAgreeShow = false">取消</van-button>
-          <van-button block round type="primary" :loading="capitalAgreeSubmitting" @click="submitCapitalAgree">确认同意</van-button>
+          <van-button block round type="primary" :loading="capitalAgreeSubmitting" @click="submitCapitalAgree">确认提交</van-button>
         </div>
       </div>
     </van-popup>
 
     <van-dialog
       v-model:show="capitalRejectShow"
-      title="拒绝补仓"
+      title="拒绝执行"
       show-cancel-button
       confirm-button-text="确认拒绝"
       confirm-button-color="#ee0a24"
@@ -149,7 +149,7 @@
           autosize
           type="textarea"
           maxlength="200"
-          placeholder="拒绝原因（必填）"
+          placeholder="退回原因（必填），将退回根用户重新转派"
           show-word-limit
           :border="false"
         />
@@ -192,7 +192,7 @@ import { useAuthStore } from '@/stores/auth'
 import {
   fetchReplenishmentMineDetail,
   capitalSubmitReplenishment,
-  capitalRejectReplenishment,
+  capitalRejectAssignmentReplenishment,
   confirmArrival,
   rejectArrival,
 } from '@/api/replenishment'
@@ -270,12 +270,15 @@ const showApplicantArrivalActions = computed(() => {
   return n === 1
 })
 
-/** 3 待资方提交：当前用户为资方执行用户时，仅同意 / 拒绝 */
+/** 待资方提交 / 退回资方修改：当前用户为资方执行人时可 capital-submit 或拒绝转派 */
 const showCapitalExecutorActions = computed(() => {
   const r = replenishment.value
-  if (!r) return false
-  if (Number(r.status) !== 3) return false
-  return isReplenishmentCapitalExecutor(r)
+  if (!r || !isReplenishmentCapitalExecutor(r)) return false
+  const s = r.status
+  const sk = typeof s === 'string' ? s.trim().toUpperCase().replace(/-/g, '_') : ''
+  if (sk === 'PENDING_CAPITAL_SUBMIT' || Number(s) === 3) return true
+  if (sk === 'RETURNED_TO_CAPITAL' || Number(s) === 5) return true
+  return false
 })
 
 const capitalAgreeShow = ref(false)
@@ -464,7 +467,7 @@ function resetCapitalAgreeForm() {
 function openCapitalAgree() {
   resetCapitalAgreeForm()
   const r = replenishment.value
-  const preset = r?.capitalReceiverUid
+  const preset = r?.capitalReceiverUid ?? r?.assignedCapitalExchangeUid
   if (preset) capitalAgreeForm.capitalReceiverUid = String(preset)
   capitalAgreeShow.value = true
 }
@@ -478,10 +481,10 @@ async function submitCapitalAgree() {
     showToast('请上传转账凭证')
     return
   }
-  if (!uid) {
-    showToast('请填写收款 UID')
-    return
-  }
+  // if (!uid) {
+  //   showToast('请填写收款 UID')
+  //   return
+  // }
   capitalAgreeSubmitting.value = true
   try {
     await capitalSubmitReplenishment(id, {
@@ -489,7 +492,7 @@ async function submitCapitalAgree() {
       transferRemark: String(capitalAgreeForm.transferRemark || '').trim() || undefined,
       capitalReceiverUid: uid,
     })
-    showToast({ type: 'success', message: '已提交同意' })
+    showToast({ type: 'success', message: '已提交凭证' })
     capitalAgreeShow.value = false
     await loadDetail()
   } catch {
@@ -514,8 +517,8 @@ async function onCapitalRejectBeforeClose(action) {
     return false
   }
   try {
-    await capitalRejectReplenishment(id, { remark })
-    showToast('已拒绝')
+    await capitalRejectAssignmentReplenishment(id, { remark })
+    showToast('已退回，根用户可重新转派')
     await loadDetail()
     return true
   } catch {

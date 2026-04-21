@@ -62,7 +62,7 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { fetchAdminRepaysPending } from '@/api/adminReplenishment'
+import { fetchAdminRepays } from '@/api/adminReplenishment'
 import { parsePageResponse } from '@/utils/pagination'
 import { formatMoney, formatRepayStatus, repayStatusTagType } from '@/utils/format'
 
@@ -225,7 +225,7 @@ function statusApiParam() {
 
 async function fetchPage(p) {
   const st = statusApiParam()
-  const raw = await fetchAdminRepaysPending({
+  const raw = await fetchAdminRepays({
     page: p,
     size: pageSize.value,
     ...(st != null ? { status: st } : {}),

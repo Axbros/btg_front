@@ -210,21 +210,38 @@ export function assignReplenishment(id, data) {
 
 // ——— 资方执行用户 / 申请人补仓动作 ———
 
-/** GET /replenishments/assigned-to-me */
+/**
+ * 派给我、要我处理的补仓分页（待资方提交 / 退回资方修改等）。
+ * GET /replenishments/assigned-to-me
+ */
 export function getAssignedReplenishments(params = {}) {
+  const { page, size, pageSize, ...rest } = params
   return get('/replenishments/assigned-to-me', {
-    page: params.page ?? 1,
-    size: params.size ?? params.pageSize ?? 10,
-    ...params,
+    page: page ?? 1,
+    size: size ?? pageSize ?? 10,
+    ...rest,
   })
 }
 
-/** POST /replenishments/{id}/capital-submit */
+/**
+ * 资方执行人同意执行并上传转账凭证。
+ * POST /replenishments/{id}/capital-submit
+ * @param {{ transferScreenshotUrl: string, capitalReceiverUid: string, transferRemark?: string }} data
+ */
 export function capitalSubmitReplenishment(id, data) {
   return post(`/replenishments/${id}/capital-submit`, data ?? {})
 }
 
-/** POST /replenishments/{id}/capital-reject — 资方拒绝（body 建议 { remark }） */
+/**
+ * 资方拒绝执行当前转派，退回根用户重新转派。
+ * POST /replenishments/{id}/capital-reject-assignment
+ * body 与 ProfitReportRejectRequest 等拒绝类一致（常用 remark / rejectReason，以后端为准）
+ */
+export function capitalRejectAssignmentReplenishment(id, data) {
+  return post(`/replenishments/${id}/capital-reject-assignment`, data ?? {})
+}
+
+/** @deprecated 请改用 capitalRejectAssignmentReplenishment（capital-reject-assignment） */
 export function capitalRejectReplenishment(id, data) {
   return post(`/replenishments/${id}/capital-reject`, data ?? {})
 }

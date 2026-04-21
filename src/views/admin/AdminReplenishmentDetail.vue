@@ -3,8 +3,9 @@
     <AppHeader title="补仓审核详情" />
     <van-loading v-if="loading" class="detail-loading" vertical>加载中…</van-loading>
     <template v-else-if="detail">
+    <ReplenishmentSubmitMt5SnapshotGroup :snapshot="detail?.submitMt5Snapshot" />
       <ReplenishmentApplyDetailBody :detail="detail" />
-      <ReplenishmentSubmitMt5SnapshotGroup :snapshot="detail?.submitMt5Snapshot" />
+      
       <van-cell-group v-if="showActionBar" inset class="detail-actions">
         <div class="detail-actions__pad">
           <div class="card__actions">
@@ -56,13 +57,16 @@
     <van-popup v-model:show="assignPopupShow" position="bottom" round :style="{ maxHeight: '85%' }">
       <div class="assign-popup">
         <div class="assign-popup__title">转派资方执行用户</div>
-        <van-cell-group inset>
+        <van-loading v-if="pickerLoading" class="assign-popup__loading" vertical>加载可选用户…</van-loading>
+        <van-cell-group v-else inset>
           <van-field
-            v-model="assignCapitalUserId"
-            label="执行人用户ID"
-            type="digit"
-            placeholder="填写 capitalUserId（btg_user.id）"
+            :model-value="assignExecutorDisplay"
+            readonly
+            label="执行人"
+            placeholder="请选择资方执行用户"
+            is-link
             required
+            @click="openAssignExecutorPicker"
           />
           <van-field
             v-model="assignRemark"
@@ -77,9 +81,22 @@
         </van-cell-group>
         <div class="assign-popup__actions">
           <van-button block round @click="assignPopupShow = false">取消</van-button>
-          <van-button block round type="primary" :loading="assignSubmitting" @click="submitAssign">确认转派</van-button>
+          <van-button block round type="primary" :loading="assignSubmitting" :disabled="pickerLoading" @click="submitAssign">
+            确认转派
+          </van-button>
         </div>
       </div>
+    </van-popup>
+
+    <van-popup v-model:show="assignExecutorPickerOpen" position="bottom" round teleport="body">
+      <van-picker
+        v-if="pickerColumns.length"
+        show-toolbar
+        title="选择执行人"
+        :columns="pickerColumns"
+        @confirm="onAssignExecutorPickerConfirm"
+        @cancel="assignExecutorPickerOpen = false"
+      />
     </van-popup>
 
     <van-dialog
@@ -117,6 +134,7 @@ import ReplenishmentApplyDetailBody from '@/components/ReplenishmentApplyDetailB
 import ReplenishmentSubmitMt5SnapshotGroup from '@/components/ReplenishmentSubmitMt5SnapshotGroup.vue'
 import { fetchAdminReplenishmentDetail, approveReplenishmentAdmin, rejectReplenishmentAdmin } from '@/api/adminReplenishment'
 import { assignReplenishment } from '@/api/replenishment'
+import { useAdminReplenishmentAssignPicker } from '@/composables/useAdminReplenishmentAssignPicker'
 
 const route = useRoute()
 
@@ -131,8 +149,17 @@ const agreeForm = reactive({
 })
 
 const assignPopupShow = ref(false)
-const assignCapitalUserId = ref('')
 const assignRemark = ref('')
+const assignExecutorPickerOpen = ref(false)
+const {
+  pickerLoading,
+  assignSelectedUserId,
+  pickerColumns,
+  assignExecutorDisplay,
+  loadExecutorPickerOptions,
+  resetAssignSelection,
+  applyPickerConfirm,
+} = useAdminReplenishmentAssignPicker()
 const assignSubmitting = ref(false)
 
 const rejectShow = ref(false)
@@ -166,7 +193,9 @@ function hasAssignedCapitalUser(row) {
 /** 1 待管理员审核：同意、拒绝 */
 const canAgree = computed(() => statusN.value === 1)
 /** 2 已通过待转派且尚未指定资方执行用户：转派 */
-const canAssign = computed(() => statusN.value === 1 )
+const canAssign = computed(
+  () => statusN.value === 2 && !hasAssignedCapitalUser(detail.value),
+)
 /** 待管理员审核或待转派阶段可拒绝 */
 const canReject = computed(() => statusN.value === 1 )
 
@@ -193,6 +222,10 @@ async function loadDetail() {
 }
 
 watch(applyId, () => loadDetail(), { immediate: true })
+
+watch(assignPopupShow, (v) => {
+  if (!v) assignExecutorPickerOpen.value = false
+})
 
 function resetAgreeForm() {
   agreeForm.transferScreenshotUrl = ''
@@ -234,23 +267,36 @@ async function submitAgree() {
   }
 }
 
-function openAssign() {
-  assignCapitalUserId.value = ''
+async function openAssign() {
+  resetAssignSelection()
   assignRemark.value = ''
   assignPopupShow.value = true
+  await loadExecutorPickerOptions()
+  if (!pickerColumns.value.length) {
+    showToast('暂无可选用户')
+    assignPopupShow.value = false
+  }
+}
+
+function openAssignExecutorPicker() {
+  if (!pickerColumns.value.length) {
+    showToast('暂无可选用户')
+    return
+  }
+  assignExecutorPickerOpen.value = true
+}
+
+function onAssignExecutorPickerConfirm({ selectedOptions }) {
+  applyPickerConfirm(selectedOptions)
+  assignExecutorPickerOpen.value = false
 }
 
 async function submitAssign() {
   const id = applyId.value
   if (id == null) return
-  const uid = assignCapitalUserId.value.trim()
-  if (!uid) {
-    showToast('请填写执行人用户ID')
-    return
-  }
-  const n = Number(uid)
-  if (!Number.isFinite(n) || n <= 0) {
-    showToast('用户ID无效')
+  const n = assignSelectedUserId.value
+  if (n == null || !Number.isFinite(n) || n <= 0) {
+    showToast('请选择执行人')
     return
   }
   assignSubmitting.value = true
@@ -340,6 +386,10 @@ async function onRejectBeforeClose(action) {
 }
 .assign-popup {
   padding: 12px 0 20px;
+}
+.assign-popup__loading {
+  padding: 28px 16px;
+  justify-content: center;
 }
 .assign-popup__title {
   text-align: center;

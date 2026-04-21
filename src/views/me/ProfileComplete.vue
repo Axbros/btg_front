@@ -1,5 +1,5 @@
 <template>
-  <div class="page" :class="{ 'page--pending-footer': auth.isProfilePendingReview }">
+  <div class="page">
     <AppHeader title="更新资料" />
     <van-loading v-if="!pageReady" class="page__loading" vertical>加载中…</van-loading>
     <template v-else>
@@ -25,7 +25,7 @@
         保存后将更新真实姓名与扩展资料。登录手机号以注册账号为准，不可在此修改。
       </p>
       <p v-else class="tip tip--pending">
-        审核期间仍可修改并保存资料；如需更换账号请使用底部「退出登录」。
+        审核期间仍可修改并保存资料；如需更换账号请至「等待审核」页退出登录。
       </p>
       <van-form scroll-to-error :show-error-message="true" @submit="onSubmit">
         <van-cell-group inset title="账号信息">
@@ -165,14 +165,7 @@
         <div class="actions">
           <van-button round block type="primary" native-type="submit" :loading="loading">保存资料</van-button>
         </div>
-        <div v-if="auth.isProfileOnlyLocked" class="locked-exit">
-          <van-button block round plain type="danger" @click="onLogout">退出登录</van-button>
-        </div>
       </van-form>
-
-      <div v-if="auth.isProfilePendingReview" class="page__pending-bar">
-        <van-button block round plain type="danger" @click="onLogout">退出登录</van-button>
-      </div>
 
       <van-dialog
         v-model:show="submitDialogShow"
@@ -192,7 +185,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { showConfirmDialog, showToast } from 'vant'
+import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import { completeUserProfile, fetchMe } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
@@ -287,16 +280,6 @@ function applyMeProfileToForm(me) {
   if (wa) form.walletAddress = rs(wa)
 }
 
-async function onLogout() {
-  try {
-    await showConfirmDialog({ title: '确认退出登录？' })
-    auth.logout()
-    router.replace('/login')
-  } catch {
-    /* 取消 */
-  }
-}
-
 onMounted(async () => {
   pageReady.value = false
   try {
@@ -377,19 +360,6 @@ async function onSubmitDialogBeforeClose(action) {
 .page {
   padding-bottom: 32px;
 }
-.page--pending-footer {
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-}
-.page__pending-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 100;
-  padding: 10px 16px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  background: #fff;
-}
 .tip--pending {
   color: #646566;
 }
@@ -411,9 +381,6 @@ async function onSubmitDialogBeforeClose(action) {
 }
 .blocked__actions {
   margin: 16px 24px 0;
-}
-.locked-exit {
-  margin: 16px 16px 0;
 }
 .submit-dialog-msg {
   margin: 0;
