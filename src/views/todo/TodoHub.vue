@@ -29,7 +29,7 @@
       <van-cell-group inset class="todo-hub__block todo-quick van-cell-group--card-style">
         <van-cell
           v-if="!isRootUser"
-          title="待支付团队长结算"
+          title="待支付结算"
           is-link
           @click="goNav({ name: 'PendingPaySettlements', query: { status: '2' } })"
         >

@@ -248,7 +248,7 @@ const maxAssignableChildProfitRatio = computed(() => {
   return Number.isFinite(n) ? n : null
 })
 
-/** 分润比例：仅非根、直属团队长、下级已激活；从「全部下级」打开非直属详情时为 false */
+/** 分润比例：须为直属团队长且下级已激活；从「全部下级」打开非直属详情时为 false */
 const canAdjustChildProfitRatio = computed(() =>
   canAdjustChildProfitRatioOnFrontend(userInfo.value, user.value),
 )
