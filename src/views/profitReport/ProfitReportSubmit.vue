@@ -35,7 +35,19 @@
         class="profit-report-submit__form"
       >
       <van-cell-group inset>
-        <van-cell v-if="contextSummaryText" title="当前分润信息" :label="contextSummaryText" />
+        <van-cell v-if="showProfitContextSummary" title="当前分润信息">
+          <template #label>
+            <div class="profit-context-summary">
+              <p v-if="commissionModeDisplayText" class="profit-context-summary__line">
+                <!-- <span class="profit-context-summary__mode-label">分润模式</span> -->
+                <span></span>
+              </p>
+              <p v-if="contextSummaryBodyText" class="profit-context-summary__line">
+                {{ contextSummaryBodyText }}(<span class="profit-context-summary__mode-label">{{ commissionModeDisplayText }}</span>)
+              </p>
+            </div>
+          </template>
+        </van-cell>
         <van-field
           v-model="profitAmount"
           name="profitAmount"
@@ -112,6 +124,7 @@ import { fetchLatestMt5Snapshot } from '@/api/mt5'
 import { fetchMe } from '@/api/user'
 import { formatMoney, formatRate } from '@/utils/format'
 import {
+  pickCommissionModeEnum,
   pickEffectiveChildProfitRatioForContext,
   pickGuaranteeChildProfitRatio,
   pickNonGuaranteeChildProfitRatio,
@@ -171,27 +184,44 @@ const parentExchangeUid = computed(() => {
   return s
 })
 
-const contextSummaryText = computed(() => {
+/** 当前分润模式文案：commissionModeDesc +（与 commissionMode 对应的比例） */
+const commissionModeDisplayText = computed(() => {
+  const c = context.value
+  if (!c || typeof c !== 'object') return ''
+  const raw = c.commissionModeDesc
+  const desc = typeof raw === 'string' ? raw.trim() : String(raw ?? '').trim()
+  if (!desc) return ''
+  const mode = pickCommissionModeEnum(c)
+  let ratio = null
+  if (mode === 'GUARANTEE') ratio = pickGuaranteeChildProfitRatio(c)
+  else if (mode === 'NON_GUARANTEE') ratio = pickNonGuaranteeChildProfitRatio(c)
+  if (ratio != null && Number.isFinite(ratio)) return `${desc}`
+  return desc
+})
+
+/** 当前分润信息说明（不含顶部分润模式行） */
+const contextSummaryBodyText = computed(() => {
   const c = context.value
   if (!c) return ''
   const parts = []
-  const g = pickGuaranteeChildProfitRatio(c)
-  const ng = pickNonGuaranteeChildProfitRatio(c)
-  if (g != null && ng != null && Math.abs(g - ng) > 1e-9) {
-    parts.push(
-      `用户利润比例：兜底 ${formatRate(g)}，不兜底 ${formatRate(ng)}（按实际上报时的分润模式取用）`,
-    )
-  } else {
-    const child = pickEffectiveChildProfitRatioForContext(c)
-    if (child != null) parts.push(`用户利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
-  }
+  // const g = pickGuaranteeChildProfitRatio(c)
+  // const ng = pickNonGuaranteeChildProfitRatio(c)
+  // if (g != null && ng != null && Math.abs(g - ng) > 1e-9) {
+  //   parts.push(
+  //     `用户利润比例：兜底 ${formatRate(g)}，不兜底 ${formatRate(ng)}（按实际上报时的分润模式取用）`,
+  //   )
+  // } else {
+  //   const child = pickEffectiveChildProfitRatioForContext(c)
+  //   if (child != null) parts.push(`用户利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
+  // }
   const pr = payableRatio.value
   if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属团队长划转 ${formatRate(pr)} 的利润部分`)
-  // if (parentExchangeUid.value) {
-  //   parts.push(`直属团队长交易所 UID：${parentExchangeUid.value}`)
-  // }
   return parts.join('；')
 })
+
+const showProfitContextSummary = computed(
+  () => Boolean(commissionModeDisplayText.value || contextSummaryBodyText.value),
+)
 
 /** 划转金额提示中的数字部分（加粗红色在模板中） */
 const transferHintAmount = computed(() => {
@@ -333,6 +363,22 @@ async function onSubmit() {
 .profit-report-submit__form {
   padding-top: 12px;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.profit-context-summary {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #646566;
+}
+.profit-context-summary__line {
+  margin: 0 0 6px;
+}
+.profit-context-summary__line:last-child {
+  margin-bottom: 0;
+}
+.profit-context-summary__mode-label {
+  color: #ee0a24;
+  font-weight: 600;
 }
 
 .profit-report-submit__state {
