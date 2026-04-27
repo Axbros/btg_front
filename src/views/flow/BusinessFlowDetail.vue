@@ -11,6 +11,11 @@
         <van-cell v-if="rejectReason" title="最后拒绝原因" :label="rejectReason" />
         <van-cell v-if="submitVersion != null && submitVersion !== ''" title="提交版本" :value="String(submitVersion)" />
         <van-cell v-if="returnedFlag != null" title="是否退回" :value="returnedFlag ? '是' : '否'" />
+        <van-cell
+          v-if="flowKind === 'profit'"
+          title="分润模式"
+          :value="profitCommissionModeDisplay"
+        />
       </van-cell-group>
 
       <van-cell-group v-if="replenishmentFlowExtraVisible" inset title="资方与到账确认" class="flow-detail__block">
@@ -61,6 +66,7 @@ import {
   formatReplenishmentStatus,
   formatRepayStatus,
 } from '@/utils/format'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
 
 const route = useRoute()
 
@@ -163,6 +169,15 @@ const returnedFlag = computed(() => {
   if (v === true || v === 1 || v === '1' || v === 'true') return true
   if (v === false || v === 0 || v === '0') return false
   return null
+})
+
+const profitCommissionModeDisplay = computed(() => {
+  if (flowKind.value !== 'profit') return '—'
+  const p = payload.value
+  if (!p || typeof p !== 'object') return '-'
+  const rep = p.report && typeof p.report === 'object' ? p.report : null
+  const n = normalizeProfitReport(rep || p)
+  return String(n.commissionModeDesc ?? '').trim() || '-'
 })
 
 function pickReplenishmentShape(p) {

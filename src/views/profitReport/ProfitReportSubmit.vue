@@ -111,6 +111,11 @@ import { fetchSelfProfitConfigUnderParent } from '@/api/profitConfig'
 import { fetchLatestMt5Snapshot } from '@/api/mt5'
 import { fetchMe } from '@/api/user'
 import { formatMoney, formatRate } from '@/utils/format'
+import {
+  pickEffectiveChildProfitRatioForContext,
+  pickGuaranteeChildProfitRatio,
+  pickNonGuaranteeChildProfitRatio,
+} from '@/utils/profitChildRatioPick'
 
 const router = useRouter()
 const profitAmount = ref('')
@@ -144,12 +149,12 @@ function pickNum(...candidates) {
   return null
 }
 
-/** 需转给直属团队长的比例：优先用后端字段，否则按「1 − 用户利润比例」估算 */
+/** 需转给直属团队长的比例：优先用后端字段，否则按「1 − 用户利润比例」估算（比例随 commissionMode 取兜底/不兜底配置） */
 function payableRatioFromContext(c) {
   if (!c) return null
   const tr = pickNum(c.transferRatio, c.payableToSuperiorRatio)
   if (tr != null) return tr
-  const child = pickNum(c.childProfitRatio)
+  const child = pickEffectiveChildProfitRatioForContext(c)
   if (child != null) return 1 - child
   return null
 }
@@ -170,8 +175,16 @@ const contextSummaryText = computed(() => {
   const c = context.value
   if (!c) return ''
   const parts = []
-  const child = pickNum(c.childProfitRatio)
-  if (child != null) parts.push(`用户利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
+  const g = pickGuaranteeChildProfitRatio(c)
+  const ng = pickNonGuaranteeChildProfitRatio(c)
+  if (g != null && ng != null && Math.abs(g - ng) > 1e-9) {
+    parts.push(
+      `用户利润比例：兜底 ${formatRate(g)}，不兜底 ${formatRate(ng)}（按实际上报时的分润模式取用）`,
+    )
+  } else {
+    const child = pickEffectiveChildProfitRatioForContext(c)
+    if (child != null) parts.push(`用户利润比例 ${formatRate(child)}（您这条线相对总利润的保留比例）`)
+  }
   const pr = payableRatio.value
   if (pr != null && Number.isFinite(pr)) parts.push(`本次应向直属团队长划转 ${formatRate(pr)} 的利润部分`)
   // if (parentExchangeUid.value) {

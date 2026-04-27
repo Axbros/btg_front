@@ -4,6 +4,7 @@
     <div class="profit-report-shell__scroll profit-distribution__scroll">
       <van-loading v-if="loading" class="pad profit-distribution__center" vertical>加载分润明细…</van-loading>
       <template v-else-if="rows.length">
+        <div class="mode-row profit-distribution__mode">分润模式：{{ commissionModeDescDisplay }}</div>
         <van-cell-group inset title="按链路分配（逐级汇总）">
           <template v-for="(row, idx) in rows" :key="idx">
             <van-cell :title="titleCell(row)" :value="amountCell(row)" :label="labelCell(row)" />
@@ -26,6 +27,7 @@ import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchProfitDistributionByReportId } from '@/api/profitDistribution'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
 import { formatMoney, formatRate } from '@/utils/format'
 
 const route = useRoute()
@@ -48,6 +50,13 @@ function extractRows(data) {
 }
 
 const rows = computed(() => extractRows(payload.value))
+
+const commissionModeDescDisplay = computed(() => {
+  const p = payload.value
+  if (!p || typeof p !== 'object') return '-'
+  const n = normalizeProfitReport(p)
+  return String(n.commissionModeDesc ?? '').trim() || '-'
+})
 
 const note = computed(() => {
   const t = payload.value?.remark ?? payload.value?.note ?? payload.value?.description
@@ -128,6 +137,9 @@ watch(
 <style scoped>
 .profit-distribution__scroll {
   padding-bottom: env(safe-area-inset-bottom);
+}
+.profit-distribution__mode {
+  margin-bottom: 4px;
 }
 .profit-distribution__center {
   flex: 1;

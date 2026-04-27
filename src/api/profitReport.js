@@ -1,20 +1,21 @@
 import { get, post } from './request'
+import { normalizeProfitReport, normalizeProfitReportPage } from '@/utils/profitReportNormalize'
 
 /** POST /api/profit-reports — body 与后端 ProfitReportSubmitRequest 对齐 */
 export function submitProfitReport(data) {
   return post('/profit-reports', data)
 }
 
-/** GET /api/profit-reports/mine — query: page、size（兼容 pageSize） */
+/** GET /api/profit-reports/mine — query: page、size（兼容 pageSize）；列表项经 {@link normalizeProfitReport} */
 export function fetchMyProfitReports(params = {}) {
   const page = params.page ?? 1
   const size = params.size ?? params.pageSize ?? 10
-  return get('/profit-reports/mine', { page, size })
+  return get('/profit-reports/mine', { page, size }).then((raw) => normalizeProfitReportPage(raw))
 }
 
 /** GET /api/profit-reports/{id} */
 export function fetchProfitReportById(id) {
-  return get(`/profit-reports/${id}`)
+  return get(`/profit-reports/${id}`).then((data) => normalizeProfitReport(data))
 }
 
 /** POST /profit-reports/{id}/resubmit */
@@ -22,7 +23,24 @@ export function resubmitProfitReport(id, data) {
   return post(`/profit-reports/${id}/resubmit`, data)
 }
 
-/** GET /profit-reports/{id}/flow */
+/** GET /profit-reports/{id}/flow — 根体与嵌套 report 均归一化 commission 字段 */
 export function getProfitReportFlow(id) {
-  return get(`/profit-reports/${id}/flow`)
+  return get(`/profit-reports/${id}/flow`).then((data) => {
+    if (data == null || typeof data !== 'object' || Array.isArray(data)) return data
+    const next = normalizeProfitReport({ ...data })
+    if (next.report && typeof next.report === 'object' && !Array.isArray(next.report)) {
+      next.report = normalizeProfitReport(next.report)
+    }
+    return next
+  })
+}
+
+/**
+ * GET /profit-reports/pending-review（若后端开放；分页体与 mine 类似或含 profitReports）
+ * @param {{ page?: number, size?: number, pageSize?: number }} [params]
+ */
+export function fetchProfitReportsPendingReview(params = {}) {
+  const page = params.page ?? 1
+  const size = params.size ?? params.pageSize ?? 10
+  return get('/profit-reports/pending-review', { page, size }).then((raw) => normalizeProfitReportPage(raw))
 }

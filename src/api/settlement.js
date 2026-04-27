@@ -1,4 +1,5 @@
 import { get, post } from './request'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
 
 /** 路径段须为纯数字，避免与 mine-payables、approved 等静态段混淆 */
 function settlementNumericSegment(id) {
@@ -69,7 +70,9 @@ export function fetchSettlementRowById(settlementId) {
 
 /** GET /api/v1/settlements/{rootReportId}/profit-flow — ProfitFlowDetailVO（含 layers 等） */
 export function getSettlementProfitFlow(rootReportId) {
-  return get(`/settlements/${settlementNumericSegment(rootReportId)}/profit-flow`)
+  return get(`/settlements/${settlementNumericSegment(rootReportId)}/profit-flow`).then((data) =>
+    normalizeProfitReport(data),
+  )
 }
 
 /** 与 {@link getSettlementProfitFlow} 同一路径，语义为「利润分润链路详情」 */

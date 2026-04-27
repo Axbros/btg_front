@@ -24,7 +24,7 @@ const props = defineProps({
   /** 查询参数 type，与后端一致 */
   uploadType: { type: String, default: 'OTHER' },
   hint: { type: String, default: '' },
-  /** 单文件最大字节，默认 10MB */
+  /** 单文件~字节，默认 10MB */
   maxSize: { type: Number, default: 10 * 1024 * 1024 },
   previewSize: { type: [Number, String], default: 88 },
 })

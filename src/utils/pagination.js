@@ -17,7 +17,7 @@ export function parsePageResponse(raw, fallbackPageSize = 10) {
   const { records, total, size, current, pages } = raw
   const pageSize = size ?? fallbackPageSize
   return {
-    list: records,
+    list: Array.isArray(records) ? records : [],
     total,
     page: current,
     pageSize,

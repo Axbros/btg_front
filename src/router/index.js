@@ -70,7 +70,7 @@ const routes = [
         path: 'team/member/:memberId/profit-ratio',
         name: 'ChildProfitRatioEdit',
         component: () => import('@/views/team/ChildProfitRatioEdit.vue'),
-        meta: { title: '调整用户利润比例', tab: 'team', hideTab: true },
+        meta: { title: '调整分润比例', tab: 'team', hideTab: true },
       },
       {
         path: 'team/member/:memberId',

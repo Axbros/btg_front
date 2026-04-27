@@ -9,6 +9,9 @@
     </template>
 
     <template v-else-if="detail">
+      <div class="mode-row profit-flow-detail__mode">
+        当前模式：{{ commissionModeDescDisplay }}
+      </div>
       <van-cell-group v-if="dataScopeShown" inset title="数据视图" class="profit-flow-detail__block">
         <van-cell title="视角范围" :value="dataScopeLabel" />
       </van-cell-group>
@@ -44,6 +47,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import ProfitLayerList from '@/components/ProfitLayerList.vue'
 import { getProfitFlowDetail } from '@/api/settlement'
 import { unwrapProfitFlowDetailPayload } from '@/utils/profitFlowLayer'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
 import { formatDataScope, formatFlowStatus } from '@/utils/profitFlowDetailFormat'
 import { formatDateTime } from '@/utils/format'
 
@@ -93,6 +97,13 @@ const dataScopeShown = computed(() => {
 })
 
 const dataScopeLabel = computed(() => formatDataScope(detail.value?.dataScope))
+
+const commissionModeDescDisplay = computed(() => {
+  const d = detail.value
+  if (!d || typeof d !== 'object') return '-'
+  const n = normalizeProfitReport(d)
+  return String(n.commissionModeDesc ?? '').trim() || '-'
+})
 
 const normalizedDataScope = computed(() => {
   const v = detail.value?.dataScope
@@ -158,8 +169,9 @@ async function load() {
   detail.value = null
   try {
     const data = await getProfitFlowDetail(id)
-    detail.value =
+    const base =
       unwrapProfitFlowDetailPayload(data) ?? (data && typeof data === 'object' ? data : null)
+    detail.value = base && typeof base === 'object' ? normalizeProfitReport(base) : null
     if (!detail.value) loadError.value = true
   } catch {
     loadError.value = true
@@ -185,5 +197,8 @@ watch(
 }
 .profit-flow-detail__block {
   margin: 12px 0 0;
+}
+.profit-flow-detail__mode {
+  margin-top: 8px;
 }
 </style>

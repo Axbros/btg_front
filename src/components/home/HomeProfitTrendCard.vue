@@ -49,7 +49,7 @@ echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
  * @typedef {{ date: string, dateKey: string, profit: number }} SevenDayProfitRow
  */
 const MOCK_SEVEN_DAY_PROFIT = [
-  { date: '周一', dateKey: '2026-04-14', profit: -20 },
+  { date: '周一', dateKey: '2026-04-14', profit: 20 },
   { date: '周二', dateKey: '2026-04-15', profit: 35 },
   { date: '周三', dateKey: '2026-04-16', profit: 68 },
   { date: '周四', dateKey: '2026-04-17', profit: 42 },

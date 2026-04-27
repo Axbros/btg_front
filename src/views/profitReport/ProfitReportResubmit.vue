@@ -19,6 +19,7 @@
           wrapable
           :text="returnNoticeText"
         />
+        <div class="mode-row pr-resubmit__mode">分润模式：{{ commissionModeDescDisplay }}</div>
         <van-field
           v-model="profitAmount"
           name="profitAmount"
@@ -96,6 +97,7 @@ import {
   canCurrentUserUseProfitResubmitFlow,
   isProfitInDirectReviewOrSettlementChain,
 } from '@/utils/profitReportSettlementBranch'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
 import BusinessFlowTimeline from '@/components/BusinessFlowTimeline.vue'
 
 const route = useRoute()
@@ -120,6 +122,13 @@ const canResubmit = computed(() => {
   const r = raw.value
   if (!r || typeof r !== 'object') return false
   return canCurrentUserUseProfitResubmitFlow(r, userInfo.value?.id)
+})
+
+const commissionModeDescDisplay = computed(() => {
+  const r = raw.value
+  if (!r || typeof r !== 'object') return '-'
+  const n = normalizeProfitReport(r)
+  return String(n.commissionModeDesc ?? '').trim() || '-'
 })
 
 /** 误入 resubmit 页：链上阶段应去结算补划转，不要提示重填利润金额 */
@@ -295,6 +304,11 @@ async function onSubmit() {
 </script>
 
 <style scoped>
+.pr-resubmit__mode {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
 .pr-resubmit__loading {
   padding: 48px 0;
 }

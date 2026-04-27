@@ -98,6 +98,21 @@ body,
   -webkit-overflow-scrolling: touch;
 }
 
+/** 分润模式（commissionModeDesc）：列表角标与详情行 */
+.mode-tag {
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(26, 92, 255, 0.08);
+  color: #1a5cff;
+}
+.mode-row {
+  margin: 8px 16px 0;
+  font-size: 13px;
+  color: #646566;
+}
+
 /**
  * 全站 Toast：部分环境/主题会把 --van-toast-* 弄成「浅底 + 白字」，看起来像空白。
  * 统一拉回 Vant 默认语义（深底 + 白字），含 Profile、表单提示与 request 等所有 showToast。

@@ -8,6 +8,7 @@
     <van-cell :is-link="linkToSettlement">
       <template #title>
         <span class="profit-card__title">{{ orderNo }}</span>
+        <span class="mode-tag">{{ commissionModeTagText }}</span>
       </template>
       <template #value>
         <van-tag :type="profitRecordStatusTagType(item.status)" plain round>
@@ -123,6 +124,12 @@ const orderNo = computed(
     props.item.recordNo ??
     (props.item.id != null ? `#${props.item.id}` : '—'),
 )
+
+/** 仅展示；旧数据无字段时显示「-」 */
+const commissionModeTagText = computed(() => {
+  const t = String(props.item.commissionModeDesc ?? '').trim()
+  return t || '-'
+})
 
 const statusText = computed(() => formatProfitRecordStatus(props.item.status))
 

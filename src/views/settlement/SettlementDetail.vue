@@ -13,6 +13,7 @@
           </template>
         </van-cell>
         <van-cell title="上报人分润比例" :value="settlementParentToChildRatioDisplay" />
+        <van-cell title="分润模式" :value="settlementCommissionModeDisplay" />
       </van-cell-group>
 
       <van-cell-group inset title="结算信息">
@@ -171,6 +172,7 @@ import {
   submitSettlementTransfer,
 } from '@/api/settlement'
 import { canCurrentUserUseProfitResubmitFlow } from '@/utils/profitReportSettlementBranch'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
 import {
   formatMoney,
   formatRate,
@@ -352,6 +354,22 @@ const settlementParentToChildRatioDisplay = computed(() => {
   const r = d.parentToChildProfitRatio
   if (r === null || r === undefined || r === '') return '—'
   return formatRate(r)
+})
+
+const settlementCommissionModeDisplay = computed(() => {
+  const d = detail.value
+  if (d && typeof d === 'object') {
+    const n = normalizeProfitReport(d)
+    const t = String(n.commissionModeDesc ?? '').trim()
+    if (t) return t
+  }
+  const head = profitHeadForResubmitGate.value
+  if (head && typeof head === 'object') {
+    const n = normalizeProfitReport(head)
+    const t2 = String(n.commissionModeDesc ?? '').trim()
+    if (t2) return t2
+  }
+  return '-'
 })
 
 const settlementTagType = computed(() => settlementStatusTagType(detail.value?.status))

@@ -7,7 +7,7 @@ export function fetchMe() {
 
 /**
  * GET /api/user/{id}，需登录（查看下级详情等场景）
- * UserDetailVo：user、profile；分润相关常见字段：childProfitRatio（用户利润比例）等
+ * UserDetailVo：user、profile；直属团队长视角下可含 viewerProfitConfig（guaranteeRatio、nonGuaranteeRatio、commissionMode、上限等）
  */
 export function fetchUserDetail(id) {
   return get(`/user/${id}`)

@@ -11,6 +11,7 @@
             <van-cell title="盈利金额" :value="formatMoney(row.profitAmount)" />
             <van-cell title="用户利润比例" :value="formatRate(row.commissionRate)" />
             <van-cell title="分润金额" :value="formatMoney(row.commissionAmount)" />
+            <van-cell title="分润模式" :value="commissionModeCell(row)" />
             <van-cell title="收益截图">
               <template #value>
                 <PreviewableRemoteImage
@@ -107,6 +108,10 @@ const rejectTarget = ref(null)
 
 function pickNo(row) {
   return String(row.recordNo ?? row.id ?? '—')
+}
+
+function commissionModeCell(row) {
+  return String(row.commissionModeDesc ?? '').trim() || '-'
 }
 
 /** ProfitRecord 主键，对应 ProfitAuditRequest.profitRecordId */

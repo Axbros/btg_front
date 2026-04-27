@@ -1,4 +1,5 @@
 import { postAdmin, getAdmin } from './request'
+import { normalizeProfitReportPage } from '@/utils/profitReportNormalize'
 
 /**
  * 管理端：补仓转派等场景选人。
@@ -9,7 +10,7 @@ export function fetchAdminUserPickerOptions() {
 }
 
 export function fetchPendingProfits(params) {
-  return getAdmin('/admin/profits/pending', params)
+  return getAdmin('/admin/profits/pending', params).then((raw) => normalizeProfitReportPage(raw))
 }
 
 export function approveProfit(data) {

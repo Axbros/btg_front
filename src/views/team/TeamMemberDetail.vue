@@ -65,10 +65,9 @@
       </van-cell-group>
 
       <van-cell-group v-if="canAdjustChildProfitRatio" inset title="分润比例配置">
-        
-        <van-cell title="当前分润比例" :value="rateTxt(childProfitRatioField)" />
-
-        <van-cell title="最大可分润比例" :value="rateTxt(maxAssignableChildProfitRatio)" />
+        <van-cell title="分润模式" :value="childCommissionModeDisplay" />
+        <van-cell title="兜底·用户利润比例" :value="childGuaranteeRatioLineDisplay" />
+        <van-cell title="不兜底·用户利润比例" :value="childNonGuaranteeRatioLineDisplay" />
       </van-cell-group>
 
       <div v-if="canAdjustChildProfitRatio" class="actions">
@@ -130,6 +129,14 @@ import { useAuthStore } from '@/stores/auth'
 import { useDashboardStore } from '@/stores/dashboard'
 import { canAdjustChildProfitRatioOnFrontend } from '@/utils/teamDirectRelation'
 import { isUserRoot } from '@/utils/permission'
+import { normalizeProfitReport } from '@/utils/profitReportNormalize'
+import {
+  pickChildRatioAcross,
+  pickGuaranteeChildProfitRatio,
+  pickNonGuaranteeChildProfitRatio,
+  pickMaxAssignableGuarantee,
+  pickMaxAssignableNonGuarantee,
+} from '@/utils/profitChildRatioPick'
 import { effectiveQualificationStatusForDisplay } from '@/utils/qualification'
 import {
   formatMoney,
@@ -157,6 +164,12 @@ const qualRejectSubmitting = ref(false)
 
 const user = computed(() => detail.value?.user ?? {})
 const profile = computed(() => detail.value?.profile ?? null)
+/** GET /user/{id} 在直属团队长视角下返回的当前下级分润配置切片 */
+const viewerProfitConfig = computed(() => {
+  const d = detail.value
+  const v = d?.viewerProfitConfig
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : null
+})
 
 /** 与后端一致：仅根用户接口会返回 tradingAccountPassword */
 const isViewerRoot = computed(() => isUserRoot(userInfo.value))
@@ -236,16 +249,67 @@ const referrerNicknameText = computed(() => {
   return String(n)
 })
 
-const childProfitRatioField = computed(
-  () => detail.value?.childLineProfitRatio ?? null,
+/** 优先 viewerProfitConfig（直属看下级），再兼容根层 / user 旧字段 */
+function memberRatioSources() {
+  const d = detail.value
+  const vpc = viewerProfitConfig.value
+  return [vpc, d, d?.user].filter((x) => x && typeof x === 'object' && !Array.isArray(x))
+}
+
+const childGuaranteeRatioDisplay = computed(() =>
+  pickChildRatioAcross(memberRatioSources(), pickGuaranteeChildProfitRatio),
 )
 
-const maxAssignableChildProfitRatio = computed(() => {
+const childNonGuaranteeRatioDisplay = computed(() =>
+  pickChildRatioAcross(memberRatioSources(), pickNonGuaranteeChildProfitRatio),
+)
+
+const maxAssignableChildGuaranteeRatioDisplay = computed(() => {
   const d = detail.value
   if (!d || typeof d !== 'object') return null
-  const v = d.maxAssignableChildProfitRatio
-  const n = Number(v)
-  return Number.isFinite(n) ? n : null
+  const v = pickMaxAssignableGuarantee(viewerProfitConfig.value ?? d)
+  return v != null && Number.isFinite(v) ? v : null
+})
+
+const maxAssignableChildNonGuaranteeRatioDisplay = computed(() => {
+  const d = detail.value
+  if (!d || typeof d !== 'object') return null
+  const v = pickMaxAssignableNonGuarantee(viewerProfitConfig.value ?? d)
+  return v != null && Number.isFinite(v) ? v : null
+})
+
+function rateTxtWithMaxSuffix(ratio, maxRatio) {
+  const main = rateTxt(ratio)
+  if (maxRatio == null || !Number.isFinite(Number(maxRatio))) return main
+  return `${main}（~${formatRate(maxRatio)}）`
+}
+
+const childGuaranteeRatioLineDisplay = computed(() =>
+  rateTxtWithMaxSuffix(childGuaranteeRatioDisplay.value, maxAssignableChildGuaranteeRatioDisplay.value),
+)
+
+const childNonGuaranteeRatioLineDisplay = computed(() =>
+  rateTxtWithMaxSuffix(childNonGuaranteeRatioDisplay.value, maxAssignableChildNonGuaranteeRatioDisplay.value),
+)
+
+const childCommissionModeDisplay = computed(() => {
+  const vpc = viewerProfitConfig.value
+  if (vpc && typeof vpc === 'object') {
+    const desc = String(vpc.commissionModeDesc ?? '').trim()
+    if (desc) return desc
+    const n = normalizeProfitReport(vpc)
+    const t = String(n.commissionModeDesc ?? '').trim()
+    if (t) return t
+  }
+  const d = detail.value
+  if (!d || typeof d !== 'object') return '-'
+  for (const obj of [d, d.user]) {
+    if (!obj || typeof obj !== 'object') continue
+    const n = normalizeProfitReport(obj)
+    const t = String(n.commissionModeDesc ?? '').trim()
+    if (t) return t
+  }
+  return '-'
 })
 
 /** 分润比例：须为直属团队长且下级已激活；从「全部下级」打开非直属详情时为 false */
