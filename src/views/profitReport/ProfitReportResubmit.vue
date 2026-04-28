@@ -19,7 +19,7 @@
           wrapable
           :text="returnNoticeText"
         />
-        <div class="mode-row pr-resubmit__mode">分润模式：{{ commissionModeDescDisplay }}</div>
+        <!-- <div class="mode-row pr-resubmit__mode">分润模式：{{ commissionModeDescDisplay }}</div> -->
         <van-field
           v-model="profitAmount"
           name="profitAmount"

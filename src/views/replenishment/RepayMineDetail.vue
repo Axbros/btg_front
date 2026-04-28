@@ -12,16 +12,13 @@
         </div>
       </van-cell-group>
 
-      <van-cell-group title="归仓详情" inset v-if="showReturnedActions" class="repay-mine-detail__actions">
-        <van-cell title="已退回待修改">
-          <template #label>
-            <div class="repay-mine-detail__btn-row">
-              <van-button type="primary" size="small" block round @click="goResubmit">去修改并重提</van-button>
-              <van-button type="default" size="small" block round plain @click="goFlow">查看状态流</van-button>
-            </div>
-          </template>
-        </van-cell>
-      </van-cell-group>
+      <div v-if="showReturnedActions" class="repay-mine-detail__action-block">
+        <!-- <p class="repay-mine-detail__action-title">已退回待修改</p> -->
+        <div class="repay-mine-detail__btn-row">
+          <van-button type="primary"  block round @click="goResubmit">去修改并重提</van-button>
+          <van-button type="default"  block round plain @click="goFlow">查看状态流</van-button>
+        </div>
+      </div>
     </template>
     <EmptyState v-else description="未获取到归仓信息" />
 
@@ -200,14 +197,20 @@ watch(repayId, () => loadDetail(), { immediate: true })
 .repay-mine-detail__loading {
   padding: 48px 0;
 }
-.repay-mine-detail__actions {
-  margin: 12px 16px 0;
-}
 .repay-mine-detail__btn-row {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 8px;
+}
+.repay-mine-detail__action-block {
+  margin: 12px 16px 0;
+  box-sizing: border-box;
+}
+.repay-mine-detail__action-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #323233;
 }
 .repay-mine-detail__review {
   margin-top: 8px;

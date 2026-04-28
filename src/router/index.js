@@ -298,6 +298,12 @@ const routes = [
         meta: { title: '今日结算', requiresRoot: true, hideTab: true },
       },
       {
+        path: 'admin/profit-config-audits',
+        name: 'AdminProfitConfigAudits',
+        component: () => import('@/views/admin/AdminProfitConfigAudits.vue'),
+        meta: { title: '分润模式变更审核', requiresRoot: true, hideTab: true },
+      },
+      {
         path: 'admin/replenishments/pending',
         name: 'AdminPendingReplenishments',
         component: () => import('@/views/replenishment/AdminReplenishmentPending.vue'),

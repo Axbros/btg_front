@@ -72,6 +72,20 @@
             <van-badge v-if="userQualificationPendingBadge" :content="userQualificationPendingBadge" max="99" />
           </template>
         </van-cell>
+        <van-cell
+          v-if="isRootUser"
+          title="待审核模式"
+          is-link
+          @click="goNav({ name: 'AdminProfitConfigAudits' })"
+        >
+          <template #value>
+            <van-badge
+              v-if="profitConfigModeAuditBadge"
+              :content="profitConfigModeAuditBadge"
+              max="99"
+            />
+          </template>
+        </van-cell>
          <van-cell  v-if="settlementReviewCount && isRootUser" title="待审核结算" is-link @click="goNav({ name: 'PendingReviewSettlements', query: { scope: 'pending' } })">
           <template #value>
             <van-badge :content="settlementReviewCount" max="99" />
@@ -253,6 +267,9 @@ const replenishmentReviewBadge = computed(() =>
 )
 const replenishmentRepayReviewBadge = computed(() =>
   countBadge(pendingSummary.value?.pendingReplenishmentRepayReviewCount),
+)
+const profitConfigModeAuditBadge = computed(() =>
+  countBadge(pendingSummary.value?.pendingProfitConfigModeAuditCount),
 )
 
 function num0(v) {
@@ -470,9 +487,23 @@ function goNav(to) {
 
 /** is-link 右侧箭头与 #value 内角标重叠：保留数值区宽度并留出箭头位 */
 .todo-quick :deep(.van-cell__value) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   flex-shrink: 0;
-  padding-right: 7px;
-  padding-top: 7px;
+  padding-right: 8px;
+  padding-top: 0;
+  margin-bottom:-4px;
+}
+.todo-quick :deep(.van-cell) {
+  height: 56px;
+  box-sizing: border-box;
+}
+.todo-quick :deep(.van-cell__title),
+.todo-quick :deep(.van-cell__value),
+.todo-quick :deep(.van-cell__right-icon) {
+  display: flex;
+  align-items: center;
 }
 
 .todo-hub__list-scope {

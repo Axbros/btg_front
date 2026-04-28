@@ -85,7 +85,10 @@ const previewHint = computed(() => {
 const canResubmit = computed(() => {
   const r = replenishment.value
   if (!r || typeof r !== 'object') return false
-  return Number(r.status) === 9
+  const s = r.status
+  const sk = typeof s === 'string' ? s.trim().toUpperCase().replace(/-/g, '_') : ''
+  if (sk === 'REJECTED' || sk === 'RETURNED_TO_APPLICANT') return true
+  return Number(s) === 7 || Number(s) === 9
 })
 
 async function load() {
@@ -98,7 +101,12 @@ async function load() {
   }
   try {
     const pack = await fetchReplenishmentMineDetail(id)
-    const r = pack?.replenishment ?? pack?.data?.replenishment ?? pack
+    const outerStatus = pack?.status ?? pack?.data?.status
+    const rawRepl = pack?.replenishment ?? pack?.data?.replenishment ?? pack
+    const r =
+      rawRepl && typeof rawRepl === 'object'
+        ? { ...(outerStatus != null && outerStatus !== '' ? { status: outerStatus } : {}), ...rawRepl }
+        : null
     replenishment.value = r && typeof r === 'object' ? r : null
     if (!canResubmit.value) {
       showToast('当前状态不可重提')

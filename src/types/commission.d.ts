@@ -107,3 +107,43 @@ export interface Mt5LatestSnapshotVo {
   snapshotTime?: string
   [key: string]: unknown
 }
+
+/** 分润模式变更审核：待审核列表行（GET /admin/profit-configs/pending-mode-audits） */
+export interface ProfitConfigModeAuditRowVO {
+  pendingConfigId?: number
+  parentUserId?: number
+  childUserId?: number
+  commissionMode?: string | null
+  commissionModeDesc?: string | null
+  guaranteeRatio?: number | null
+  nonGuaranteeRatio?: number | null
+  auditStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | string | number
+  createdAt?: string | null
+  updatedAt?: string | null
+  [key: string]: unknown
+}
+
+/** 分润模式变更详情中的配置快照（before/after） */
+export interface ProfitConfigModeChangeConfigVO {
+  id?: number
+  commissionMode?: string | null
+  commissionModeDesc?: string | null
+  guaranteeRatio?: number | null
+  nonGuaranteeRatio?: number | null
+  activeAt?: string | null
+  submitTime?: string | null
+  createdAt?: string | null
+  updatedAt?: string | null
+  [key: string]: unknown
+}
+
+/** 分润模式变更审核详情（GET /admin/profit-configs/{id}/mode-change-detail） */
+export interface ProfitConfigModeChangeDetailVO {
+  pendingConfigId?: number
+  auditStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | string | number
+  beforeActiveConfig?: ProfitConfigModeChangeConfigVO | null
+  afterPendingConfig?: ProfitConfigModeChangeConfigVO | null
+  createdAt?: string | null
+  updatedAt?: string | null
+  [key: string]: unknown
+}

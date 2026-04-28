@@ -2,13 +2,13 @@
   <template v-if="detail">
   <van-cell-group title="补仓详情" inset>
     <van-cell title="订单单号" :value="txt(pick('applyNo'))" />
-     <!-- <van-cell title="补仓状态">
+    <van-cell title="补仓状态">
       <template #value>
         <van-tag :type="replenishmentListStatusTagType(detail)" plain round>
           {{ formatReplenishmentListStatus(detail) }}
         </van-tag>
       </template>
-    </van-cell> -->
+    </van-cell>
     <van-cell title="申请人姓名" :value="txt(pick('nickname'))" />
     <van-cell title="申请人电话" :value="txt(pick('mobile'))" />
    
@@ -48,6 +48,7 @@
     
     <van-cell title="申请提交时间" :value="formatDateTime(pick('submitTime'))" />
     <van-cell v-if="txt(pick('auditTime')) !== '—'" title="申请审核时间" :value="formatDateTime(pick('auditTime'))" />
+    <van-cell v-if="txt(pick('auditRemark')) !== '—'" title="申请审核备注" :value="txt(pick('auditRemark'))" />
     <!-- <van-cell v-if="txt(pick('auditBy')) !== '—'" title="审核人 ID" :value="txt(pick('auditBy'))" /> -->
   </van-cell-group>
 

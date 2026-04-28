@@ -71,7 +71,7 @@
         </div>
       </div>
       <div v-if="showReturnedActions" class="repl-mine-detail__action-block">
-        <p class="repl-mine-detail__action-title">已退回待修改</p>
+        <!-- <p class="repl-mine-detail__action-title">已退回待修改</p> -->
         <div class="repl-mine-detail__btn-stack">
           <van-button type="primary" block round @click="goResubmit">去修改并重提</van-button>
           <van-button type="default" block round @click="goFlow">查看状态流</van-button>
@@ -231,7 +231,10 @@ const showApplicantFundProgressHint = computed(() => {
 const showReturnedActions = computed(() => {
   const r = replenishment.value
   if (!r) return false
-  return Number(r.status) === 9
+  const s = r.status
+  const sk = typeof s === 'string' ? s.trim().toUpperCase().replace(/-/g, '_') : ''
+  if (sk === 'REJECTED' || sk === 'RETURNED_TO_APPLICANT') return true
+  return Number(s) === 7 || Number(s) === 9
 })
 
 const myUserId = computed(() => {
@@ -391,9 +394,14 @@ function parseReplenishmentDetailPayload(raw) {
       : []
   if ('replenishment' in raw || 'replenishmentApply' in raw || 'approvedRepays' in raw) {
     const repl = raw.replenishment ?? raw.replenishmentApply ?? null
+    const outerStatus = raw.status
     const list = raw.approvedRepays
+    const mergedReplenishment =
+      repl && typeof repl === 'object'
+        ? { ...(outerStatus != null && outerStatus !== '' ? { status: outerStatus } : {}), ...repl }
+        : null
     return {
-      replenishment: repl && typeof repl === 'object' ? repl : null,
+      replenishment: mergedReplenishment,
       approvedRepays: Array.isArray(list) ? list : [],
       pendingRepays: pendingList,
     }
