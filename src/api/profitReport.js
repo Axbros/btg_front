@@ -13,6 +13,24 @@ export function fetchMyProfitReports(params = {}) {
   return get('/profit-reports/mine', { page, size }).then((raw) => normalizeProfitReportPage(raw))
 }
 
+// GET /profit-reports/mine/seven-day-profit — 固定 7 条，字段 date、dateKey、profit，时间正序。
+export function fetchMySevenDayProfit() {
+  return get('/profit-reports/mine/seven-day-profit').then((data) => normalizeSevenDayProfitList(data))
+}
+
+/** @param {unknown} data 接口 data 段（数组） */
+function normalizeSevenDayProfitList(data) {
+  if (!Array.isArray(data)) return []
+  return data.map((row) => ({
+    date: row?.date != null ? String(row.date) : '',
+    dateKey: row?.dateKey != null ? String(row.dateKey) : '',
+    profit: (() => {
+      const n = Number(row?.profit)
+      return Number.isFinite(n) ? n : 0
+    })(),
+  }))
+}
+
 /** GET /api/profit-reports/{id} */
 export function fetchProfitReportById(id) {
   return get(`/profit-reports/${id}`).then((data) => normalizeProfitReport(data))

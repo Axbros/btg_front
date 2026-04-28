@@ -40,26 +40,14 @@ import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import { fetchMySevenDayProfit } from '@/api/profitReport'
 import { formatMoney } from '@/utils/format'
 
 echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
-/**
- * Mock：与后端对齐时可改为同结构数组，方便直接替换。
- * @typedef {{ date: string, dateKey: string, profit: number }} SevenDayProfitRow
- */
-const MOCK_SEVEN_DAY_PROFIT = [
-  { date: '周一', dateKey: '2026-04-14', profit: 20 },
-  { date: '周二', dateKey: '2026-04-15', profit: 35 },
-  { date: '周三', dateKey: '2026-04-16', profit: 68 },
-  { date: '周四', dateKey: '2026-04-17', profit: 42 },
-  { date: '周五', dateKey: '2026-04-18', profit: 105 },
-  { date: '周六', dateKey: '2026-04-19', profit: 88 },
-  { date: '周日', dateKey: '2026-04-20', profit: 126 },
-]
+/** @typedef {{ date: string, dateKey: string, profit: number }} SevenDayProfitRow */
 
-/** 后续接接口时改为 ref + 赋值即可 */
-const rows = shallowRef(MOCK_SEVEN_DAY_PROFIT)
+const rows = shallowRef(/** @type {SevenDayProfitRow[]} */ ([]))
 
 const chartRef = ref(null)
 let chartInstance = null
@@ -110,7 +98,10 @@ function getChartOption() {
         const v = p.value
         const n = Number(v)
         const s = Number.isFinite(n) ? formatMoney(n) : String(v)
-        return `${p.axisValue}<br/>收益 ${s}`
+        const idx = typeof p.dataIndex === 'number' ? p.dataIndex : -1
+        const key = idx >= 0 && rows.value[idx]?.dateKey ? rows.value[idx].dateKey : ''
+        const head = key ? `${p.axisValue}（${key}）` : String(p.axisValue)
+        return `${head}<br/>收益 ${s}`
       },
     },
     xAxis: {
@@ -197,11 +188,17 @@ function onWinResize() {
 }
 
 onMounted(async () => {
+  try {
+    rows.value = await fetchMySevenDayProfit()
+  } catch {
+    rows.value = []
+  }
   await nextTick()
   await nextTick()
-  if (!hasData.value) return
-  renderChart()
-  requestAnimationFrame(() => chartInstance?.resize())
+  if (hasData.value) {
+    renderChart()
+    requestAnimationFrame(() => chartInstance?.resize())
+  }
   window.addEventListener('resize', onWinResize)
 })
 
