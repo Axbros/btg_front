@@ -300,8 +300,14 @@ const routes = [
       {
         path: 'admin/profit-config-audits',
         name: 'AdminProfitConfigAudits',
-        component: () => import('@/views/admin/AdminProfitConfigAudits.vue'),
+        component: () => import('@/views/admin/AdminProfitConfigAuditList.vue'),
         meta: { title: '分润模式变更审核', requiresRoot: true, hideTab: true },
+      },
+      {
+        path: 'admin/profit-config-audits/:id',
+        name: 'AdminProfitConfigAuditDetail',
+        component: () => import('@/views/admin/AdminProfitConfigAuditDetail.vue'),
+        meta: { title: '分润模式变更详情', requiresRoot: true, hideTab: true },
       },
       {
         path: 'admin/replenishments/pending',
