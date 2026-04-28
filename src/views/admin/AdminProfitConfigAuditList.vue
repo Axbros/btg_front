@@ -3,7 +3,18 @@
     <AppHeader title="分润模式变更审核" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <div class="profit-config-audits__wrap" :class="{ 'profit-config-audits__wrap--docked': loaded }">
-        <van-list v-model:loading="loading" :finished="finished" finished-text="没有更多了" @load="onLoad">
+        <div class="profit-config-audits__filter">
+          <van-dropdown-menu>
+            <van-dropdown-item v-model="auditStatusFilter" :options="auditStatusFilterOptions" />
+          </van-dropdown-menu>
+        </div>
+        <van-list
+          :key="auditStatusFilter"
+          v-model:loading="loading"
+          :finished="finished"
+          finished-text="没有更多了"
+          @load="onLoad"
+        >
           <van-cell-group v-if="list.length" inset :border="false" class="prev-mine-list-group">
             <van-cell
               v-for="(row, idx) in list"
@@ -17,9 +28,15 @@
               @click="goDetail(row)"
               @keydown.enter.prevent="goDetail(row)"
               @keydown.space.prevent="goDetail(row)"
-            />
+            >
+              <template v-if="auditStatusFilter === 'all'" #value>
+                <van-tag :type="auditStatusTagType(row.auditStatus)" plain round>
+                  {{ formatAuditStatus(row.auditStatus) }}
+                </van-tag>
+              </template>
+            </van-cell>
           </van-cell-group>
-          <EmptyState v-if="!loading && !list.length && loaded" description="暂无待审核分润模式变更" />
+          <EmptyState v-if="!loading && !list.length && loaded" :description="emptyDescription" />
         </van-list>
       </div>
     </van-pull-refresh>
@@ -42,15 +59,70 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AppHeader from '@/components/AppHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { fetchPendingModeAudits } from '@/api/profitConfig'
 import { parsePageResponse } from '@/utils/pagination'
 
+const route = useRoute()
 const router = useRouter()
+
+const AUDIT_STATUS_FILTER_OPTIONS = [
+  { text: '全部状态', value: 'all' },
+  { text: '待审核', value: 'PENDING' },
+  { text: '已通过', value: 'APPROVED' },
+  { text: '已拒绝', value: 'REJECTED' },
+]
+
+const AUDIT_STATUS_QUERY_SET = new Set(['PENDING', 'APPROVED', 'REJECTED'])
+
+const auditStatusFilterOptions = AUDIT_STATUS_FILTER_OPTIONS
+
+function auditStatusFromQuery(query) {
+  const raw = query?.auditStatus
+  const s = (Array.isArray(raw) ? String(raw[0]) : raw != null ? String(raw) : '')
+    .trim()
+    .toUpperCase()
+  return AUDIT_STATUS_QUERY_SET.has(s) ? s : 'all'
+}
+
+const auditStatusFilter = ref(auditStatusFromQuery(route.query))
+
+function profitConfigAuditsQueryEquals(a, b) {
+  return auditStatusFromQuery(a) === auditStatusFromQuery(b)
+}
+
+watch(
+  () => route.query.auditStatus,
+  () => {
+    const next = auditStatusFromQuery(route.query)
+    if (next === auditStatusFilter.value) return
+    page.value = 1
+    list.value = []
+    loaded.value = false
+    finished.value = false
+    auditStatusFilter.value = next
+  },
+)
+
+watch(auditStatusFilter, (val) => {
+  page.value = 1
+  list.value = []
+  loaded.value = false
+  finished.value = false
+  const q = { ...route.query }
+  if (val === 'all') {
+    delete q.auditStatus
+  } else {
+    q.auditStatus = val
+  }
+  if (!profitConfigAuditsQueryEquals(route.query, q)) {
+    router.replace({ name: 'AdminProfitConfigAudits', query: q })
+  }
+})
 
 const list = ref([])
 const loading = ref(false)
@@ -62,9 +134,19 @@ const pageSize = ref(10)
 const hasMore = ref(false)
 const recordsTotal = ref(0)
 
+const emptyDescription = computed(() => {
+  if (auditStatusFilter.value === 'PENDING') return '暂无待审分润模式变更'
+  if (auditStatusFilter.value === 'APPROVED') return '暂无已通过记录'
+  if (auditStatusFilter.value === 'REJECTED') return '暂无已拒绝记录'
+  return '暂无分润模式变更记录'
+})
+
 const countSumLabel = computed(() => {
   const onOnePage = !hasMore.value && recordsTotal.value > 0 && list.value.length === recordsTotal.value
-  return onOnePage ? '待审核合计' : '本页待审核数'
+  if (auditStatusFilter.value === 'PENDING') {
+    return onOnePage ? '待审合计' : '本页待审数'
+  }
+  return onOnePage ? '本页合计' : '本页条数'
 })
 
 function txt(v) {
@@ -83,6 +165,22 @@ function cellTitle(row) {
 
 function cellLabel(row) {
   return modeText(row?.commissionModeDesc)
+}
+
+function formatAuditStatus(s) {
+  const key = String(s ?? '').trim().toUpperCase().replace(/-/g, '_')
+  if (key === 'PENDING' || Number(s) === 1) return '待审'
+  if (key === 'APPROVED' || Number(s) === 2) return '已通过'
+  if (key === 'REJECTED' || Number(s) === 3) return '已拒绝'
+  return txt(s)
+}
+
+function auditStatusTagType(s) {
+  const key = String(s ?? '').trim().toUpperCase().replace(/-/g, '_')
+  if (key === 'APPROVED' || Number(s) === 2) return 'success'
+  if (key === 'REJECTED' || Number(s) === 3) return 'danger'
+  if (key === 'PENDING' || Number(s) === 1) return 'warning'
+  return 'default'
 }
 
 function pendingId(row) {
@@ -111,10 +209,21 @@ function toastErrorWithFallback(e, fallback = '操作失败，请稍后重试') 
   showToast(msg || fallback)
 }
 
+function auditStatusApiParam() {
+  const v = auditStatusFilter.value
+  if (v === 'all' || v == null || v === '') return undefined
+  return v
+}
+
 async function fetchList() {
   try {
+    const auditStatus = auditStatusApiParam()
     const raw = await fetchPendingModeAudits(
-      { page: page.value, size: pageSize.value },
+      {
+        page: page.value,
+        size: pageSize.value,
+        ...(auditStatus ? { auditStatus } : {}),
+      },
       { skipGlobalToast: true },
     )
     const parsed = parsePageResponse(raw, pageSize.value)
@@ -179,6 +288,13 @@ function goDetail(row) {
 <style scoped>
 .profit-config-audits {
   min-width: 0;
+}
+.profit-config-audits__filter {
+  margin: 0 0 4px;
+  background: #fff;
+}
+.profit-config-audits__filter :deep(.van-dropdown-menu__bar) {
+  box-shadow: none;
 }
 .profit-config-audits__wrap {
   min-height: 40px;

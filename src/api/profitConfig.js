@@ -39,17 +39,30 @@ export function updateProfitConfig(id, data) {
   return put(`/profit-configs/${id}`, data)
 }
 
+/** @typedef {'PENDING'|'APPROVED'|'REJECTED'} ProfitConfigModeAuditStatusFilter */
+
 /**
  * GET /api/v1/admin/profit-configs/pending-mode-audits
- * 根用户待审核的分润模式变更列表（支持数组或分页体）。
- * @param {{ page?: number, size?: number, pageSize?: number }} [params]
+ * 分润模式变更审核列表（支持数组或分页体）。
+ * @param {{ page?: number, size?: number, pageSize?: number, auditStatus?: ProfitConfigModeAuditStatusFilter }} [params]
+ * @param {string} [params.auditStatus] 不传或非法值则三种状态都查；PENDING / APPROVED / REJECTED 为单状态筛选
  */
 export function fetchPendingModeAudits(params = {}, config = {}) {
   const page = params.page ?? 1
   const size = params.size ?? params.pageSize ?? 10
-  return get('/admin/profit-configs/pending-mode-audits', { page, size }, config).then((raw) =>
+  const auditStatus = normalizeAuditStatusQueryParam(params.auditStatus)
+  const query = { page, size, ...(auditStatus ? { auditStatus } : {}) }
+  return get('/admin/profit-configs/pending-mode-audits', query, config).then((raw) =>
     normalizePendingModeAuditList(raw),
   )
+}
+
+const AUDIT_STATUS_FILTER_SET = new Set(['PENDING', 'APPROVED', 'REJECTED'])
+
+function normalizeAuditStatusQueryParam(v) {
+  if (v == null || v === '') return null
+  const s = String(v).trim().toUpperCase()
+  return AUDIT_STATUS_FILTER_SET.has(s) ? s : null
 }
 
 /**

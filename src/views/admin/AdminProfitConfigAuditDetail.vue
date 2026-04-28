@@ -10,6 +10,17 @@
         <van-cell title="团队长" :value="txt(detailAfter.parentNickname || detailBefore.parentNickname)" />
         <van-cell title="下级" :value="txt(detailAfter.childNickname || detailBefore.childNickname)" />
       </van-cell-group>
+      <van-cell-group title="审核信息" inset class="audit-detail__group-gap">
+        <van-cell title="审核状态">
+          <template #value>
+            <van-tag :type="auditStatusTagType(detailAuditStatusRaw)" plain round>
+              {{ formatAuditStatus(detailAuditStatusRaw) }}
+            </van-tag>
+          </template>
+        </van-cell>
+        <van-cell title="审核时间" :value="formatDateTime(detailData.auditTime)" />
+        <van-cell title="审核人" :value="detailAuditorDisplay" />
+      </van-cell-group>
       <van-cell-group title="变更前" inset>
         <van-cell title="模式" :value="modeText(detailBefore.commissionModeDesc)" />
         <van-cell title="兜底比例" :value="formatRate(detailBefore.guaranteeRatio)" />
@@ -96,13 +107,38 @@ const detailAfter = computed(() => {
   const d = detailData.value
   return d && typeof d === 'object' ? d.afterPendingConfig ?? {} : {}
 })
+
+/** 顶层审核状态（与 GET mode-change-detail 的 data.auditStatus 一致） */
+const detailAuditStatusRaw = computed(() => detailData.value?.auditStatus)
+
+const detailAuditorDisplay = computed(() => {
+  const nickname = detailData.value?.auditorNickname
+  return nickname ? String(nickname).trim() : '—'
+})
+
 const actionTitle = computed(() => (actionKind.value === 'reject' ? '拒绝变更申请' : '同意变更申请'))
 const detailIsPending = computed(() => {
-  const s = detailData.value?.auditStatus
+  const s = detailAuditStatusRaw.value
   if (s == null || String(s).trim() === '') return true
   const key = String(s ?? '').trim().toUpperCase().replace(/-/g, '_')
   return key === 'PENDING' || Number(s) === 1
 })
+
+function formatAuditStatus(s) {
+  const key = String(s ?? '').trim().toUpperCase().replace(/-/g, '_')
+  if (key === 'PENDING' || Number(s) === 1) return '待审核'
+  if (key === 'APPROVED' || Number(s) === 2) return '已通过'
+  if (key === 'REJECTED' || Number(s) === 3) return '已拒绝'
+  return txt(s)
+}
+
+function auditStatusTagType(s) {
+  const key = String(s ?? '').trim().toUpperCase().replace(/-/g, '_')
+  if (key === 'APPROVED' || Number(s) === 2) return 'success'
+  if (key === 'REJECTED' || Number(s) === 3) return 'danger'
+  if (key === 'PENDING' || Number(s) === 1) return 'warning'
+  return 'default'
+}
 
 function txt(v) {
   return v != null && String(v).trim() !== '' ? String(v) : '—'

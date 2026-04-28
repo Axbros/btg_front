@@ -76,7 +76,7 @@
           v-if="isRootUser"
           title="待审核模式"
           is-link
-          @click="goNav({ name: 'AdminProfitConfigAudits' })"
+          @click="goNav({ name: 'AdminProfitConfigAudits', query: { auditStatus: 'PENDING' } })"
         >
           <template #value>
             <van-badge
